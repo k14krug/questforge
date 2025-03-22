@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Flask
+instance/
+.webassets-cache
+
+# Environment files
+.env
+.env.prod
+
+# VSCode
+.vscode/
+
+# DB
+*.sqlite3
+*.db
+
+# Migrations
+migrations/
