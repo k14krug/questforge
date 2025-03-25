@@ -1,4 +1,4 @@
-from questforge import db, bcrypt
+from questforge.extensions import db, bcrypt
 from flask_login import UserMixin
 
 class User(UserMixin, db.Model):

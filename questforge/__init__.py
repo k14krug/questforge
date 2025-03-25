@@ -1,13 +1,8 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_login import LoginManager
-from flask_bcrypt import Bcrypt
-
-db = SQLAlchemy()
-migrate = Migrate()
-login_manager = LoginManager()
-bcrypt = Bcrypt()
+from questforge.extensions import db, migrate, login_manager, bcrypt
+from questforge.models.user import User
+from questforge.models.game import Game
+from questforge.models.template import Template
 
 def create_app(config_class='config.Config'):
     app = Flask(__name__)

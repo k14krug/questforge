@@ -1,0 +1,40 @@
+# Project Intelligence
+
+## Development Patterns
+1. Always use virtualenvwrapper for environment management
+2. Follow Flask application factory pattern
+3. Use blueprints for modular organization
+4. Implement database models before views
+5. Write migrations for all schema changes
+
+## Code Style
+- Follow PEP 8 for Python code
+- Use Google-style docstrings
+- Keep line length under 88 characters
+- Use type hints for function signatures
+
+## Project Preferences
+- Prefer SQLAlchemy over raw SQL
+- Use bcrypt for password hashing
+- Implement CSRF protection globally
+- Use Flask-Migrate for database migrations
+
+## Workflow Guidelines
+1. Update memory bank after all task completions
+2. Document all architectural decisions
+3. Maintain separate dev/prod configurations
+4. Write tests for critical functionality
+5. Validate all user inputs
+
+## Template Guidelines
+- Use Bootstrap 5 for styling
+- Implement responsive design
+- Use Jinja2 template inheritance
+- Create base.html as foundation template
+- Include modern navbar with:
+  - Brand logo
+  - Navigation links
+  - User menu (when logged in)
+  - Search functionality
+- Use consistent spacing and typography
+- Implement dark/light mode toggle

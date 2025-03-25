@@ -1,0 +1,645 @@
+# QuestForge System Specification
+
+## Overview
+
+This document outlines specifications for QuestForge, a Flask-based web application designed to run on a Raspberry Pi within a home network. The application will serve as a platform for multiplayer adventure games, powered by AI that functions as a game master. The system will allow multiple users to join different games simultaneously, with each game maintaining its own persistent state and narrative arc.
+
+## Core Requirements
+
+### Deployment Environment
+- Raspberry Pi running on a home network
+- Python Flask application with virtualenvwrapper
+- Systemd service management
+- Nginx as reverse proxy
+- Local DNS routing
+- MySQL/MariaDB database (questforge_dev and questforge_user setup)
+
+### User Experience
+- Multiple users can access the system simultaneously from different devices
+- Users can create new games or join existing ones
+- Real-time updates showing player actions and AI responses
+- Persistent game state across sessions
+
+### Game System
+- Template-based game creation
+- Customizable game parameters
+- AI-generated campaign structure
+- Structured narrative with clear objectives and conclusion
+- Persistent game state that maintains narrative coherence
+
+## System Architecture
+
+### Component Overview
+
+1. **User Authentication Module**
+   - User registration and login
+   - Session management
+   - User preferences and history
+
+2. **Game Management Module**
+   - Game creation interface
+   - Game selection and joining
+   - Game state persistence
+
+3. **Template Module**
+   - Pre-defined game templates (fantasy, mystery, sci-fi, etc.)
+   - Template-specific question flows for game setup
+   - Rule sets for each template
+
+4. **Campaign Structure Module**
+   - AI-generated complete campaign structure
+   - Narrative arc with key plot points
+   - Objectives and conclusion conditions
+   - Key locations and characters
+
+5. **Game State Tracking Module**
+   - Progress tracking toward objectives
+   - Player decision history
+   - Location and character tracking
+
+6. **AI Game Master Module**
+   - Integration with LLM API
+   - Context management for maintaining narrative coherence
+   - Real-time response generation
+
+7. **Real-time Communication Module**
+   - WebSocket connections for instant updates
+   - Room-based messaging for multiple concurrent games
+
+### Technical Architecture with Modularization
+
+```
+/questforge
+  /config
+    __init__.py
+    dev.py
+    prod.py
+  /migrations  # For SQLAlchemy-Migrate
+    versions/
+    script.py.mako
+    env.py
+  /questforge
+    __init__.py  # Application factory
+    /static
+      /css
+      /js
+    /templates
+      /auth
+      /game
+      /template
+    /models
+      __init__.py
+      user.py
+      game.py
+      template.py
+      campaign.py
+    /views  # Flask Blueprints
+      __init__.py
+      auth.py
+      game.py
+      template.py
+      campaign.py
+    /services  # Helper modules
+      __init__.py
+      ai_service.py
+      campaign_service.py
+      game_state_service.py
+    /utils
+      __init__.py
+      context_manager.py
+      prompt_builder.py
+    /extensions  # Flask extensions (SQLAlchemy, etc.)
+      __init__.py
+      db.py
+      socketio.py
+  manage.py  # Management script for migrations, etc.
+  wsgi.py    # WSGI entry point for production
+  .env.example  # Example environment variables
+  requirements.txt
+  setup.py
+```
+
+## Database Schema (SQLAlchemy Models for MySQL/MariaDB)
+
+### Users
+```python
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime, nullable=True)
+```
+
+### Templates
+```python
+class Template(db.Model):
+    __tablename__ = 'templates'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    question_flow = db.Column(db.JSON, nullable=False)
+    default_rules = db.Column(db.JSON, nullable=False)
+```
+
+### Games
+```python
+class Game(db.Model):
+    __tablename__ = 'games'
+    id = db.Column(db.Integer, primary_key=True)
+    template_id = db.Column(db.Integer, db.ForeignKey('templates.id'))
+    name = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    status = db.Column(db.String(20), default='active')
+    
+    template = db.relationship('Template', backref='games')
+    creator = db.relationship('User', backref='created_games')
+```
+
+### CampaignStructures (renamed from Blueprints)
+```python
+class CampaignStructure(db.Model):
+    __tablename__ = 'campaign_structures'
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey('games.id'))
+    template_id = db.Column(db.Integer, db.ForeignKey('templates.id'))
+    campaign_data = db.Column(db.JSON, nullable=False)
+    objectives = db.Column(db.JSON, nullable=False)
+    conclusion_conditions = db.Column(db.JSON, nullable=False)
+    key_locations = db.Column(db.JSON, nullable=False)
+    key_characters = db.Column(db.JSON, nullable=False)
+    major_plot_points = db.Column(db.JSON, nullable=False)
+    possible_branches = db.Column(db.JSON, nullable=False)
+    
+    game = db.relationship('Game', backref='campaign_structure', uselist=False)
+```
+
+### GameStates
+```python
+class GameState(db.Model):
+    __tablename__ = 'game_states'
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey('games.id'))
+    campaign_structure_id = db.Column(db.Integer, db.ForeignKey('campaign_structures.id'))
+    current_location = db.Column(db.String(100), nullable=True)
+    completed_objectives = db.Column(db.JSON, default=lambda: "[]")
+    discovered_locations = db.Column(db.JSON, default=lambda: "[]")
+    encountered_characters = db.Column(db.JSON, default=lambda: "[]")
+    completed_plot_points = db.Column(db.JSON, default=lambda: "[]")
+    current_branch = db.Column(db.String(50), default='main')
+    player_decisions = db.Column(db.JSON, default=lambda: "[]")
+    campaign_complete = db.Column(db.Boolean, default=False)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    game = db.relationship('Game', backref='state', uselist=False)
+    campaign_structure = db.relationship('CampaignStructure', backref='game_states')
+```
+
+### PlayerGameStates
+```python
+class PlayerGameState(db.Model):
+    __tablename__ = 'player_game_states'
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey('games.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_active = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    player_specific_data = db.Column(db.JSON, default=lambda: "{}")
+    
+    game = db.relationship('Game', backref='player_states')
+    user = db.relationship('User', backref='player_states')
+```
+
+### GameSessions
+```python
+class GameSession(db.Model):
+    __tablename__ = 'game_sessions'
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey('games.id'))
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    ended_at = db.Column(db.DateTime, nullable=True)
+    players = db.Column(db.JSON, default=lambda: "[]")
+    session_history = db.Column(db.JSON, default=lambda: "[]")
+    
+    game = db.relationship('Game', backref='sessions')
+```
+
+## Module Breakdown (Flask Blueprints)
+
+### Auth Blueprint (views/auth.py)
+- Login endpoint
+- Registration endpoint
+- Logout endpoint
+- Password reset endpoints
+- Profile management endpoints
+
+### Game Blueprint (views/game.py)
+- Game creation endpoint
+- Game listing endpoint
+- Game joining endpoint
+- Game state endpoint
+- Game action endpoint
+
+### Template Blueprint (views/template.py)
+- Template listing endpoint
+- Template detail endpoint
+- Template selection endpoint
+- Template question flow endpoint
+
+### Campaign Blueprint (views/campaign.py)
+- Campaign creation endpoint
+- Campaign detail endpoint
+- Campaign state endpoint
+
+## Helper Modules
+
+### AI Service (services/ai_service.py)
+**Purpose:** Manage all interactions with the LLM API
+**Functions:**
+- `initialize_api(config)`: Set up API connection
+- `generate_campaign(template, inputs)`: Generate complete campaign structure
+- `get_response(context, player_action)`: Get AI response to player action
+- `analyze_state_changes(state, action, response)`: Extract state changes from AI response
+
+### Campaign Service (services/campaign_service.py)
+**Purpose:** Manage campaign structure and state
+**Functions:**
+- `create_campaign(template_id, inputs)`: Create new campaign structure
+- `get_campaign_structure(game_id)`: Get campaign structure for a game
+- `update_campaign_state(game_id, changes)`: Update game state based on changes
+- `check_conclusion(game_id)`: Check if campaign conclusion conditions are met
+
+### Game State Service (services/game_state_service.py)
+**Purpose:** Manage game state persistence
+**Functions:**
+- `initialize_state(game_id)`: Create initial game state
+- `get_state(game_id)`: Get current game state
+- `update_state(game_id, changes)`: Apply changes to game state
+- `get_player_state(game_id, user_id)`: Get player-specific state
+- `join_game(game_id, user_id)`: Add player to a game
+- `leave_game(game_id, user_id)`: Remove player from a game
+
+### Context Manager (utils/context_manager.py)
+**Purpose:** Manage AI context window
+**Functions:**
+- `build_context(game_id, history_length=10)`: Build context for AI request
+- `compress_history(history)`: Compress long history entries
+- `prioritize_content(content, max_tokens)`: Prioritize important context elements
+
+### Prompt Builder (utils/prompt_builder.py)
+**Purpose:** Build prompts for different AI interactions
+**Functions:**
+- `build_campaign_prompt(template, inputs)`: Build prompt for campaign generation
+- `build_response_prompt(state, action)`: Build prompt for AI response
+- `build_analysis_prompt(state, action, response)`: Build prompt for state analysis
+
+## Workflow Processes
+
+### Game Creation Process
+1. User selects a game template
+2. System presents template-specific questions
+3. User provides answers to customize the game
+4. System sends template and answers to AI service
+5. AI generates complete campaign structure
+6. System stores structure and initializes game state
+7. Game is ready for play
+
+### Gameplay Process
+1. User joins an existing game
+2. System loads campaign structure and current game state
+3. User interface displays current game status
+4. User submits an action
+5. System sends action, structure, and state to AI service
+6. AI generates response while maintaining narrative coherence
+7. System updates game state based on AI response
+8. System broadcasts update to all users in the game
+9. Process repeats until game conclusion conditions are met
+
+## Flask Extensions and Dependencies
+
+### Core Extensions
+- **Flask-SQLAlchemy**: Database ORM
+- **Flask-Migrate**: Database migrations
+- **Flask-SocketIO**: WebSocket support
+- **Flask-Login**: User authentication
+- **Flask-WTF**: Form handling and CSRF protection
+- **Flask-Bcrypt**: Password hashing
+
+### Additional Dependencies
+- **python-dotenv**: Environment variable management
+- **requests**: HTTP requests (for AI API)
+- **eventlet/gevent**: Async support for SocketIO
+- **pymysql**: MySQL/MariaDB adapter
+- **cryptography**: Required by pymysql for secure connections
+
+## Development and Production Setup
+
+### Development Setup
+
+1. **Environment Setup**
+```bash
+# Create virtualenv
+mkvirtualenv questforge
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with development settings
+```
+
+2. **Database Setup**
+```bash
+# Database should already be set up
+# Initialize migrations
+flask db init
+flask db migrate -m "Initial migration"
+flask db upgrade
+```
+
+3. **Run Development Server**
+```bash
+flask run --debug
+```
+
+### Production Setup
+
+1. **Environment Configuration**
+```bash
+# Create production config
+cp .env.example .env.prod
+# Edit .env.prod with production settings
+```
+
+2. **Database Setup**
+```bash
+# Use existing production database or create new
+mysql -u root -p
+CREATE DATABASE questforge_prod CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON questforge_prod.* TO 'questforge_user'@'localhost';
+FLUSH PRIVILEGES;
+exit;
+
+flask db upgrade
+```
+
+3. **Systemd Service Configuration**
+```
+[Unit]
+Description=QuestForge Application
+After=network.target mariadb.service
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/questforge
+Environment="PATH=/home/pi/.virtualenvs/questforge/bin"
+EnvironmentFile=/home/pi/questforge/.env.prod
+ExecStart=/home/pi/.virtualenvs/questforge/bin/gunicorn --workers 2 --bind unix:questforge.sock wsgi:app
+
+[Install]
+WantedBy=multi-user.target
+```
+
+4. **Nginx Configuration**
+```
+server {
+    listen 80;
+    server_name questforge.local;
+
+    location / {
+        proxy_pass http://unix:/home/pi/questforge/questforge.sock;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+    
+    location /static {
+        alias /home/pi/questforge/questforge/static;
+    }
+    
+    location /socket.io {
+        proxy_pass http://unix:/home/pi/questforge/questforge.sock;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+## Application Factory Pattern
+
+The QuestForge application will use the application factory pattern to support multiple environments and testing:
+
+```python
+# questforge/__init__.py
+from flask import Flask
+from flask_socketio import SocketIO
+from .extensions.db import db
+from .extensions.socketio import socketio
+
+def create_app(config_name='default'):
+    app = Flask(__name__)
+    
+    # Load config
+    if config_name == 'production':
+        app.config.from_object('config.prod.ProductionConfig')
+    else:
+        app.config.from_object('config.dev.DevelopmentConfig')
+    
+    # Initialize extensions
+    db.init_app(app)
+    socketio.init_app(app)
+    
+    # Register blueprints
+    from .views.auth import auth_bp
+    from .views.game import game_bp
+    from .views.template import template_bp
+    from .views.campaign import campaign_bp
+    
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(game_bp)
+    app.register_blueprint(template_bp)
+    app.register_blueprint(campaign_bp)
+    
+    return app
+```
+
+## Database Configuration (MySQL-specific)
+
+```python
+# config/dev.py
+class DevelopmentConfig:
+    DEBUG = True
+    SECRET_KEY = 'dev-secret-key'
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://questforge_user:password@localhost/questforge_dev?charset=utf8mb4'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    JSON_AS_ASCII = False
+
+# config/prod.py
+class ProductionConfig:
+    DEBUG = False
+    SECRET_KEY = 'your-production-secret-key'
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://questforge_user:password@localhost/questforge_prod?charset=utf8mb4'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    JSON_AS_ASCII = False
+```
+
+## MySQL-specific Considerations
+
+### JSON Field Handling for MySQL/MariaDB
+
+```python
+# In models, we use string defaults with lambda to ensure compatibility
+completed_objectives = db.Column(db.JSON, default=lambda: "[]")
+
+# When working with these fields, we should ensure proper serialization
+import json
+
+# When setting
+game_state.completed_objectives = json.dumps(objectives_list)
+
+# When getting 
+objectives_list = json.loads(game_state.completed_objectives)
+```
+
+### Character Set and Collation
+Ensure proper UTF-8 support:
+
+```python
+# In your SQLAlchemy config
+SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://user:pass@localhost/db?charset=utf8mb4'
+```
+
+## Database Migration Support
+
+SQLAlchemy-Migrate will be set up through Flask-Migrate:
+
+```python
+# manage.py
+from flask_migrate import Migrate, MigrateCommand
+from flask_script import Manager
+from questforge import create_app
+from questforge.extensions.db import db
+
+app = create_app()
+migrate = Migrate(app, db)
+manager = Manager(app)
+manager.add_command('db', MigrateCommand)
+
+if __name__ == '__main__':
+    manager.run()
+```
+
+## Real-time Communication Implementation
+
+```python
+# extensions/socketio.py
+from flask_socketio import SocketIO
+
+socketio = SocketIO()
+
+# Then in questforge/services/socket_service.py
+from flask_socketio import join_room, emit
+from ..extensions.socketio import socketio
+
+class SocketService:
+    @staticmethod
+    def register_handlers():
+        @socketio.on('join')
+        def handle_join(data):
+            room = data['game_id']
+            join_room(room)
+            emit('status', {'msg': f"{data['username']} has joined the game"}, room=room)
+        
+        @socketio.on('player_action')
+        def handle_action(data):
+            room = data['game_id']
+            # Process action through AI service
+            response = ai_service.get_response(data['game_id'], data['action'])
+            # Update game state
+            game_state_service.update_state(data['game_id'], response['state_changes'])
+            # Broadcast to all in the room
+            emit('game_update', {
+                'player': data['username'],
+                'action': data['action'],
+                'response': response['content']
+            }, room=room)
+```
+
+## Security Considerations
+
+### Authentication
+- Secure password storage using bcrypt
+- CSRF protection on all forms
+- Session management with secure cookies
+
+### Data Protection
+- Input validation on all endpoints
+- Sanitization of user input before passing to AI
+- Parameter binding for SQL queries
+
+### Network Security
+- Local network restriction through nginx
+- Rate limiting for API requests
+- Secure WebSocket configuration
+
+## Future Expansion Possibilities
+
+### Enhanced Game Features
+- Character creation and progression
+- Inventory systems
+- Combat mechanics
+- Skill checks and dice rolling
+
+### UI Improvements
+- Mobile-responsive design
+- Dark mode option
+- Customizable themes
+- Audio integration
+
+### AI Enhancements
+- Image generation for scenes
+- Voice output for narratives
+- Multiple AI personalities for different NPCs
+
+## Development Roadmap
+
+### Phase 1: Core Framework
+- Flask application factory setup
+- Database models and migrations
+- Authentication system
+- Basic Flask blueprints structure
+- Environment configuration (dev/prod)
+
+### Phase 2: Game Engine
+- Template system implementation
+- Campaign structure generation
+- Game state tracking
+- AI service integration
+
+### Phase 3: Real-time Features
+- SocketIO implementation
+- Game joining/leaving
+- Real-time updates
+- Multi-user synchronization
+
+### Phase 4: Game Experience
+- UI implementation
+- Game creation wizard
+- Playing interface
+- Game history and transcripts
+
+### Phase 5: Deployment
+- Production configuration
+- Systemd service setup
+- Nginx configuration
+- Performance optimization
