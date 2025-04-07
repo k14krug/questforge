@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, jsonify, request
 from flask_login import login_required, current_user
 import json
 from ..models.template import Template
@@ -20,7 +20,19 @@ def list_templates():
 def create_template():
     """Create a new template"""
     form = TemplateForm()
-    
+
+    # Set default values for JSON fields on GET request
+    if request.method == 'GET':
+        form.question_flow.data = '[{"text": "What is your name?", "type": "text", "key": "name"}]'
+        form.default_rules.data = '{"start_location": "Town Square", "win_condition": "Defeat the Dragon"}'
+        form.campaign_data.data = '{"setting": "Fantasy world", "theme": "Heroic adventure"}'
+        form.objectives.data = '[{"name": "Defeat the dragon", "description": "Slay the ancient dragon terrorizing the kingdom"}]'
+        form.conclusion_conditions.data = '[{"type": "objective", "id": 1, "description": "Main objective completed"}]'
+        form.key_locations.data = '[{"name": "Dark Forest", "description": "A dangerous forest full of monsters"}]'
+        form.key_characters.data = '[{"name": "King Arthur", "role": "Ruler of the kingdom"}]'
+        form.major_plot_points.data = '[{"name": "Dragon Attack", "description": "The dragon attacks the capital city"}]'
+        form.possible_branches.data = '[{"name": "Negotiate", "description": "Try to negotiate with the dragon"}]'
+
     if form.validate_on_submit():
         try:
             template = Template(
