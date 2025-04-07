@@ -1,20 +1,38 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="{{ url_for('main.index') }}">QuestForge</a>
+        <a class="navbar-brand" href="{{ url_for('main.home') }}">QuestForge</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('main.index') }}">Home</a>
+                    <a class="nav-link" href="{{ url_for('main.home') }}">Home</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('main.about') }}">About</a>
                 </li>
+                {% if current_user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('game.create_game_view') }}">Create Game</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('game.list_games') }}">Join Game</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('template.list_templates') }}">Templates</a>
+                </li>
+                {% endif %}
             </ul>
             
             <ul class="navbar-nav">
+                <!-- Theme Toggle -->
+                <li class="nav-item">
+                    <button id="theme-toggle" class="btn btn-link nav-link" type="button">
+                        <i class="bi bi-moon-fill"></i>
+                    </button>
+                </li>
+
                 {% if current_user.is_authenticated %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">

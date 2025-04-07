@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Game History: <span id="gameTitle">{{ game.name }}</span></h2>
+        <div>
+            <button id="exportBtn" class="btn btn-outline-secondary">
+                <i class="bi bi-download"></i> Export Transcript
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Timeline -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Session Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline" id="gameTimeline">
+                        {% for event in game.events %}
+                        <div class="timeline-item" data-event-id="{{ event.id }}">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <small class="text-muted">{{ event.timestamp|datetimeformat }}</small>
+                                <p>{{ event.description }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- State Visualization -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <h5>Game State</h5>
+                    <div class="btn-group" role="group">
+                        <button id="prevState" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </button>
+                        <button id="nextState" class="btn btn-sm btn-outline-primary">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="stateDiffViewer" class="state-diff-viewer">
+                        <!-- State diffs will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+.timeline-item {
+    position: relative;
+    padding-bottom: 15px;
+}
+.timeline-point {
+    position: absolute;
+    left: -20px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #0d6efd;
+}
+.timeline-content {
+    padding-left: 10px;
+}
+.state-diff-viewer {
+    min-height: 400px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 15px;
+    background-color: #f8f9fa;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timelineItems = document.querySelectorAll('.timeline-item');
+    let currentIndex = timelineItems.length - 1; // Start at most recent event
+
+    // Highlight current timeline item
+    function updateTimelineSelection() {
+        timelineItems.forEach((item, index) => {
+            item.classList.toggle('active', index === currentIndex);
+        });
+        loadStateDiff(timelineItems[currentIndex].dataset.eventId);
+    }
+
+    // Navigation controls
+    document.getElementById('prevState').addEventListener('click', () => {
+        if (currentIndex > 0) {
+            currentIndex--;
+            updateTimelineSelection();
+        }
+    });
+
+    document.getElementById('nextState').addEventListener('click', () => {
+        if (currentIndex < timelineItems.length - 1) {
+            currentIndex++;
+            updateTimelineSelection();
+        }
+    });
+
+    // Timeline item click handler
+    timelineItems.forEach((item, index) => {
+        item.addEventListener('click', () => {
+            currentIndex = index;
+            updateTimelineSelection();
+        });
+    });
+
+    // Export functionality
+    document.getElementById('exportBtn').addEventListener('click', () => {
+        exportGameHistory();
+    });
+
+    // Initial load
+    updateTimelineSelection();
+});
+
+function loadStateDiff(eventId) {
+    // TODO: Load state diff for the selected event
+    fetch(`/api/games/${gameId}/events/${eventId}/diff`)
+        .then(response => response.json())
+        .then(data => {
+            renderStateDiff(data);
+        });
+}
+
+function renderStateDiff(diff) {
+    // TODO: Implement diff visualization
+    document.getElementById('stateDiffViewer').innerHTML = 
+        `<pre>${JSON.stringify(diff, null, 2)}</pre>`;
+}
+
+function exportGameHistory() {
+    // TODO: Implement export functionality
+    alert('Export functionality will be implemented here');
+}
+</script>
+{% endblock %}

@@ -1,20 +1,24 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 from questforge.models.user import User
-from questforge import db, bcrypt
+from questforge.extensions import db, login_manager
+from questforge.extensions.bcrypt import bcrypt
 from .forms import RegistrationForm, LoginForm
 
 auth_bp = Blueprint('auth', __name__)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegistrationForm()
     if form.validate_on_submit():
-        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
         user = User(
             username=form.username.data,
             email=form.email.data,
-            password=hashed_password
+            password=form.password.data
         )
         db.session.add(user)
         db.session.commit()
@@ -33,6 +37,11 @@ def login():
         else:
             flash('Login Unsuccessful. Please check email and password', 'danger')
     return render_template('auth/login.html', form=form)
+
+@auth_bp.route('/profile')
+@login_required
+def profile():
+    return render_template('auth/profile.html')
 
 @auth_bp.route('/logout')
 @login_required

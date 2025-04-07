@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% from "partials/_messages.html" import flash_messages %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Game Lobby: {{ game.name }}</h1>
+    <div class="row">
+        <div class="col-md-8">
+            <div id="players" class="card mb-4">
+                <div class="card-header">
+                    Players
+                <div class="card-body">
+                    <ul id="player-list" class="list-group">
+                        {% for assoc in player_associations %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center" data-user-id="{{ assoc.user_id }}">
+                            <span>
+                                {{ assoc.user.username }}
+                                <span class="ready-status ms-2">
+                                    {% if assoc.is_ready %}✅{% else %}❌{% endif %}
+                                </span>
+                            </span>
+                            {% if assoc.user_id == current_user_id and not assoc.is_ready %}
+                            <button class="btn btn-sm btn-success ready-button">Ready Up</button>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div id="game-controls" class="mt-3">
+                <!-- Placeholder for Start Game button -->
+                <button id="start-game-button" class="btn btn-primary" disabled>Start Game</button>
+                <small id="start-game-status" class="ms-2 text-muted">Waiting for players...</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    // --- Moved Socket.IO logic directly into lobby.html ---
+    console.log("Initializing SocketIO logic directly in lobby.html...");
+
+    // Set current user ID from template context
+    window.currentUserId = '{{ current_user_id }}';
+    const gameId = '{{ game.id }}';
+    const currentUserId = '{{ current_user_id }}';
+    const playerList = document.getElementById('player-list');
+    const startGameButton = document.getElementById('start-game-button');
+    const startGameStatus = document.getElementById('start-game-status');
+    let socket;
+
+    function updatePlayerStatus(userId, isReady) {
+        console.log(`updatePlayerStatus called for userId=${userId}, isReady=${isReady}`);
+        const playerItem = playerList.querySelector(`li[data-user-id="${userId}"]`);
+        if (playerItem) {
+            const statusSpan = playerItem.querySelector('.ready-status');
+            statusSpan.textContent = isReady ? '✅' : '❌';
+            
+            // Remove ready button if user is now ready
+            if (userId == currentUserId && isReady) {
+                const readyButton = playerItem.querySelector('.ready-button');
+                if (readyButton) {
+                    readyButton.remove();
+                }
+            }
+        }
+        checkAllPlayersReady();
+    }
+
+    function checkAllPlayersReady() {
+        console.log("checkAllPlayersReady called");
+        const allReady = Array.from(playerList.querySelectorAll('.ready-status')).every(span => span.textContent === '✅');
+        console.log(`checkAllPlayersReady: allReady=${allReady}`);
+        const playerCount = playerList.children.length; // Basic check, assumes at least 2 players needed
+
+        if (allReady && playerCount >= 2) { // Adjust minimum player count if needed
+            startGameButton.disabled = false;
+            startGameStatus.textContent = 'All players ready!';
+        } else {
+            startGameButton.disabled = true;
+            startGameStatus.textContent = 'Waiting for players...';
+        }
+    }
+
+    // Event listener for Start Game button click
+    startGameButton.addEventListener('click', () => {
+        console.log(`Start Game button clicked for game ${gameId} by user ${currentUserId}`); // Added logging
+        // Check if the socket is connected before emitting the event
+        if (socket && socket.connected) {
+            console.log(`Socket is connected. Emitting start_game event for game ${gameId} by user ${currentUserId}`); // Added logging
+            socket.emit('start_game', { // Use socketClient.socket.emit directly for consistency? Or add a dedicated method? Let's try direct emit first.
+                game_id: gameId, 
+                user_id: currentUserId // Send user_id
+            }); 
+            console.log('start_game event emitted'); // Added logging
+            startGameButton.disabled = true; // Disable after clicking
+            startGameStatus.textContent = 'Starting game...';
+        } else {
+            console.error("Socket is not connected. Cannot emit start_game event.");
+            startGameStatus.textContent = 'Socket disconnected. Please refresh the page.';
+        }
+    });
+
+    function emitPlayerReady() {
+        console.log(`emitPlayerReady called. State: connected=${socket?.connected}, gameId=${gameId}`);
+        if (gameId && socket?.connected) { 
+            console.log(`Emitting player_ready for game ${gameId}, user ${currentUserId}`); 
+            socket.emit('player_ready', { 
+                game_id: gameId,
+                user_id: currentUserId
+            });
+        } else {
+            console.warn(`Conditions not met to emit player_ready: connected=${socket?.connected}`);
+        }
+    }
+
+    // Event listener for Ready button clicks
+    playerList.addEventListener('click', (event) => {
+        if (event.target.classList.contains('ready-button')) {
+            console.log('Ready button clicked');
+            // Use the dedicated method from the SocketClient class
+            emitPlayerReady(); 
+            event.target.disabled = true; // Disable button temporarily
+            event.target.textContent = 'Waiting...'; 
+        }
+    });
+
+    function handlePlayerStatusUpdate(data) {
+        console.log(`Received player_status_update event:`, data);
+        if (data && data.user_id && typeof data.is_ready !== 'undefined') {
+            // Direct DOM manipulation to update player status
+            const playerList = document.getElementById('player-list');
+            if (playerList) {
+                const playerItem = playerList.querySelector(`li[data-user-id="${data.user_id}"]`);
+                if (playerItem) {
+                    const statusSpan = playerItem.querySelector('.ready-status');
+                    if (statusSpan) {
+                        statusSpan.textContent = data.is_ready ? '✅' : '❌';
+                    }
+                }
+                checkAllPlayersReady(); // Call checkAllPlayersReady here too
+            }
+        }
+    }
+
+    // Initialize SocketIO connection
+    function connectSocket() {
+        console.log(`Attempting to connect to SocketIO for game ${gameId}...`);
+        socket = io({ path: '/socket.io/' });
+
+        socket.on('connect', () => {
+            console.log('Socket connected for lobby');
+            socket.emit('join_game', {
+                game_id: gameId,
+                user_id: currentUserId
+            });
+        });
+
+        socket.on('player_list', (data) => {
+            console.log(`Received player_list event for game ${gameId}:`, data);
+            if (playerList && data?.players) {
+                playerList.innerHTML = '';
+                data.players.forEach(player => {
+                    const playerItem = document.createElement('li');
+                    playerItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    playerItem.dataset.userId = player.user_id;
+                    playerItem.innerHTML = `
+                        <span>
+                            ${player.username}
+                            <span class="ready-status ms-2">${player.is_ready ? '✅' : '❌'}</span>
+                        </span>
+                        ${player.user_id == currentUserId && !player.is_ready ? '<button class="btn btn-sm btn-success ready-button">Ready Up</button>' : ''}
+                    `;
+                    playerList.appendChild(playerItem);
+                });
+                checkAllPlayersReady();
+            }
+        });
+
+        socket.on('player_status_update', (data) => {
+            handlePlayerStatusUpdate(data);
+        });
+
+        socket.on('game_started', (data) => {
+            console.log(`Received game_started event for game ${gameId}:`, data);
+            if (data.game_id == gameId) {
+                console.log(`Redirecting to /game/${gameId}/play`);
+                window.location.href = `/game/${gameId}/play`;
+            }
+        });
+    }
+
+    // Always attempt connection on page load.
+    console.log("Lobby: Attempting to connect socket...");
+    connectSocket();
+
+    // Initial check (might be early, but harmless)
+    checkAllPlayersReady();
+
+</script>
+{% endblock %}

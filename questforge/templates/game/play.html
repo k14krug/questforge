@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid game-container">
+    <div class="row">
+        <!-- Game State Visualization -->
+        <div class="col-md-8">
+            <div class="game-state-container">
+                <div class="game-state-header">
+                    <h3 id="gameTitle" data-game-id="{{ game.id }}" data-user-id="{{ user_id }}">Game Title</h3>
+                    <div class="game-status">
+                        <span class="badge bg-primary">Active</span>
+                    </div>
+                </div>
+                <div id="gameStateVisualization" class="game-state-visualization">
+                    <!-- Dynamic game state will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Controls -->
+        <div class="col-md-4">
+            <div class="player-controls">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Available Actions</h5>
+                    </div>
+                    <div class="card-body" id="actionControls">
+                        <!-- Dynamic action buttons will be inserted here -->
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Game Log</h5>
+                    </div>
+                    <div class="card-body game-log" id="gameLog">
+                        <!-- Game events will be logged here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.game-container {
+    padding: 20px;
+    height: 100vh;
+}
+.game-state-visualization {
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 15px;
+    min-height: 400px;
+    background-color: #f8f9fa;
+}
+.player-controls {
+    position: sticky;
+    top: 20px;
+}
+.game-log {
+    max-height: 300px;
+    overflow-y: auto;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+import socketClient from '/static/js/socketClient.mjs'; // Import the module
+
+// Set current user ID globally for socketClient
+window.currentUserId = '{{ user_id }}'; 
+
+// Use the imported socketClient instance
+// const socket = io(); // REMOVE THIS LINE
+
+// --- Game State Update Handlers ---
+// Listeners will be added inside the onReady callback
+
+function updateGameState(state) {
+    console.log("Updating game state display with:", state); // Add log
+    // Update visualization based on state
+    const gameStateVisualization = document.getElementById('gameStateVisualization');
+    if (gameStateVisualization) {
+        gameStateVisualization.innerHTML = renderGameState(state);
+    } else {
+        console.error("gameStateVisualization element not found");
+    }
+    // Assuming state includes actions and log for simplicity here
+    // Add checks for existence before calling update functions
+    if (state && state.actions) {
+        updateActionControls(state.actions);
+    }
+    if (state && state.log) {
+        updateGameLog(state.log);
+    }
+}
+
+// --- UI Update Functions ---
+
+function updateGameLog(log) {
+    const gameLog = document.getElementById('gameLog');
+    if (!gameLog) {
+        console.error("gameLog element not found");
+        return;
+    }
+    gameLog.innerHTML = ''; // Clear previous logs
+    log.forEach(event => {
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-entry'; // Add a class for potential styling
+        // TODO: Format the event nicely (e.g., timestamp, player name?)
+        logEntry.innerText = typeof event === 'object' ? JSON.stringify(event) : event; 
+        gameLog.appendChild(logEntry);
+    });
+    // Scroll to bottom?
+    gameLog.scrollTop = gameLog.scrollHeight;
+}
+
+function updateActionControls(actions) {
+    const actionControls = document.getElementById('actionControls');
+     if (!actionControls) {
+        console.error("actionControls element not found");
+        return;
+    }
+    actionControls.innerHTML = ''; // Clear previous actions
+    if (actions && Array.isArray(actions)) {
+        actions.forEach(action => {
+            const button = document.createElement('button');
+            button.className = 'btn btn-primary mb-2 w-100'; // Make buttons full width
+            // TODO: Use a more descriptive property than 'name' if available
+            button.innerText = typeof action === 'object' ? action.name || JSON.stringify(action) : action; 
+            button.onclick = () => performAction(action);
+            actionControls.appendChild(button);
+        });
+    } else {
+        console.warn("No valid actions received to update controls.");
+        actionControls.innerHTML = '<p class="text-muted">No actions available.</p>';
+    }
+}
+
+// --- Action Emission ---
+
+function performAction(action) {
+    console.log("Performing action:", action); // Add log
+    // Emit action to server
+    const gameTitleElement = document.getElementById('gameTitle');
+    if (!gameTitleElement) {
+         console.error("gameTitle element not found, cannot perform action.");
+         return;
+    }
+    const game_id = gameTitleElement.dataset.gameId;
+    const user_id = gameTitleElement.dataset.userId;
+    
+    // TODO: Structure the action payload correctly based on server expectations
+    // Assuming the server expects the 'action' object directly for now
+    if (socketClient && socketClient.socket) {
+        socketClient.socket.emit('player_action', {
+            game_id: game_id,
+            user_id: user_id,
+            action: action // Send the action object/string received
+        });
+    } else {
+         console.error("socketClient or socketClient.socket not available! Cannot emit player_action.");
+    }
+}
+
+// --- State Rendering ---
+
+function renderGameState(state) {
+    // Basic rendering, improve as needed
+    // Check if state is valid
+    if (!state || typeof state !== 'object') {
+        return '<p class="text-danger">Error: Invalid game state received.</p>';
+    }
+    
+    // Implement state-specific rendering
+    // Use optional chaining and default values for safety
+    let html = '<div class="state-section mb-3">';
+    html += '<h5>Campaign Data</h5><pre class="bg-light p-2 rounded">' + JSON.stringify(state.campaign_data || {}, null, 2) + '</pre>';
+    html += '</div>';
+
+    html += '<div class="state-section mb-3">';
+    html += '<h5>Objectives</h5>';
+    if (state.objectives && state.objectives.length > 0) {
+        html += '<ul class="list-group">';
+        state.objectives.forEach(obj => { html += '<li class="list-group-item">' + obj + '</li>'; });
+        html += '</ul>';
+    } else {
+        html += '<p class="text-muted">None</p>';
+    }
+    html += '</div>';
+    
+    // Add similar safe rendering for other sections...
+    // Example for Key Locations:
+     html += '<div class="state-section mb-3">';
+    html += '<h5>Key Locations</h5>';
+    if (state.key_locations && state.key_locations.length > 0) {
+        html += '<ul class="list-group">';
+        state.key_locations.forEach(loc => { html += '<li class="list-group-item">' + loc + '</li>'; });
+        html += '</ul>';
+    } else {
+        html += '<p class="text-muted">None</p>';
+    }
+    html += '</div>';
+
+    // Add other sections similarly (conclusion_conditions, key_characters, major_plot_points, possible_branches)
+
+    return html;
+}
+
+// --- Initial Setup ---
+const gameId = document.getElementById('gameTitle')?.dataset.gameId; // Get gameId early
+
+if (gameId) {
+    let initialStateRequested = false;
+
+    // Define the function to request initial state
+    const requestInitialState = () => {
+        // Check socketClient.socket directly
+        const userId = document.getElementById('gameTitle')?.dataset.userId; // Get user_id
+        if (!initialStateRequested && socketClient.socket && socketClient.connected && userId) {
+            console.log(`Requesting initial state for game ${gameId} by user ${userId}`);
+            socketClient.socket.emit('request_state', { game_id: gameId, user_id: userId }); // Add user_id
+            initialStateRequested = true;
+        } else if (!initialStateRequested) {
+             console.log("Socket not ready/available when requestInitialState was called.");
+        }
+    };
+
+    // Setup listeners after connection
+    const setupListenersAndRequestState = () => {
+        console.log("Play page: Socket connected. Setting up listeners and requesting initial state.");
+
+        if (!socketClient.socket) {
+             console.error("Play page: setupListenersAndRequestState called but socketClient.socket is not available! Aborting setup.");
+             return;
+        }
+        
+        // Join the room for this game (using the object's method)
+        socketClient.joinRoom(gameId); 
+
+        // --- Setup Listeners ---
+        console.log("Play page: Setting up socket listeners.");
+        socketClient.socket.off('game_state_update'); // Clear potential old listeners
+        socketClient.socket.off('game_state');
+
+        socketClient.socket.on('game_state_update', (data) => {
+            console.log("Play page: Received game_state_update:", data);
+            updateGameState(data);
+        });
+
+        socketClient.socket.on('game_state', (state) => {
+            console.log("Play page: Received full game state:", state);
+            updateGameState(state);
+        });
+
+        // --- Request Initial State ---
+        requestInitialState(); // Call the request function now that listeners are set up
+    };
+
+    // Register the setup function to run when the socket connects
+    // Use the onConnectCallbacks array from the socketClient object
+    socketClient.onConnectCallbacks.push(setupListenersAndRequestState);
+
+    // Initiate the connection process for this game ID.
+    console.log("Calling socketClient.connect(gameId) for play page.");
+    socketClient.connect(gameId); // This will eventually trigger the callbacks in onConnectCallbacks
+
+} else {
+    console.error("Game ID not found in DOM, cannot initialize socket connection.");
+}
+
+</script>
+{% endblock %}

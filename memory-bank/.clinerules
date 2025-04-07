@@ -25,6 +25,11 @@
 3. Maintain separate dev/prod configurations
 4. Write tests for critical functionality
 5. Validate all user inputs
+6. Ensure robust validation of JSON inputs, especially for Template creation/editing
+
+## JSON Data Handling
+- Be mindful of JSON serialization/deserialization when interacting directly with JSON database fields (e.g., `Template.question_flow`, `initial_state`).
+- Use consistent structures for JSON data defined in templates.
 
 ## Template Guidelines
 - Use Bootstrap 5 for styling
@@ -38,3 +43,24 @@
   - Search functionality
 - Use consistent spacing and typography
 - Implement dark/light mode toggle
+
+## Real-time Communication
+- Initialize SocketIO in extensions.py
+- Use namespaces for logical separation
+- Follow event handler pattern:
+  - Validate session first
+  - Process request
+  - Emit response
+- Manage rooms via game IDs
+- Keep event payloads minimal
+- Use ACK callbacks for critical operations
+- Note: Redis pub/sub not currently planned
+- **Client-Side JS Modules:** Be cautious with complex JS syntax (like ES6 classes) in external modules (`.js`, `.mjs`). Browsers might have parsing issues (`Unexpected token '{'`). If errors persist despite correct syntax, consider embedding logic directly into the template's `<script type="module">` or using simpler JS object structures for external modules.
+- **Global Scope for Modules:** Ensure data needed by external JS modules (like `user_id`) is explicitly set in the global scope (e.g., `window.currentUserId`) within the relevant HTML template before the module is used.
+
+## AI Service Interaction
+- Follow patterns outlined in `questforge/services/ai_service.py` and `questforge/services/campaign_service.py` (once implemented).
+- Build prompts systematically, incorporating template data and user input.
+- Implement robust validation for AI responses, checking both structure and content plausibility (`Template.validate_ai_response`).
+- Handle potential AI service errors gracefully (timeouts, API errors, invalid responses) using retry logic (`Template.generate_ai_content`) and user feedback.
+- Manage context effectively to maintain narrative coherence during gameplay.

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Template</h2>
+    <form method="POST" action="{{ url_for('template.edit_template', template_id=template.id) }}">
+        {{ form.hidden_tag() }}
+        
+        <div class="form-group">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control") }}
+            {% if form.name.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.name.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows=3) }}
+        </div>
+
+        <div class="form-group">
+            {{ form.category.label(class="form-label") }}
+            {{ form.category(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.question_flow.label(class="form-label") }}
+            {{ form.question_flow(class="form-control", rows=5) }}
+            <small class="form-text text-muted">Enter valid JSON for the question flow</small>
+        </div>
+
+        <div class="form-group">
+            {{ form.default_rules.label(class="form-label") }}
+            {{ form.default_rules(class="form-control", rows=5) }}
+            <small class="form-text text-muted">Enter valid JSON for default rules</small>
+        </div>
+
+        <div class="form-group">
+            {{ form.ai_service_endpoint.label(class="form-label") }}
+            {{ form.ai_service_endpoint(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.campaign_data.label(class="form-label") }}
+            {{ form.campaign_data(class="form-control", rows=5) }}
+            <small class="form-text text-muted">Enter valid JSON for campaign data</small>
+        </div>
+
+        <div class="form-group">
+            {{ form.objectives.label(class="form-label") }}
+            {{ form.objectives(class="form-control", rows=5) }}
+            <small class="form-text text-muted">Enter valid JSON for objectives</small>
+        </div>
+
+        <div class="form-group">
+            {{ form.conclusion_conditions.label(class="form-label") }}
+            {{ form.conclusion_conditions(class="form-control", rows=5) }}
+            <small class="form-text text-muted">Enter valid JSON for conclusion conditions</small>
+        </div>
+
+        <div class="form-group">
+            {{ form.key_locations.label(class="form-label") }}
+            {{ form.key_locations(class="form-control", rows=5) }}
+            <small class="form-text text-muted">Enter valid JSON for key locations</small>
+        </div>
+
+        <div class="form-group">
+            {{ form.key_characters.label(class="form-label") }}
+            {{ form.key_characters(class="form-control", rows=5) }}
+            <small class="form-text text-muted">Enter valid JSON for key characters</small>
+        </div>
+
+        <div class="form-group">
+            {{ form.major_plot_points.label(class="form-label") }}
+            {{ form.major_plot_points(class="form-control", rows=5) }}
+            <small class="form-text text-muted">Enter valid JSON for major plot points</small>
+        </div>
+
+        <div class="form-group">
+            {{ form.possible_branches.label(class="form-label") }}
+            {{ form.possible_branches(class="form-control", rows=5) }}
+            <small class="form-text text-muted">Enter valid JSON for possible branches</small>
+        </div>
+
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-primary">Update Template</button>
+            <a href="{{ url_for('template.list_templates') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

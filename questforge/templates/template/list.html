@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Your Templates</h2>
+    <a href="{{ url_for('template.create_template') }}" class="btn btn-primary mb-3">Create New Template</a>
+    
+    <div class="list-group">
+        {% for template in templates %}
+        <div class="list-group-item">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h5>{{ template.name }}</h5>
+                    <p class="mb-1">{{ template.description }}</p>
+                    <small>Category: {{ template.category }}</small>
+                </div>
+                <div>
+                    <a href="{{ url_for('template.edit_template', template_id=template.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="POST" action="{{ url_for('template.delete_template', template_id=template.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this template?')">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">You haven't created any templates yet.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

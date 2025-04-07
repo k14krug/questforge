@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+    <link href="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.2/dist/jsoneditor.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Create New Template</h2>
+    <form method="POST" action="{{ url_for('template.create_template') }}">
+        {{ form.hidden_tag() }}
+        
+        <div class="form-group">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control") }}
+            {% if form.name.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.name.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows=3) }}
+        </div>
+
+        <div class="form-group">
+            {{ form.category.label(class="form-label") }}
+            {{ form.category(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.question_flow.label(class="form-label") }}
+            <div id="question_flow_editor"></div>
+            <small class="form-text text-muted">Enter valid JSON for the question flow</small>
+            <input type="hidden" id="question_flow_data" name="question_flow">
+        </div>
+
+        <div class="form-group">
+            {{ form.default_rules.label(class="form-label") }}
+            <div id="default_rules_editor"></div>
+            <small class="form-text text-muted">Enter valid JSON for default rules</small>
+            <input type="hidden" id="default_rules_data" name="default_rules">
+        </div>
+
+        <div class="form-group">
+            {{ form.ai_service_endpoint.label(class="form-label") }}
+            {{ form.ai_service_endpoint(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.campaign_data.label(class="form-label") }}
+            <div id="campaign_data_editor"></div>
+            <small class="form-text text-muted">Enter valid JSON for campaign data. Example: {"setting": "Fantasy world", "theme": "Heroic adventure"}</small>
+            <input type="hidden" id="campaign_data_data" name="campaign_data">
+        </div>
+
+        <div class="form-group">
+            {{ form.objectives.label(class="form-label") }}
+            <div id="objectives_editor"></div>
+            <small class="form-text text-muted">Enter valid JSON for objectives. Example: [{"name": "Defeat the dragon", "description": "Slay the ancient dragon terrorizing the kingdom"}]</small>
+            <input type="hidden" id="objectives_data" name="objectives">
+        </div>
+
+        <div class="form-group">
+            {{ form.conclusion_conditions.label(class="form-label") }}
+            <div id="conclusion_conditions_editor"></div>
+            <small class="form-text text-muted">Enter valid JSON for conclusion conditions. Example: [{"type": "objective", "id": 1, "description": "Main objective completed"}]</small>
+            <input type="hidden" id="conclusion_conditions_data" name="conclusion_conditions">
+        </div>
+
+        <div class="form-group">
+            {{ form.key_locations.label(class="form-label") }}
+            <div id="key_locations_editor"></div>
+            <small class="form-text text-muted">Enter valid JSON for key locations. Example: [{"name": "Dark Forest", "description": "A dangerous forest full of monsters"}]</small>
+            <input type="hidden" id="key_locations_data" name="key_locations">
+        </div>
+
+        <div class="form-group">
+            {{ form.key_characters.label(class="form-label") }}
+            <div id="key_characters_editor"></div>
+            <small class="form-text text-muted">Enter valid JSON for key characters. Example: [{"name": "King Arthur", "role": "Ruler of the Kingdom"}]</small>
+            <input type="hidden" id="key_characters_data" name="key_characters">
+        </div>
+
+        <div class="form-group">
+            {{ form.major_plot_points.label(class="form-label") }}
+            <div id="major_plot_points_editor"></div>
+            <small class="form-text text-muted">Enter valid JSON for major plot points. Example: [{"name": "Dragon Attack", "description": "The dragon attacks the capital city"}]</small>
+            <input type="hidden" id="major_plot_points_data" name="major_plot_points">
+        </div>
+
+        <div class="form-group">
+            {{ form.possible_branches.label(class="form-label") }}
+           <div id="possible_branches_editor"></div>
+            <small class="form-text text-muted">Enter valid JSON for possible branches. Example: [{"name": "Negotiate", "description": "Try to negotiate with the dragon"}]</small>
+            <input type="hidden" id="possible_branches_data" name="possible_branches">
+        </div>
+
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-primary">Save Template</button>
+            <a href="{{ url_for('template.list_templates') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.2/dist/jsoneditor.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const editors = [
+      { id: 'question_flow_editor', data: [{ text: 'What is your name?', type: 'text', key: 'name' }] },
+      { id: 'default_rules_editor', data: { start_location: 'Town Square', win_condition: 'Defeat the Dragon' } },
+      { id: 'campaign_data_editor', data: { setting: 'Fantasy World', theme: 'Heroic Adventure' } },
+      { id: 'objectives_editor', data: [{ name: 'Defeat the Dragon', description: 'Slay the ancient dragon terrorizing the kingdom' }] },
+      { id: 'conclusion_conditions_editor', data: [{ type: 'objective', id: 1, description: 'Main objective completed' }] },
+      { id: 'key_locations_editor', data: [{ name: 'Dark Forest', description: 'A dangerous forest full of monsters' }] },
+      { id: 'key_characters_editor', data: [{ name: 'King Arthur', role: 'Ruler of the Kingdom' }] },
+      { id: 'major_plot_points_editor', data: [{ name: 'Dragon Attack', description: 'The dragon attacks the capital city' }] },
+      { id: 'possible_branches_editor', data: [{ name: 'Negotiate', description: 'Try to negotiate with the dragon' }] }
+    ];
+
+    const editorInstances = {};
+
+    editors.forEach(editor => {
+      const container = document.getElementById(editor.id);
+      if (container) {
+        const instance = new JSONEditor(container, { modes: ['code', 'form', 'text', 'tree', 'view'] });
+        instance.set(editor.data);
+        editorInstances[editor.id] = instance;
+      }
+    });
+
+    document.querySelector('form').addEventListener('submit', function(event) {
+      Object.keys(editorInstances).forEach(id => {
+        const input = document.getElementById(`${id.replace('_editor', '')}_data`);
+        if (input) {
+          input.value = JSON.stringify(editorInstances[id].get());
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
