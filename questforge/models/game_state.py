@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.types import TypeDecorator, Text
 import sqlalchemy as sa
 import json
+from sqlalchemy.dialects.sqlite import JSON # Import JSON specifically for SQLite if needed
 
 class JSONEncodedDict(TypeDecorator):
     """Custom JSON type to handle JSON fields in SQLite."""
@@ -40,9 +41,9 @@ class GameState(db.Model):
     __tablename__ = 'game_states'
     
     id = db.Column(db.Integer, primary_key=True)
-    game_id = db.Column(db.Integer, db.ForeignKey('games.id'))
-    campaign_id = db.Column(db.Integer, db.ForeignKey('campaigns.id'))
-    current_location = db.Column(db.String(100), nullable=True)
+    game_id = db.Column(db.Integer, db.ForeignKey('games.id'), nullable=False) # Ensure game_id is not nullable
+    # Removed campaign_id
+    current_location = db.Column(db.String(100), nullable=True) # This might belong in state_data?
     completed_objectives = db.Column(
         sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'),
         default=list
@@ -69,14 +70,25 @@ class GameState(db.Model):
     )
     current_branch = db.Column(db.String(50), default='main')
     campaign_complete = db.Column(db.Boolean, default=False)
+    game_log = db.Column(
+        sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'), 
+        default=list, 
+        nullable=False
+    )
+    available_actions = db.Column(
+        sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'), 
+        default=list, 
+        nullable=False
+    )
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
+    # Relationship back to the Game
     game = db.relationship('Game', back_populates='game_states')
-    campaign = db.relationship('Campaign', back_populates='game_states')
-    
-    def __init__(self, game_id, campaign_id, state_data=None):
+    # Removed campaign relationship
+
+    def __init__(self, game_id, state_data=None): # Removed campaign_id parameter
         self.game_id = game_id
-        self.campaign_id = campaign_id
+        # self.campaign_id = campaign_id # Removed
         self.state_data = state_data or {
             'current_location': None,
             'completed_objectives': [],
@@ -85,8 +97,13 @@ class GameState(db.Model):
             'completed_plot_points': [],
             'player_decisions': [],
             'current_branch': 'main',
-            'campaign_complete': False
+            'campaign_complete': False,
+            'game_log': [], # Add to default state data if needed, though DB default is usually sufficient
+            'available_actions': [] # Add to default state data if needed
         }
+        # Initialize DB columns directly if not relying solely on state_data
+        self.game_log = []
+        self.available_actions = []
         
     def __repr__(self):
         return f'<GameState {self.id}>'

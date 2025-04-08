@@ -85,12 +85,12 @@ def create_campaign(game_id: int, template_id: int, user_inputs: dict):
              db.session.rollback() # Rollback campaign creation
              return None
 
+        # Instantiate GameState using only game_id and state_data
         initial_game_state = GameState(
             game_id=game_id,
-            campaign_id=new_campaign.id,
             state_data=initial_state_data
         )
-        # Explicitly set current_location after object creation
+        # Explicitly set current_location after object creation (if still needed - might be part of state_data now)
         initial_game_state.current_location = initial_state_data.get('location')
         db.session.add(initial_game_state)
         logger.info("Created initial GameState object")

@@ -19,7 +19,7 @@ class Campaign(db.Model):
     
     game = db.relationship('Game', back_populates='campaign')
     template = db.relationship('Template', backref='campaign_structures')
-    game_states = db.relationship('GameState', back_populates='campaign')
+    # Removed game_states relationship as it's accessed via game
     
     def __init__(self, game_id, template_id, campaign_data, objectives, 
                  conclusion_conditions, key_locations, key_characters,
@@ -42,33 +42,25 @@ class Campaign(db.Model):
         """Get current game state from latest GameState record"""
         if not self.game_states:
             return None
-        return self.game_states[-1].state_data
+        # This property might be incorrect now, as game_states relationship was removed.
+        # Access via campaign.game.game_states instead.
+        # if not self.game_states:
+        #     return None
+        # return self.game_states[-1].state_data
+        latest_state = GameState.query.filter_by(game_id=self.game_id).order_by(GameState.last_updated.desc()).first()
+        return latest_state.state_data if latest_state else None
 
-    def update_state(self, state_data):
-        """Update game state by creating new GameState record"""
-        new_state = GameState(
-            campaign_id=self.id,
-            state_data=state_data,
-            timestamp=datetime.utcnow()
-        )
-        db.session.add(new_state)
-        
-    def process_action(self, player_id, action, payload):
-        """Process player action and return result"""
-        # Basic implementation - should be expanded based on game rules
-        result = {
-            'success': True,
-            'action': action,
-            'player_id': player_id,
-            'payload': payload,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        # Update state with action result
-        self.update_state({
-            'last_action': action,
-            'last_player': player_id,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-        
-        return result
+
+    # This method seems incorrect - state updates should happen via GameStateService
+    # def update_state(self, state_data):
+    #     """Update game state by creating new GameState record"""
+    #     # This logic is flawed, GameState needs game_id, not campaign_id
+    #     # State updates should be handled by GameStateService
+    #     pass
+
+    # This method also seems out of place, actions are processed via SocketService/AIService
+    # def process_action(self, player_id, action, payload):
+    #     """Process player action and return result"""
+    #     # Basic implementation - should be expanded based on game rules
+    #     # ... (original implementation commented out) ...
+    #     pass # Placeholder if needed, or just remove the method definition entirely if preferred

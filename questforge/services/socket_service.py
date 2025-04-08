@@ -8,7 +8,7 @@ from ..models import Game, User, GamePlayer, GameState, Template # Added GameSta
 
 socketio = get_socketio()
 from .game_state_service import game_state_service # Import the instance
-from .ai_service import AIService
+from .ai_service import ai_service # Import the singleton INSTANCE
 
 class SocketService:
     @staticmethod
@@ -168,12 +168,13 @@ class SocketService:
 
             if not game_id or not user_id: # Check for user_id too
                 emit('error', {'message': 'Missing game_id or user_id'})
-                return
+                return # Correct indentation
 
             with current_app.app_context(): # Add app context
-                game = db.session.get(Game, game_id)
+                # Eagerly load the campaign relationship when fetching the game
+                game = db.session.query(Game).options(joinedload(Game.campaign)).get(game_id)
                 if not game:
-                    current_app.logger.error(f"Start game request failed: Game {game_id} not found.") # Add logging
+                    current_app.logger.error(f"Start game request failed: Game {game_id} not found.")
                     emit('error', {'message': 'Game not found'}) # Emit can be outside context
                     return
 
@@ -206,14 +207,82 @@ class SocketService:
                 if game.status != 'in_progress': # Prevent starting multiple times
                     game.status = 'in_progress'
                     try:
+                        # Commit game status change first
                         db.session.commit()
                         current_app.logger.info(f"Game {game_id} status updated to 'in_progress'.")
-                        # Emit event to redirect players to the game play page (emit can be outside context)
-                        current_app.logger.info(f"Emitting 'game_started' for game {game_id} to room {game_id}") # Add log
+
+                        # --- Generate Initial State ---
+                        current_app.logger.info(f"Generating initial state for game {game_id}...")
+                        # Ensure GameState record exists or create it
+                        game_state = GameState.query.filter_by(game_id=game_id).first()
+                        if not game_state:
+                            current_app.logger.info(f"Creating initial GameState record for game {game_id}.")
+                            # Create GameState without campaign_id
+                            game_state = GameState(
+                                game_id=game_id,
+                                state_data=game.campaign.initial_state, # Use initial_state from game.campaign
+                                game_log=[],
+                                available_actions=[]
+                            )
+                            db.session.add(game_state)
+                            # Commit here to ensure game_state has an ID if needed by AI service
+                            db.session.commit() 
+                            current_app.logger.info(f"Initial GameState record created for game {game_id}.")
+                            # Initialize in-memory service state
+                            game_state_service.join_game(game_id, 'system')
+                            game_state_service.active_games[game_id]['state'] = game_state.state_data
+                            game_state_service.active_games[game_id]['version'] = 1
+
+                        # Call AI Service to get starting narrative/actions
+                        try:
+                            # Use the imported ai_service INSTANCE
+                            initial_scene = ai_service.generate_initial_scene(game)
+                            if initial_scene: # Check if AI call was successful
+                                game_state.game_log = [initial_scene.get('narrative', 'The adventure begins!')]
+                                game_state.available_actions = initial_scene.get('actions', [])
+                            else: # Handle AI failure explicitly
+                                current_app.logger.error(f"AIService.generate_initial_scene returned None for game {game_id}.")
+                                game_state.game_log = ["Error: Could not generate starting scene."]
+                                game_state.available_actions = []
+                            db.session.commit()
+                            current_app.logger.info(f"Initial scene generated and saved for game {game_id}.")
+                            
+                            # Update in-memory state as well
+                            if game_id in game_state_service.active_games:
+                                game_state_service.active_games[game_id]['log'] = game_state.game_log
+                                game_state_service.active_games[game_id]['actions'] = game_state.available_actions
+                                # Optionally increment version again if desired after initial scene generation
+                                # game_state_service.active_games[game_id]['version'] += 1 
+
+                        except Exception as ai_exc:
+                            current_app.logger.error(f"Error generating initial scene for game {game_id}: {ai_exc}", exc_info=True)
+                            # Decide how to handle - maybe start with default message?
+                            game_state.game_log = ["Error generating start. The adventure begins!"]
+                            game_state.available_actions = []
+                            db.session.commit() # Save default state on error
+
+                        # --- Emit game_started and initial state ---
+                        current_app.logger.info(f"Emitting 'game_started' for game {game_id} to room {game_id}")
                         emit('game_started', {'game_id': game_id}, room=game_id)
+                        
+                        # --- Emit game_started and initial state ---
+                        current_app.logger.info(f"Emitting 'game_started' for game {game_id} to room {game_id}")
+                        emit('game_started', {'game_id': game_id}, room=game_id)
+
+                        # Construct the initial state payload directly using the updated game_state record
+                        # This ensures we send the just-generated log and actions
+                        final_emit_data = {
+                            'version': game_state_service.active_games.get(game_id, {}).get('version', 1),
+                            'state': game_state.state_data,
+                            'log': game_state.game_log,
+                            'actions': game_state.available_actions
+                        }
+                        current_app.logger.info(f"Emitting initial 'game_state' (v{final_emit_data['version']}) after start for game {game_id}")
+                        emit('game_state', final_emit_data, room=game_id)
+
                     except Exception as e:
                         db.session.rollback()
-                        current_app.logger.error(f"Error updating game status for game {game_id}: {str(e)}")
+                        current_app.logger.error(f"Error during game start process for game {game_id}: {str(e)}", exc_info=True)
                         emit('error', {'message': 'Failed to start game'}) # Emit can be outside context
                 else:
                      current_app.logger.warning(f"Attempted to start game {game_id} which is already in progress.")
@@ -243,19 +312,25 @@ class SocketService:
                     user_id=user_id
                 )
 
-                # Update game state with AI response
-                updated_state = game_state_service.update_state(
+                # Update game state, log, and actions via the service
+                # Note: ai_response now contains 'narrative', 'state_changes', 'available_actions'
+                updated_state_info = game_state_service.update_state(
                     game_id=game_id,
-                    new_state=ai_response['updated_state'],
-                    log_entry=ai_response['narrative']
+                    state_changes=ai_response.get('state_changes'), # Pass state changes dict
+                    log_entry=ai_response.get('narrative'),       # Pass narrative as log entry
+                    actions=ai_response.get('available_actions'), # Pass new actions list
+                    increment_version=True                        # Increment version on player action
                 )
 
-                # Broadcast updated state to all players
-                emit('game_state_update', {
-                    'state': updated_state,
-                    'log': ai_response['narrative'],
-                    'actions': ai_response['available_actions']
-                }, room=game_id)
+                if not updated_state_info:
+                     current_app.logger.error(f"Failed to update state after player action for game {game_id}")
+                     emit('error', {'message': 'Failed to update game state after action'}, room=game_id)
+                     return
+
+                # Broadcast updated state to all players using the data returned by update_state
+                current_app.logger.info(f"Broadcasting game_state_update for game {game_id} (v{updated_state_info['version']})")
+                # updated_state_info contains {'version': V, 'state': {...}, 'log': [...], 'actions': [...]}
+                emit('game_state_update', updated_state_info, room=game_id) 
 
             except Exception as e:
                 current_app.logger.error(f"Error processing action: {str(e)}")
@@ -332,12 +407,14 @@ class SocketService:
                         raise ValueError("Game state retrieval failed")
 
                     # Emit the state data currently held by the service
-                    # Note: Emitting only 'state' and 'version' as 'log' and 'actions' aren't directly available here.
+                    # Emit the full state including log and actions
                     emit_data = {
-                        'state': final_state_info['state'], # Send the dictionary from the service
-                        'version': final_state_info['version'] # Include version
+                        'state': final_state_info['state'],
+                        'version': final_state_info['version'],
+                        'log': final_state_info.get('log', []), # Include log, default to empty list
+                        'actions': final_state_info.get('actions', []) # Include actions, default to empty list
                     }
-                    current_app.logger.info(f"Emitting game_state (v{emit_data['version']}) for game {game_id} to {request.sid}")
+                    current_app.logger.info(f"Emitting game_state (v{emit_data['version']}) with log/actions for game {game_id} to {request.sid}")
                     emit('game_state', emit_data, room=request.sid)
 
             except Exception as e:
