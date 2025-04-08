@@ -21,6 +21,22 @@ class JSONEncodedDict(TypeDecorator):
         return json.loads(value)
 
 class GameState(db.Model):
+    """Tracks live campaign state according to questforge-spec.md v1.2
+    Attributes:
+        state_data (JSON): Main state storage containing:
+            - current_location (str)
+            - completed_objectives (list)
+            - discovered_locations (list)  
+            - encountered_characters (list)
+            - completed_plot_points (list)
+            - player_decisions (list)
+            - current_branch (str)
+            - campaign_complete (bool)
+    Relationships:
+        - game: Parent Game record
+        - campaign: Associated Campaign template
+    Spec Reference: Section 4.3 (Campaign State Management)
+    Last Updated: 2025-07-04"""
     __tablename__ = 'game_states'
     
     id = db.Column(db.Integer, primary_key=True)

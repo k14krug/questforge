@@ -1,8 +1,19 @@
 from questforge.models.game_state import GameState
 from questforge.models.user import User
+from questforge.models.template import Template
 from deepdiff import DeepDiff
+from flask import current_app # Import current_app
 
 class GameStateService:
+    """Implements spec section 4.3 (Campaign State Management)
+    Key Responsibilities:
+    - Maintain in-memory game states for active sessions
+    - Sync with database persistence layer
+    - Enforce state transition rules from templates
+    - Track completion progress for objectives
+    
+    Architecture Note: Uses double-checked locking pattern to ensure
+    thread-safe singleton behavior across socket connections"""
     def __init__(self):
         self.active_games = {}  # game_id: {'players': set(), 'state': {}, 'version': 0}
         self.state_history = {}  # game_id: {version: state}
@@ -31,18 +42,36 @@ class GameStateService:
         if game_id not in self.active_games:
             return {'version': 0, 'state': {}}
 
-        # Ensure all necessary keys are present in the state
-        game_state = self.active_games[game_id]['state'].copy()
-        template = Template.query.get(GameState.query.filter_by(game_id=game_id).first().campaign_id)
-        initial_state = template.initial_state
+        # Safely retrieve GameState and Template from DB
+        db_game_state = GameState.query.filter_by(game_id=game_id).first()
+        if not db_game_state:
+            # This case might happen if state hasn't been created yet,
+            # but the service thinks it has. Return empty state for now.
+            # The socket handler should ideally create the state first.
+            current_app.logger.warning(f"get_state: GameState record not found in DB for game {game_id}. Returning empty state.")
+            return {'version': 0, 'state': {}}
 
+        template = Template.query.get(db_game_state.campaign_id)
+        if not template:
+            current_app.logger.error(f"get_state: Template record not found for campaign_id {db_game_state.campaign_id} (Game {game_id}). Returning empty state.")
+            # If template is missing, we can't determine initial state keys.
+            return {'version': 0, 'state': {}}
+
+        # Now we know template and initial_state exist
+        initial_state = template.initial_state
+        current_memory_state = self.active_games[game_id]['state'].copy()
+
+        # Ensure all keys from initial_state are present in the current memory state
         for key in initial_state:
-            if key not in game_state:
-                game_state[key] = initial_state[key]
+            if key not in current_memory_state:
+                current_memory_state[key] = initial_state[key]
+
+        # Update the service's state if keys were missing (optional, but good practice)
+        self.active_games[game_id]['state'] = current_memory_state
 
         return {
             'version': self.active_games[game_id]['version'],
-            'state': game_state
+            'state': current_memory_state # Return the potentially updated state
         }
         
     def get_state_diff(self, game_id, from_version):

@@ -1,0 +1,2060 @@
+2025-04-01 10:14:58,227 - root - INFO - --- Queue-based logging initialized ---
+2025-04-01 10:14:59,631 - engineio.server - INFO - Server initialized for eventlet.
+2025-04-01 10:14:59,650 - root - INFO - Starting SocketIO server...
+2025-04-01 10:17:41,161 - root - INFO - SocketIO server stopped.
+2025-04-01 10:17:45,451 - root - INFO - --- Queue-based logging initialized ---
+2025-04-01 10:17:46,607 - engineio.server - INFO - Server initialized for eventlet.
+2025-04-01 10:17:46,625 - root - INFO - Starting SocketIO server...
+2025-04-01 10:21:55,806 - root - INFO - SocketIO server stopped.
+2025-04-01 10:22:07,375 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 10:25:01,685 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 10:42:06,770 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 11:37:55,498 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 12:20:45,518 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:15:20,944 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:15:39,061 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:24:41,463 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:24:41,628 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:24:41,884 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:24:41,897 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:24:42,192 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:24:42,205 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:24:42,425 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:24:42,525 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:24:42,555 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:38:24,500 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:38:25,137 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:38:25,274 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:38:25,417 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:38:25,641 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:38:25,677 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:38:25,721 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:38:25,778 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:38:25,840 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:44:03,109 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:44:03,388 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:44:03,698 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:44:04,049 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:44:04,058 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:44:04,202 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:44:04,274 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:44:04,315 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:44:04,436 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:47:52,169 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:47:52,805 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:47:52,815 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:47:52,980 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:47:52,987 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:47:53,260 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:47:53,331 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:47:53,400 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:47:53,417 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:50:29,327 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:50:29,609 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:50:29,880 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:50:29,949 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:50:30,288 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:50:30,294 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:50:30,373 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:50:30,442 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:50:30,597 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:56:36,476 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:56:36,476 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 13:56:37,120 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:56:37,121 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 13:56:37,346 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:56:37,347 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 13:56:37,520 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:56:37,521 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 13:56:37,922 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:56:37,923 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 13:56:38,026 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:56:38,026 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 13:56:38,064 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:56:38,064 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 13:56:38,073 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:56:38,074 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 13:56:38,185 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 13:56:38,185 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:02:52,023 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:02:52,029 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:02:52,261 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:02:52,262 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:02:52,639 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:02:52,640 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:02:52,796 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:02:52,796 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:02:52,883 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:02:52,883 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:02:52,905 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:02:52,905 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:02:53,106 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:02:53,106 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:02:53,246 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:02:53,247 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:02:53,313 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:02:53,314 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:04:35,906 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:04:35,907 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:04:36,186 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:04:36,187 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:04:36,393 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:04:36,394 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:04:36,532 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:04:36,533 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:04:36,638 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:04:36,638 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:04:36,711 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:04:36,711 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:04:36,783 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:04:36,784 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:04:36,955 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:04:36,955 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:04:36,971 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:04:36,971 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:06:46,869 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:06:46,870 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:06:46,944 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:06:46,949 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:06:47,372 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:06:47,373 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:06:47,535 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:06:47,546 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:06:48,082 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:06:48,082 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:06:48,122 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:06:48,123 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:06:48,166 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:06:48,169 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:06:48,314 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:06:48,323 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:06:48,501 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:06:48,507 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:06:48,508 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:06:48,516 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:06:48,556 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:06:48,557 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:06:48,587 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:06:48,587 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:06:48,591 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:06:48,592 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:06:48,601 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:06:48,605 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:06:48,647 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:06:48,650 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:06:48,659 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:06:48,662 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:06:48,666 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:06:48,668 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:06:48,713 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:06:48,716 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:11:12,607 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:11:12,608 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:11:12,705 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:11:12,719 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:11:12,738 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:11:12,739 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:11:12,739 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:11:12,739 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:11:12,740 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:11:12,740 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:11:12,744 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:11:12,744 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:11:12,744 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:11:12,744 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:11:12,744 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:11:12,745 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:11:12,745 - questforge - INFO - Route: /api/api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:11:12,745 - questforge - INFO - Route: /api/api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:11:12,746 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:11:12,746 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:11:12,746 - questforge - INFO - Route: /api/api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:11:12,747 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:11:12,748 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:11:12,836 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:11:12,837 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:11:13,083 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:11:13,095 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:11:13,119 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:11:13,128 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:11:13,128 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:11:13,129 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:11:13,129 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:11:13,129 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:11:13,129 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:11:13,129 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:11:13,129 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:11:13,129 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:11:13,129 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:11:13,129 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:11:13,130 - questforge - INFO - Route: /api/api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:11:13,130 - questforge - INFO - Route: /api/api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:11:13,130 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:11:13,130 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:11:13,130 - questforge - INFO - Route: /api/api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:11:13,130 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:11:13,130 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:11:13,130 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:11:13,130 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:11:13,131 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:11:13,131 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:11:13,131 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:11:13,131 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:11:13,131 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:11:13,131 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:11:13,131 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:11:13,131 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:11:13,490 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:11:13,490 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:11:13,580 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:11:13,583 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:11:13,592 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:11:13,594 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:11:13,594 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:11:13,595 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:11:13,596 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:11:13,596 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:11:13,597 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:11:13,597 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:11:13,598 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:11:13,598 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:11:13,598 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:11:13,598 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:11:13,598 - questforge - INFO - Route: /api/api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:11:13,598 - questforge - INFO - Route: /api/api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /api/api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:11:13,599 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:11:13,599 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:11:13,600 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:11:13,600 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:11:13,600 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:11:13,601 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:11:13,682 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:11:13,684 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:11:13,684 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:11:13,687 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:11:13,695 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:11:13,696 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:11:13,697 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:11:13,698 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:11:13,698 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:11:13,699 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:11:13,699 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:11:13,699 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /api/api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /api/api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /api/api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:11:13,700 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:11:13,701 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:11:13,701 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:11:13,701 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:11:13,701 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:11:13,701 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:11:13,701 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:11:13,701 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:11:13,701 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:11:13,701 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:11:13,701 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:11:13,752 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:11:13,755 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:11:13,763 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:11:13,764 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:11:13,764 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:11:13,765 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:11:13,765 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:11:13,766 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:11:13,766 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:11:13,766 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:11:13,767 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:11:13,767 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:11:13,768 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:11:13,768 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:11:13,769 - questforge - INFO - Route: /api/api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:11:13,769 - questforge - INFO - Route: /api/api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:11:13,769 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:11:13,770 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:11:13,770 - questforge - INFO - Route: /api/api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:11:13,771 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:11:13,771 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:11:13,771 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:11:13,772 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:11:13,772 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:11:13,772 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:11:13,772 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:11:13,773 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:11:13,773 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:11:13,773 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:11:13,774 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:11:13,774 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:11:13,792 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:11:13,792 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:11:13,834 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:11:13,834 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:11:13,878 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:11:13,882 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:11:13,890 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:11:13,891 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:11:13,891 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:11:13,892 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:11:13,892 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:11:13,893 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:11:13,893 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:11:13,894 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:11:13,894 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:11:13,895 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:11:13,895 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:11:13,896 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:11:13,896 - questforge - INFO - Route: /api/api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:11:13,896 - questforge - INFO - Route: /api/api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:11:13,896 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:11:13,896 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:11:13,896 - questforge - INFO - Route: /api/api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:11:13,896 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:11:13,896 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:11:13,896 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:11:13,897 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:11:13,897 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:11:13,897 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:11:13,897 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:11:13,897 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:11:13,897 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:11:13,897 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:11:13,897 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:11:13,897 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:11:13,909 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:11:13,912 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:11:13,918 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:11:13,918 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:11:13,919 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:11:13,919 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:11:13,919 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:11:13,919 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:11:13,919 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:11:13,919 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:11:13,919 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:11:13,919 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:11:13,919 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:11:13,920 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:11:13,920 - questforge - INFO - Route: /api/api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:11:13,920 - questforge - INFO - Route: /api/api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:11:13,920 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:11:13,920 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:11:13,920 - questforge - INFO - Route: /api/api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:11:13,920 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:11:13,920 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:11:13,920 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:11:13,921 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:11:13,921 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:11:13,921 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:11:13,921 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:11:13,921 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:11:13,921 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:11:13,921 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:11:13,921 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:11:13,922 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:11:13,954 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:11:13,954 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:11:14,010 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:11:14,012 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:11:14,017 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:11:14,017 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:11:14,017 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:11:14,018 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /api/api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /api/api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /api/api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:11:14,018 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:11:14,019 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:11:14,058 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:11:14,058 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:11:14,104 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:11:14,107 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:11:14,111 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:11:14,111 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:11:14,111 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:11:14,111 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:11:14,111 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:11:14,112 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /api/api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /api/api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /api/api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /api/api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:11:14,112 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:11:14,113 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:11:14,113 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:11:14,113 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:11:14,113 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:11:14,113 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:11:14,113 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:11:14,113 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:13:10,099 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:13:10,105 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:13:10,191 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:13:10,195 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:13:10,203 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:13:10,204 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:13:10,204 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:13:10,205 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:13:10,205 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:13:10,206 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:13:10,206 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:13:10,206 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:13:10,207 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:13:10,207 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:13:10,208 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:13:10,208 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:13:10,208 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:13:10,209 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:13:10,209 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:13:10,210 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:13:10,210 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:13:10,211 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:13:10,211 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:13:10,211 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:13:10,212 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:13:10,212 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:13:10,213 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:13:10,213 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:13:10,213 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:13:10,214 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:13:10,214 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:13:10,214 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:13:10,214 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:13:10,606 - questforge - INFO - Starting campaign creation process
+2025-04-01 14:13:10,606 - questforge - DEBUG - Input parameters - game_id: 60, template_id: 2
+2025-04-01 14:13:10,607 - questforge - INFO - Requesting campaign generation for game 60 using template 2
+2025-04-01 14:13:10,609 - questforge - ERROR - Error during campaign creation for game 60: 'Template' object has no attribute 'rules'
+Traceback (most recent call last):
+  File "/home/kkrug/projects/questforge/questforge/services/campaign_service.py", line 60, in create_campaign
+    campaign_data = ai_service.generate_campaign(template, user_inputs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/services/ai_service.py", line 40, in generate_campaign
+    prompt = build_campaign_prompt(template, user_inputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/utils/prompt_builder.py", line 24, in build_campaign_prompt
+    template.rules if template.rules else "No specific rules provided.",
+                      ^^^^^^^^^^^^^^
+AttributeError: 'Template' object has no attribute 'rules'
+2025-04-01 14:13:11,065 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:13:11,066 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:13:11,146 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:13:11,150 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:13:11,158 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:13:11,159 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:13:11,160 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:13:11,160 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:13:11,161 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:13:11,161 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:13:11,162 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:13:11,162 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:13:11,163 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:13:11,163 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:13:11,163 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:13:11,164 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:13:11,164 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:13:11,165 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:13:11,165 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:13:11,165 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:13:11,166 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:13:11,166 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:13:11,167 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:13:11,167 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:13:11,167 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:13:11,168 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:13:11,168 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:13:11,168 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:13:11,168 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:13:11,168 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:13:11,168 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:13:11,169 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:13:11,169 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:13:11,621 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:13:11,622 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:13:11,688 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:13:11,689 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:13:11,717 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:13:11,717 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:13:11,766 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:13:11,769 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:13:11,770 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:13:11,776 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:13:11,778 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:13:11,779 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:13:11,779 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:13:11,780 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:13:11,781 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:13:11,781 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:13:11,782 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:13:11,783 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:13:11,783 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:13:11,784 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:13:11,784 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:13:11,785 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:13:11,785 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:13:11,786 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:13:11,786 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:13:11,787 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:13:11,787 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:13:11,788 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:13:11,788 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:13:11,789 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:13:11,789 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:13:11,790 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:13:11,790 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:13:11,791 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:13:11,791 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:13:11,791 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:13:11,791 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:13:11,792 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:13:11,792 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:13:11,793 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:13:11,796 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:13:11,796 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:13:11,796 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:13:11,797 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:13:11,797 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:13:11,797 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:13:11,798 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:13:11,799 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:13:11,805 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:13:11,805 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:13:11,806 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:13:11,806 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:13:11,806 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:13:11,806 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:13:11,806 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:13:11,806 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:13:11,806 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:13:11,806 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:13:11,806 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:13:11,806 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:13:11,806 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:13:11,807 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:13:11,808 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:13:11,808 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:13:11,808 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:13:11,808 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:13:11,835 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:13:11,836 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:13:11,844 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:13:11,848 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:13:11,927 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:13:11,931 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:13:11,940 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:13:11,941 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:13:11,942 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:13:11,942 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:13:11,943 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:13:11,944 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:13:11,944 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:13:11,944 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:13:11,944 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:13:11,945 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:13:11,945 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:13:11,945 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:13:11,946 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:13:11,946 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:13:11,947 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:13:11,947 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:13:11,947 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:13:11,948 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:13:11,948 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:13:11,949 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:13:11,949 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:13:11,949 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:13:11,950 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:13:11,950 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:13:11,950 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:13:11,950 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:13:11,950 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:13:11,951 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:13:11,951 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:13:11,951 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:13:11,951 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:13:11,954 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:13:11,954 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:13:11,954 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:13:11,955 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:13:11,955 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:13:11,955 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:13:11,955 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:13:11,955 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:13:11,955 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:13:11,955 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:13:11,955 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:13:11,956 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:13:11,956 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:13:11,956 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:13:11,956 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:13:11,956 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:13:11,956 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:13:11,956 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:13:11,956 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:13:11,956 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:13:11,957 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:13:11,957 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:13:11,957 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:13:11,957 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:13:11,957 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:13:11,957 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:13:11,957 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:13:11,957 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:13:11,958 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:13:12,020 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:13:12,021 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:13:12,070 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:13:12,072 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:13:12,074 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:13:12,074 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:13:12,076 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:13:12,077 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:13:12,077 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:13:12,077 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:13:12,077 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:13:12,077 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:13:12,077 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:13:12,077 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:13:12,077 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:13:12,077 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:13:12,077 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:13:12,078 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:13:12,079 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:13:12,128 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:13:12,130 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:13:12,134 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:13:12,135 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:13:12,135 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:13:12,136 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:15:28,887 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:15:28,888 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:15:28,961 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:15:28,964 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:15:28,971 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:15:28,972 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:15:28,973 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:15:28,973 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:15:28,973 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:15:28,974 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:15:28,974 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:15:28,975 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:15:28,975 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:15:28,976 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:15:28,976 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:15:28,977 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:15:28,978 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:15:28,978 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:15:28,979 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:15:28,979 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:15:28,979 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:15:28,980 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:15:28,980 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:15:28,981 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:15:28,981 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:15:28,981 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:15:28,981 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:15:28,981 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:15:28,982 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:15:28,982 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:15:28,982 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:15:28,982 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:15:28,982 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:15:29,915 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:15:29,916 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:15:29,944 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:15:29,945 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:15:29,957 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:15:29,957 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:15:30,055 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:15:30,056 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:15:30,063 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:15:30,071 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:15:30,093 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:15:30,094 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:15:30,094 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:15:30,094 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:15:30,094 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:15:30,094 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:15:30,094 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:15:30,094 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:15:30,095 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:15:30,095 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:15:30,095 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:15:30,095 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:15:30,095 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:15:30,095 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:15:30,095 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:15:30,095 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:15:30,095 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:15:30,095 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:15:30,096 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:15:30,096 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:15:30,101 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:15:30,101 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:15:30,101 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:15:30,101 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:15:30,102 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:15:30,102 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:15:30,102 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:15:30,102 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:15:30,102 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:15:30,112 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:15:30,120 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:15:30,146 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:15:30,150 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:15:30,154 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:15:30,157 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:15:30,162 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:15:30,165 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:15:30,167 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:15:30,171 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:15:30,171 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:15:30,171 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:15:30,171 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:15:30,171 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:15:30,171 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:15:30,171 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:15:30,172 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:15:30,172 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:15:30,172 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:15:30,173 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:15:30,173 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:15:30,173 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:15:30,174 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:15:30,175 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:15:30,176 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:15:30,176 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:15:30,172 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:15:30,176 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:15:30,176 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:15:30,176 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:15:30,176 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:15:30,176 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:15:30,177 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:15:30,178 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:15:30,178 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:15:30,181 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:15:30,284 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:15:30,285 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:15:30,307 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:15:30,311 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:15:30,320 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:15:30,321 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:15:30,321 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:15:30,322 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:15:30,322 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:15:30,322 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:15:30,323 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:15:30,323 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:15:30,323 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:15:30,323 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:15:30,324 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:15:30,324 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:15:30,324 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:15:30,325 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:15:30,325 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:15:30,325 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:15:30,325 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:15:30,326 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:15:30,326 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:15:30,326 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:15:30,327 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:15:30,327 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:15:30,327 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:15:30,328 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:15:30,328 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:15:30,328 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:15:30,329 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:15:30,329 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:15:30,329 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:15:30,353 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:15:30,353 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:15:30,367 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:15:30,369 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:15:30,374 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:15:30,375 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:15:30,375 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:15:30,375 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:15:30,375 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:15:30,375 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:15:30,375 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:15:30,375 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:15:30,375 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:15:30,376 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:15:30,377 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:15:30,377 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:15:30,377 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:15:30,377 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:15:30,377 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:15:30,377 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:15:30,377 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:15:30,377 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:15:30,408 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:15:30,409 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:15:30,412 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:15:30,414 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:15:30,419 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:15:30,420 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:15:30,420 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:15:30,421 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:15:30,458 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:15:30,460 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:15:30,464 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:15:30,465 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:15:30,465 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:15:30,466 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:16:47,394 - questforge - INFO - Starting campaign creation process
+2025-04-01 14:16:47,394 - questforge - DEBUG - Input parameters - game_id: 61, template_id: 2
+2025-04-01 14:16:47,394 - questforge - INFO - Requesting campaign generation for game 61 using template 2
+2025-04-01 14:16:47,395 - questforge - ERROR - Error during campaign creation for game 61: 'Template' object has no attribute 'rules'
+Traceback (most recent call last):
+  File "/home/kkrug/projects/questforge/questforge/services/campaign_service.py", line 60, in create_campaign
+    campaign_data = ai_service.generate_campaign(template, user_inputs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/services/ai_service.py", line 40, in generate_campaign
+    prompt = build_campaign_prompt(template, user_inputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/utils/prompt_builder.py", line 24, in build_campaign_prompt
+    template.rules if template.rules else "No specific rules provided.",
+                      ^^^^^^^^^^^^^^
+AttributeError: 'Template' object has no attribute 'rules'
+2025-04-01 14:36:47,054 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:36:47,054 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:36:47,107 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:36:47,110 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:36:47,114 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:36:47,115 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:36:47,115 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:36:47,116 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:37:25,280 - questforge - INFO - Starting campaign creation process
+2025-04-01 14:37:25,280 - questforge - DEBUG - Input parameters - game_id: 62, template_id: 2
+2025-04-01 14:37:25,280 - questforge - INFO - Requesting campaign generation for game 62 using template 2
+2025-04-01 14:37:25,584 - questforge - ERROR - AI service failed to generate campaign data for game 62
+2025-04-01 14:40:06,943 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:40:06,943 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:40:06,996 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:40:06,998 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:40:07,003 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:40:07,003 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:40:07,003 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:40:07,004 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:40:39,018 - questforge - INFO - Starting campaign creation process
+2025-04-01 14:40:39,018 - questforge - DEBUG - Input parameters - game_id: 63, template_id: 2
+2025-04-01 14:40:39,018 - questforge - INFO - Requesting campaign generation for game 63 using template 2
+2025-04-01 14:40:39,314 - questforge - ERROR - AI service failed to generate campaign data for game 63
+2025-04-01 14:42:20,380 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 14:42:20,380 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 14:42:20,432 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 14:42:20,434 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 14:42:20,438 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 14:42:20,438 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 14:42:20,438 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 14:42:20,438 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 14:42:20,439 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 14:42:20,439 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 14:42:35,952 - questforge - INFO - Starting campaign creation process
+2025-04-01 14:42:35,952 - questforge - DEBUG - Input parameters - game_id: 64, template_id: 2
+2025-04-01 14:42:35,952 - questforge - INFO - Requesting campaign generation for game 64 using template 2
+2025-04-01 14:42:38,477 - questforge - INFO - Received campaign data from AI
+2025-04-01 14:42:38,477 - questforge - DEBUG - AI Response Data: {'initial_description': 'As the sun sets over the bustling city of Kent, you find yourself yearning for a life of luxury and extravagance. The streets are filled with merchants selling their wares, beggars seeking alms, and nobles waltzing by in their fine attire. Determined to rise above your humble beginnings, you set out on a daring quest to Get Rich and claim your rightful place among the elite.', 'initial_state': {'location': 'City of Kent', 'wealth': 0, 'inventory': []}, 'goals': ['Acquire wealth through various means', 'Establish connections with influential individuals', 'Uncover hidden opportunities for fortune'], 'key_npcs': [{'name': 'Lord Harrington', 'description': 'A wealthy nobleman known for hosting lavish parties and sponsoring aspiring entrepreneurs. His favor could open doors to lucrative ventures.'}]}
+2025-04-01 14:42:38,477 - questforge - INFO - Validating required fields
+2025-04-01 14:42:38,477 - questforge - INFO - AI Response contains all required fields
+2025-04-01 14:42:38,477 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-01 14:42:38,480 - questforge - INFO - Created Campaign object (ID: 51)
+2025-04-01 14:42:38,480 - questforge - DEBUG - Campaign fields after mapping: game_id=64, template_id=2
+2025-04-01 14:42:38,480 - questforge - DEBUG - campaign_data={'description': 'As the sun sets over the bustling city of Kent, you find yourself yearning for a life of luxury and extravagance. The streets are filled with merchants selling their wares, beggars seeking alms, and nobles waltzing by in their fine attire. Determined to rise above your humble beginnings, you set out on a daring quest to Get Rich and claim your rightful place among the elite.'}
+2025-04-01 14:42:38,481 - questforge - DEBUG - objectives=['Acquire wealth through various means', 'Establish connections with influential individuals', 'Uncover hidden opportunities for fortune']
+2025-04-01 14:42:38,481 - questforge - DEBUG - key_characters=[{'name': 'Lord Harrington', 'description': 'A wealthy nobleman known for hosting lavish parties and sponsoring aspiring entrepreneurs. His favor could open doors to lucrative ventures.'}]
+2025-04-01 14:42:38,481 - questforge - ERROR - Error during campaign creation for game 64: __init__() got an unexpected keyword argument 'turn_number'
+Traceback (most recent call last):
+  File "/home/kkrug/projects/questforge/questforge/services/campaign_service.py", line 111, in create_campaign
+    initial_game_state = GameState(
+                         ^^^^^^^^^^
+TypeError: __init__() got an unexpected keyword argument 'turn_number'
+2025-04-01 15:52:34,193 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 15:52:34,193 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 15:52:34,243 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 15:52:34,245 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 15:52:34,250 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 15:52:34,250 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 15:52:34,250 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 15:52:34,250 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 15:52:34,250 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 15:52:34,250 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 15:52:34,250 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 15:52:34,250 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 15:52:34,250 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 15:52:34,250 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 15:52:34,251 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 15:52:41,044 - questforge - INFO - Starting campaign creation process
+2025-04-01 15:52:41,044 - questforge - DEBUG - Input parameters - game_id: 65, template_id: 2
+2025-04-01 15:52:41,044 - questforge - INFO - Requesting campaign generation for game 65 using template 2
+2025-04-01 15:52:43,998 - questforge - INFO - Received campaign data from AI
+2025-04-01 15:52:43,998 - questforge - DEBUG - AI Response Data: {'initial_description': 'Welcome to the town of Kent, a bustling hub of trade and opportunity. As you walk through the crowded marketplace, the sun glints off the many treasures displayed by vendors. You have come to Kent with one goal in mind - to get rich. The entrepreneurial spirit in the air is infectious, and you feel determined to make your mark in this vibrant town.', 'initial_state': {'location': 'Kent', 'currency': 0, 'inventory': [], 'level': 1}, 'goals': ['Find a lucrative business opportunity in Kent', 'Start building your wealth', 'Gain renown as a successful entrepreneur'], 'key_npcs': [{'name': 'Olivia the Merchant', 'description': 'Olivia is a shrewd businesswoman known for her sharp deals and vast network of contacts. She might have valuable advice or opportunities for you.'}]}
+2025-04-01 15:52:43,998 - questforge - INFO - Validating required fields
+2025-04-01 15:52:43,998 - questforge - INFO - AI Response contains all required fields
+2025-04-01 15:52:43,998 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-01 15:52:44,001 - questforge - INFO - Created Campaign object (ID: 52)
+2025-04-01 15:52:44,002 - questforge - DEBUG - Campaign fields after mapping: game_id=65, template_id=2
+2025-04-01 15:52:44,002 - questforge - DEBUG - campaign_data={'description': 'Welcome to the town of Kent, a bustling hub of trade and opportunity. As you walk through the crowded marketplace, the sun glints off the many treasures displayed by vendors. You have come to Kent with one goal in mind - to get rich. The entrepreneurial spirit in the air is infectious, and you feel determined to make your mark in this vibrant town.'}
+2025-04-01 15:52:44,002 - questforge - DEBUG - objectives=['Find a lucrative business opportunity in Kent', 'Start building your wealth', 'Gain renown as a successful entrepreneur']
+2025-04-01 15:52:44,002 - questforge - DEBUG - key_characters=[{'name': 'Olivia the Merchant', 'description': 'Olivia is a shrewd businesswoman known for her sharp deals and vast network of contacts. She might have valuable advice or opportunities for you.'}]
+2025-04-01 15:52:44,002 - questforge - ERROR - Error during campaign creation for game 65: __init__() got an unexpected keyword argument 'turn_number'
+Traceback (most recent call last):
+  File "/home/kkrug/projects/questforge/questforge/services/campaign_service.py", line 111, in create_campaign
+    initial_game_state = GameState(
+                         ^^^^^^^^^^
+TypeError: __init__() got an unexpected keyword argument 'turn_number'
+2025-04-01 15:54:44,828 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 15:54:44,828 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 15:54:44,881 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 15:54:44,883 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 15:54:44,887 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 15:54:44,887 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 15:54:44,887 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 15:54:44,888 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 15:54:44,888 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 15:54:44,889 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 15:54:48,694 - questforge - INFO - Starting campaign creation process
+2025-04-01 15:54:48,694 - questforge - DEBUG - Input parameters - game_id: 66, template_id: 2
+2025-04-01 15:54:48,695 - questforge - INFO - Requesting campaign generation for game 66 using template 2
+2025-04-01 15:54:50,978 - questforge - INFO - Received campaign data from AI
+2025-04-01 15:54:50,978 - questforge - DEBUG - AI Response Data: {'initial_description': 'Welcome to the town of Kent, a place where opportunities abound for those seeking to get rich. The streets are bustling with traders, adventurers, and whispers of hidden treasures waiting to be discovered. As you step into this world of possibilities, the air is filled with a sense of ambition and excitement, driving you to chase your dreams of wealth and success.', 'initial_state': {'location': 'Town of Kent', 'player_name': 'Kent', 'objective': 'Get Rich', 'wealth': 0}, 'goals': ['Embark on a quest to find a legendary treasure', 'Establish a successful business venture', 'Accumulate a fortune of 10,000 gold coins'], 'key_npcs': []}
+2025-04-01 15:54:50,978 - questforge - INFO - Validating required fields
+2025-04-01 15:54:50,978 - questforge - INFO - AI Response contains all required fields
+2025-04-01 15:54:50,978 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-01 15:54:50,981 - questforge - INFO - Created Campaign object (ID: 53)
+2025-04-01 15:54:50,981 - questforge - DEBUG - Campaign fields after mapping: game_id=66, template_id=2
+2025-04-01 15:54:50,981 - questforge - DEBUG - campaign_data={'description': 'Welcome to the town of Kent, a place where opportunities abound for those seeking to get rich. The streets are bustling with traders, adventurers, and whispers of hidden treasures waiting to be discovered. As you step into this world of possibilities, the air is filled with a sense of ambition and excitement, driving you to chase your dreams of wealth and success.'}
+2025-04-01 15:54:50,981 - questforge - DEBUG - objectives=['Embark on a quest to find a legendary treasure', 'Establish a successful business venture', 'Accumulate a fortune of 10,000 gold coins']
+2025-04-01 15:54:50,981 - questforge - DEBUG - key_characters=[]
+2025-04-01 15:54:50,981 - questforge - INFO - Created initial GameState object
+2025-04-01 15:54:50,988 - questforge - INFO - Successfully created campaign and initial state for game 66
+2025-04-01 15:56:12,001 - questforge - INFO - Starting campaign creation process
+2025-04-01 15:56:12,001 - questforge - DEBUG - Input parameters - game_id: 67, template_id: 2
+2025-04-01 15:56:12,001 - questforge - INFO - Requesting campaign generation for game 67 using template 2
+2025-04-01 15:56:13,914 - questforge - INFO - Received campaign data from AI
+2025-04-01 15:56:13,915 - questforge - DEBUG - AI Response Data: {'initial_description': 'Welcome to the town of Kent, a once prosperous place now facing tough times due to a mysterious curse that has plagued the land. As a brave adventurer seeking to uncover the truth and restore prosperity, you arrive with a burning desire to unearth riches and bring hope back to the people.', 'initial_state': {'location': 'Town of Kent', 'wealth': 0, 'inventory': []}, 'goals': ['Investigate the source of the curse', 'Gather clues to unlock the secrets of Kent', 'Amass wealth to fulfill your quest'], 'key_npcs': []}
+2025-04-01 15:56:13,915 - questforge - INFO - Validating required fields
+2025-04-01 15:56:13,915 - questforge - INFO - AI Response contains all required fields
+2025-04-01 15:56:13,915 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-01 15:56:13,917 - questforge - INFO - Created Campaign object (ID: 54)
+2025-04-01 15:56:13,917 - questforge - DEBUG - Campaign fields after mapping: game_id=67, template_id=2
+2025-04-01 15:56:13,917 - questforge - DEBUG - campaign_data={'description': 'Welcome to the town of Kent, a once prosperous place now facing tough times due to a mysterious curse that has plagued the land. As a brave adventurer seeking to uncover the truth and restore prosperity, you arrive with a burning desire to unearth riches and bring hope back to the people.'}
+2025-04-01 15:56:13,917 - questforge - DEBUG - objectives=['Investigate the source of the curse', 'Gather clues to unlock the secrets of Kent', 'Amass wealth to fulfill your quest']
+2025-04-01 15:56:13,917 - questforge - DEBUG - key_characters=[]
+2025-04-01 15:56:13,918 - questforge - INFO - Created initial GameState object
+2025-04-01 15:56:13,923 - questforge - INFO - Successfully created campaign and initial state for game 67
+2025-04-01 15:58:04,841 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 15:58:04,841 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 15:58:04,895 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 15:58:04,897 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 15:58:04,902 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 15:58:04,902 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 15:58:04,902 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 15:58:04,903 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-01 15:58:48,866 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-01 15:58:48,866 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-01 15:58:48,936 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-01 15:58:48,939 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-01 15:58:48,947 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-01 15:58:48,947 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-01 15:58:48,947 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-01 15:58:48,947 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-01 15:58:48,947 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-01 15:58:48,947 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-01 15:58:48,947 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-01 15:58:48,947 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-01 15:58:48,947 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-01 15:58:48,948 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-01 15:58:48,949 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-01 15:58:48,949 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-01 15:58:48,949 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-01 15:58:48,949 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-01 15:58:48,949 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-01 15:58:48,949 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-02 08:57:08,016 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 08:57:08,017 - questforge - INFO - --- DEBUG: campaign_api_bp registered with prefix /api ---
+2025-04-02 08:57:08,122 - questforge - INFO - --- DEBUG: Registering campaign_api_bp blueprint ---
+2025-04-02 08:57:08,124 - questforge - INFO - --- DEBUG: campaign_api_bp blueprint registered successfully ---
+2025-04-02 08:57:08,131 - questforge - INFO - --- DEBUG: Listing all registered routes ---
+2025-04-02 08:57:08,131 - questforge - INFO - Route: /static/<path:filename> -> Endpoint: static
+2025-04-02 08:57:08,131 - questforge - INFO - Route: /register -> Endpoint: auth.register
+2025-04-02 08:57:08,131 - questforge - INFO - Route: /login -> Endpoint: auth.login
+2025-04-02 08:57:08,131 - questforge - INFO - Route: /profile -> Endpoint: auth.profile
+2025-04-02 08:57:08,132 - questforge - INFO - Route: /logout -> Endpoint: auth.logout
+2025-04-02 08:57:08,132 - questforge - INFO - Route: / -> Endpoint: main.home
+2025-04-02 08:57:08,132 - questforge - INFO - Route: /about -> Endpoint: main.about
+2025-04-02 08:57:08,132 - questforge - INFO - Route: /contact -> Endpoint: main.contact
+2025-04-02 08:57:08,132 - questforge - INFO - Route: /privacy -> Endpoint: main.privacy
+2025-04-02 08:57:08,132 - questforge - INFO - Route: /terms -> Endpoint: main.terms
+2025-04-02 08:57:08,132 - questforge - INFO - Route: /create-game -> Endpoint: main.create_game
+2025-04-02 08:57:08,132 - questforge - INFO - Route: /api/templates/<int:template_id>/questions -> Endpoint: campaign_api.get_template_questions
+2025-04-02 08:57:08,132 - questforge - INFO - Route: /api/campaigns/generate -> Endpoint: campaign_api.generate_campaign
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.get_campaign
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /api/campaigns/<int:campaign_id> -> Endpoint: campaign_api.update_campaign
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /api/games/create -> Endpoint: campaign_api.create_game
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /api/games/create-game -> Endpoint: game.create_game
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /game/<int:game_id>/lobby -> Endpoint: game.lobby
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /game/<int:game_id>/play -> Endpoint: game.play
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /game/<int:game_id>/history -> Endpoint: game.history
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.get_game_state
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /api/game/<int:game_id>/state -> Endpoint: game.update_game_state
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /api/game/<int:game_id>/action -> Endpoint: game.player_action
+2025-04-02 08:57:08,133 - questforge - INFO - Route: /templates -> Endpoint: template.list_templates
+2025-04-02 08:57:08,134 - questforge - INFO - Route: /template/create -> Endpoint: template.create_template
+2025-04-02 08:57:08,134 - questforge - INFO - Route: /template/<int:template_id>/edit -> Endpoint: template.edit_template
+2025-04-02 08:57:08,134 - questforge - INFO - Route: /template/<int:template_id>/delete -> Endpoint: template.delete_template
+2025-04-02 08:57:08,134 - questforge - INFO - Route: /api/template/<int:template_id>/questions -> Endpoint: template.get_template_questions
+2025-04-02 08:59:17,259 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 09:05:40,270 - questforge - INFO - Starting campaign creation process
+2025-04-02 09:05:40,270 - questforge - DEBUG - Input parameters - game_id: 68, template_id: 2
+2025-04-02 09:05:40,271 - questforge - INFO - Requesting campaign generation for game 68 using template 2
+2025-04-02 09:05:43,189 - questforge - INFO - Received campaign data from AI
+2025-04-02 09:05:43,189 - questforge - INFO - Validating required fields
+2025-04-02 09:05:43,189 - questforge - INFO - AI Response contains all required fields
+2025-04-02 09:05:43,189 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-02 09:05:43,193 - questforge - INFO - Created Campaign object (ID: 55)
+2025-04-02 09:05:43,193 - questforge - INFO - Created initial GameState object
+2025-04-02 09:05:43,200 - questforge - INFO - Successfully created campaign and initial state for game 68
+2025-04-02 09:07:35,438 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 09:07:48,906 - questforge - INFO - Starting campaign creation process
+2025-04-02 09:07:48,906 - questforge - DEBUG - Input parameters - game_id: 69, template_id: 2
+2025-04-02 09:07:48,906 - questforge - INFO - Requesting campaign generation for game 69 using template 2
+2025-04-02 09:07:53,193 - questforge - INFO - Received campaign data from AI
+2025-04-02 09:07:53,193 - questforge - INFO - Validating required fields
+2025-04-02 09:07:53,193 - questforge - INFO - AI Response contains all required fields
+2025-04-02 09:07:53,193 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-02 09:07:53,198 - questforge - INFO - Created Campaign object (ID: 56)
+2025-04-02 09:07:53,199 - questforge - INFO - Created initial GameState object
+2025-04-02 09:07:53,209 - questforge - INFO - Successfully created campaign and initial state for game 69
+2025-04-02 09:15:50,550 - questforge - INFO - Starting campaign creation process
+2025-04-02 09:15:50,550 - questforge - DEBUG - Input parameters - game_id: 70, template_id: 2
+2025-04-02 09:15:50,550 - questforge - INFO - Requesting campaign generation for game 70 using template 2
+2025-04-02 09:15:52,776 - questforge - INFO - Received campaign data from AI
+2025-04-02 09:15:52,776 - questforge - INFO - Validating required fields
+2025-04-02 09:15:52,776 - questforge - INFO - AI Response contains all required fields
+2025-04-02 09:15:52,776 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-02 09:15:52,778 - questforge - INFO - Created Campaign object (ID: 57)
+2025-04-02 09:15:52,778 - questforge - INFO - Created initial GameState object
+2025-04-02 09:15:52,781 - questforge - INFO - Successfully created campaign and initial state for game 70
+2025-04-02 11:02:43,452 - questforge - INFO - Starting campaign creation process
+2025-04-02 11:02:43,452 - questforge - DEBUG - Input parameters - game_id: 71, template_id: 2
+2025-04-02 11:02:43,453 - questforge - INFO - Requesting campaign generation for game 71 using template 2
+2025-04-02 11:02:47,295 - questforge - INFO - Received campaign data from AI
+2025-04-02 11:02:47,296 - questforge - INFO - Validating required fields
+2025-04-02 11:02:47,296 - questforge - INFO - AI Response contains all required fields
+2025-04-02 11:02:47,296 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-02 11:02:47,297 - questforge - INFO - Created Campaign object (ID: 58)
+2025-04-02 11:02:47,298 - questforge - INFO - Created initial GameState object
+2025-04-02 11:02:47,301 - questforge - INFO - Successfully created campaign and initial state for game 71
+2025-04-02 11:13:58,639 - questforge - INFO - Starting campaign creation process
+2025-04-02 11:13:58,639 - questforge - DEBUG - Input parameters - game_id: 72, template_id: 2
+2025-04-02 11:13:58,639 - questforge - INFO - Requesting campaign generation for game 72 using template 2
+2025-04-02 11:14:02,886 - questforge - INFO - Received campaign data from AI
+2025-04-02 11:14:02,886 - questforge - INFO - Validating required fields
+2025-04-02 11:14:02,886 - questforge - INFO - AI Response contains all required fields
+2025-04-02 11:14:02,886 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-02 11:14:02,888 - questforge - INFO - Created Campaign object (ID: 59)
+2025-04-02 11:14:02,888 - questforge - INFO - Created initial GameState object
+2025-04-02 11:14:02,896 - questforge - INFO - Successfully created campaign and initial state for game 72
+2025-04-02 11:23:43,577 - questforge - INFO - Starting campaign creation process
+2025-04-02 11:23:43,577 - questforge - DEBUG - Input parameters - game_id: 73, template_id: 2
+2025-04-02 11:23:43,577 - questforge - INFO - Requesting campaign generation for game 73 using template 2
+2025-04-02 11:23:48,306 - questforge - INFO - Received campaign data from AI
+2025-04-02 11:23:48,306 - questforge - INFO - Validating required fields
+2025-04-02 11:23:48,306 - questforge - INFO - AI Response contains all required fields
+2025-04-02 11:23:48,306 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-02 11:23:48,308 - questforge - INFO - Created Campaign object (ID: 60)
+2025-04-02 11:23:48,308 - questforge - INFO - Created initial GameState object
+2025-04-02 11:23:48,314 - questforge - INFO - Successfully created campaign and initial state for game 73
+2025-04-02 11:51:30,089 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 11:51:37,076 - questforge - INFO - Starting campaign creation process
+2025-04-02 11:51:37,076 - questforge - DEBUG - Input parameters - game_id: 74, template_id: 2
+2025-04-02 11:51:37,076 - questforge - INFO - Requesting campaign generation for game 74 using template 2
+2025-04-02 11:51:40,431 - questforge - INFO - Received campaign data from AI
+2025-04-02 11:51:40,431 - questforge - INFO - Validating required fields
+2025-04-02 11:51:40,431 - questforge - INFO - AI Response contains all required fields
+2025-04-02 11:51:40,431 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-02 11:51:40,439 - questforge - INFO - Created Campaign object (ID: 61)
+2025-04-02 11:51:40,440 - questforge - INFO - Created initial GameState object
+2025-04-02 11:51:40,445 - questforge - INFO - Successfully created campaign and initial state for game 74
+2025-04-02 11:58:15,756 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 11:59:14,465 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 11:59:15,709 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 11:59:54,898 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 11:59:56,150 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 12:03:41,312 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 12:11:43,017 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 12:11:44,228 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 12:13:04,854 - questforge - INFO - Starting campaign creation process
+2025-04-02 12:13:04,854 - questforge - DEBUG - Input parameters - game_id: 75, template_id: 2
+2025-04-02 12:13:04,854 - questforge - INFO - Requesting campaign generation for game 75 using template 2
+2025-04-02 12:13:07,509 - questforge - INFO - Received campaign data from AI
+2025-04-02 12:13:07,509 - questforge - INFO - Validating required fields
+2025-04-02 12:13:07,509 - questforge - INFO - AI Response contains all required fields
+2025-04-02 12:13:07,509 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-02 12:13:07,515 - questforge - INFO - Created Campaign object (ID: 62)
+2025-04-02 12:13:07,515 - questforge - INFO - Created initial GameState object
+2025-04-02 12:13:07,521 - questforge - INFO - Successfully created campaign and initial state for game 75
+2025-04-02 12:15:44,252 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 12:15:45,482 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 13:16:57,402 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 13:22:59,145 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 13:29:48,819 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 13:29:50,076 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 13:33:27,005 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 13:37:29,851 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 13:37:31,076 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 16:51:02,466 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 16:51:03,763 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 16:56:27,818 - questforge - INFO - Starting campaign creation process
+2025-04-02 16:56:27,818 - questforge - DEBUG - Input parameters - game_id: 76, template_id: 2
+2025-04-02 16:56:27,818 - questforge - INFO - Requesting campaign generation for game 76 using template 2
+2025-04-02 16:56:30,232 - questforge - INFO - Received campaign data from AI
+2025-04-02 16:56:30,232 - questforge - INFO - Validating required fields
+2025-04-02 16:56:30,232 - questforge - INFO - AI Response contains all required fields
+2025-04-02 16:56:30,232 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-02 16:56:30,241 - questforge - INFO - Created Campaign object (ID: 63)
+2025-04-02 16:56:30,242 - questforge - INFO - Created initial GameState object
+2025-04-02 16:56:30,250 - questforge - INFO - Successfully created campaign and initial state for game 76
+2025-04-02 17:01:01,169 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 20:56:35,853 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 20:59:24,060 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 21:09:28,233 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 21:17:32,774 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-02 21:17:34,024 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 06:49:58,661 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 06:50:00,671 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:18:24,546 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:18:33,579 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:23:31,479 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:23:32,742 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:27:20,599 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:27:21,858 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:33:07,369 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:39:56,848 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:40:37,971 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:40:39,197 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:47:44,949 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:54:25,136 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:54:26,359 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:54:52,615 - questforge - ERROR - Exception on /game/create [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/game.py", line 113, in create_game_view
+    return render_template('game_create.html', templates=templates)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/kkrug/projects/questforge/questforge/templates/game_create.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/kkrug/projects/questforge/questforge/templates/base.html", line 31, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/templates/game_create.html", line 8, in block 'content'
+    {{ form.hidden_tag() }}
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'form' is undefined
+2025-04-03 07:55:54,499 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:59:01,997 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 07:59:33,717 - questforge - ERROR - Exception on /api/templates/2/questions [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 20, in get_template_questions_for_frontend
+    questions = [
+                ^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 22, in <listcomp>
+    'text': q.get('prompt', 'Question'),
+            ^^^^^
+AttributeError: 'list' object has no attribute 'get'
+2025-04-03 07:59:39,650 - questforge - ERROR - Exception on /api/games/create [POST]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 132, in create_game_api
+    return jsonify({'error': f'Missing input for question: {question["prompt"]}'}), 400
+                                                            ~~~~~~~~^^^^^^^^^^
+TypeError: list indices must be integers or slices, not str
+2025-04-03 08:00:42,302 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:00:51,280 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:01:25,305 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:01:39,626 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:05:18,241 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:05:39,019 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:07:06,593 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:09:29,060 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:11:31,955 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:11:43,611 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:13:51,891 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:13:53,123 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:16:59,968 - questforge - ERROR - Exception on /api/templates/2/questions [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 20, in get_template_questions_for_frontend
+    questions = [
+                ^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 22, in <listcomp>
+    'text': q.get('prompt', 'Question'),
+            ^^^^^
+AttributeError: 'list' object has no attribute 'get'
+2025-04-03 08:17:01,468 - questforge - ERROR - Exception on /api/games/create [POST]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 132, in create_game_api
+    return jsonify({'error': f'Missing input for question: {question["prompt"]}'}), 400
+                                                            ~~~~~~~~^^^^^^^^^^
+TypeError: list indices must be integers or slices, not str
+2025-04-03 08:19:00,362 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:19:55,666 - questforge - ERROR - Exception on /templates [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 126, in fix_question_flow
+    question_flow = json.loads(template.question_flow)
+                    ^^^^
+NameError: name 'json' is not defined
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 13, in list_templates
+    fix_question_flow()
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 131, in fix_question_flow
+    except (TypeError, json.JSONDecodeError):
+                       ^^^^
+NameError: name 'json' is not defined
+2025-04-03 08:20:00,871 - questforge - ERROR - Exception on /templates [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 126, in fix_question_flow
+    question_flow = json.loads(template.question_flow)
+                    ^^^^
+NameError: name 'json' is not defined
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 13, in list_templates
+    fix_question_flow()
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 131, in fix_question_flow
+    except (TypeError, json.JSONDecodeError):
+                       ^^^^
+NameError: name 'json' is not defined
+2025-04-03 08:24:49,869 - questforge - ERROR - Exception on /templates [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 126, in fix_question_flow
+    question_flow = json.loads(template.question_flow)
+                    ^^^^
+NameError: name 'json' is not defined
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 13, in list_templates
+    fix_question_flow()
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 131, in fix_question_flow
+    except (TypeError, json.JSONDecodeError):
+                       ^^^^
+NameError: name 'json' is not defined
+2025-04-03 08:25:19,055 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:25:20,363 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:25:28,625 - questforge - ERROR - Exception on /templates [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 126, in fix_question_flow
+    question_flow = json.loads(template.question_flow)
+                    ^^^^
+NameError: name 'json' is not defined
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 13, in list_templates
+    fix_question_flow()
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/template.py", line 131, in fix_question_flow
+    except (TypeError, json.JSONDecodeError):
+                       ^^^^
+NameError: name 'json' is not defined
+2025-04-03 08:26:32,225 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:27:02,836 - questforge - ERROR - Exception on /api/templates/2/questions [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 20, in get_template_questions_for_frontend
+    questions = [
+                ^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 22, in <listcomp>
+    'text': q.get('prompt', 'Question'),
+            ^^^^^
+AttributeError: 'list' object has no attribute 'get'
+2025-04-03 08:27:02,858 - questforge - ERROR - Exception on /api/games/create [POST]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 132, in create_game_api
+    return jsonify({'error': f'Missing input for question: {question["prompt"]}'}), 400
+                                                            ~~~~~~~~^^^^^^^^^^
+TypeError: list indices must be integers or slices, not str
+2025-04-03 08:28:38,787 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:29:02,066 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:29:03,309 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:29:25,633 - questforge - ERROR - Exception on /api/templates/2/questions [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 20, in get_template_questions_for_frontend
+    questions = [
+                ^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 22, in <listcomp>
+    'text': q.get('prompt', 'Question'),
+            ^^^^^
+AttributeError: 'list' object has no attribute 'get'
+2025-04-03 08:29:33,729 - questforge - ERROR - Exception on /api/games/create [POST]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 132, in create_game_api
+    return jsonify({'error': f'Missing input for question: {question["prompt"]}'}), 400
+                                                            ~~~~~~~~^^^^^^^^^^
+TypeError: list indices must be integers or slices, not str
+2025-04-03 08:31:07,025 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:31:39,572 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:31:40,826 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:31:59,118 - questforge - ERROR - Exception on /api/templates/2/questions [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 21, in get_template_questions_for_frontend
+    questions = [
+                ^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 23, in <listcomp>
+    'text': q.get('prompt', 'Question'),
+            ^^^^^
+AttributeError: 'list' object has no attribute 'get'
+2025-04-03 08:32:01,095 - questforge - ERROR - Exception on /api/games/create [POST]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 136, in create_game_api
+    return jsonify({'error': f'Missing input for question: {question["prompt"]}'}), 400
+                                                            ~~~~~~~~^^^^^^^^^^
+TypeError: list indices must be integers or slices, not str
+2025-04-03 08:32:56,923 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:33:15,219 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:33:16,484 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:33:33,111 - questforge - ERROR - Exception on /api/templates/2/questions [GET]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 21, in get_template_questions_for_frontend
+    questions = [
+                ^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 23, in <listcomp>
+    'text': q.get('prompt', 'Question'),
+            ^^^^^
+AttributeError: 'list' object has no attribute 'get'
+2025-04-03 08:33:33,344 - questforge - ERROR - Exception on /api/games/create [POST]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 136, in create_game_api
+    return jsonify({'error': f'Missing input for question: {question["prompt"]}'}), 400
+                                                            ~~~~~~~~^^^^^^^^^^
+TypeError: list indices must be integers or slices, not str
+2025-04-03 08:37:16,841 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:39:28,952 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:39:30,167 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:40:38,007 - questforge - ERROR - Exception on /api/games/create [POST]
+Traceback (most recent call last):
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/.virtualenvs/questforge/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kkrug/projects/questforge/questforge/views/campaign_api.py", line 146, in create_game_api
+    return jsonify({'error': f'Missing input for question: {question["prompt"]}'}), 400
+                                                            ~~~~~~~~^^^^^^^^^^
+TypeError: list indices must be integers or slices, not str
+2025-04-03 08:42:55,882 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:59:28,878 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 08:59:30,117 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 09:00:21,355 - questforge - INFO - Starting campaign creation process
+2025-04-03 09:00:21,356 - questforge - DEBUG - Input parameters - game_id: 77, template_id: 2
+2025-04-03 09:00:21,356 - questforge - INFO - Requesting campaign generation for game 77 using template 2
+2025-04-03 09:00:25,235 - questforge - INFO - Received campaign data from AI
+2025-04-03 09:00:25,235 - questforge - INFO - Validating required fields
+2025-04-03 09:00:25,235 - questforge - INFO - AI Response contains all required fields
+2025-04-03 09:00:25,235 - questforge - INFO - Mapping AI response to Campaign model
+2025-04-03 09:00:25,242 - questforge - INFO - Created Campaign object (ID: 64)
+2025-04-03 09:00:25,242 - questforge - INFO - Created initial GameState object
+2025-04-03 09:00:25,248 - questforge - INFO - Successfully created campaign and initial state for game 77
+2025-04-03 09:04:31,610 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 09:04:44,802 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 09:04:53,974 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 09:05:03,139 - questforge - INFO - --- Standard Flask logging initialized ---
+2025-04-03 09:05:17,372 - questforge - INFO - --- Standard Flask logging initialized ---

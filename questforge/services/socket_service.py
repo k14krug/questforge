@@ -1,10 +1,10 @@
-from flask import current_app
+from flask import current_app, request # Added request import
 from flask_socketio import join_room, leave_room, emit
 from flask_login import current_user
 from sqlalchemy.orm import joinedload # Import joinedload
 from ..extensions import db
 from ..extensions.socketio import get_socketio
-from ..models import Game, User, GamePlayer
+from ..models import Game, User, GamePlayer, GameState, Template # Added GameState, Template
 
 socketio = get_socketio()
 from .game_state_service import game_state_service # Import the instance
@@ -221,45 +221,128 @@ class SocketService:
 
         @socketio.on('player_action')
         def handle_player_action(data):
-            """Process player actions and broadcast updates"""
+            """Process player actions through AI and update game state"""
             game_id = data.get('game_id')
             user_id = data.get('user_id')
-            player_action = data.get('action')
-
-            if not all([game_id, user_id, player_action]):
-                emit('error', {'message': 'Missing required fields'})
+            action = data.get('action')
+            
+            if not all([game_id, user_id, action]):
+                emit('error', {'message': 'Missing required fields'}, room=game_id)
                 return
 
-            # 1. Get the GameState
-            game_state = GameStateService.get_state(game_id)
-            if not game_state:
-                emit('error', {'message': 'Game state not found'})
-                return
+            try:
+                # Get current game state
+                game_state = game_state_service.get_state(game_id)
+                if not game_state:
+                    raise ValueError("Game state not found")
+                
+                # Get AI response
+                ai_response = AIService.get_response(
+                    game_state=game_state,
+                    player_action=action,
+                    user_id=user_id
+                )
 
-            # 2. Update the campaign state
-            from .campaign_service import update_campaign_state, check_conclusion
-            success = update_campaign_state(game_state, player_action)
-            if not success:
-                emit('error', {'message': 'Failed to update campaign state'})
-                return
+                # Update game state with AI response
+                updated_state = game_state_service.update_state(
+                    game_id=game_id,
+                    new_state=ai_response['updated_state'],
+                    log_entry=ai_response['narrative']
+                )
 
-            # 3. Check for conclusion
-            conclusion = check_conclusion(game_state)
-            if conclusion:
-                emit('game_concluded', {'message': 'The game has concluded!'}, room=game_id)
-                return
+                # Broadcast updated state to all players
+                emit('game_state_update', {
+                    'state': updated_state,
+                    'log': ai_response['narrative'],
+                    'actions': ai_response['available_actions']
+                }, room=game_id)
 
-            # 4. Broadcast the update to all players
-            emit('game_update', {
-                'user_id': user_id,
-                'action': player_action,
-                'state_data': game_state.state_data # Send the updated state
-            }, room=game_id)
+            except Exception as e:
+                current_app.logger.error(f"Error processing action: {str(e)}")
+                emit('error', {'message': 'Failed to process action'}, room=game_id)
 
         @socketio.on('request_state')
         def handle_state_request(data):
             """Send current game state to requesting player"""
             game_id = data.get('game_id')
-            if game_id:
-                state = game_state_service.get_state(game_id)
-                emit('game_state', state)
+            user_id = data.get('user_id')
+            
+            if not game_id or not user_id:
+                emit('error', {'message': 'Missing game ID or user ID'}, room=request.sid)
+                return
+
+            try:
+                with current_app.app_context():
+                    # Load Game with its Campaign relationship eagerly
+                    game = db.session.query(Game).options(joinedload(Game.campaign)).get(game_id)
+                    if not game:
+                        emit('error', {'message': 'Invalid game ID'}, room=request.sid)
+                        current_app.logger.warning(f"State request failed: Invalid game ID {game_id} from {request.sid}")
+                        return
+                    if not game.campaign: # Check if campaign relationship loaded
+                        current_app.logger.error(f"State request failed: Game {game_id} has no associated campaign template.")
+                        emit('error', {'message': 'Game campaign template not found'}, room=request.sid)
+                        return
+
+                    # Check if state is already in the service (in-memory)
+                    state_info = game_state_service.get_state(game_id)
+
+                    # Check if state exists in memory and is not empty/default
+                    if not state_info or not state_info.get('state'):
+                        current_app.logger.info(f"State for game {game_id} not found in service, checking DB.")
+                        # State not in memory, check the database
+                        db_state = GameState.query.filter_by(game_id=game_id).first()
+
+                        if db_state:
+                            # State found in DB, load it into the service
+                            current_app.logger.info(f"Loading existing state for game {game_id} from DB into service.")
+                            game_state_service.join_game(game_id, 'system') # Ensure game is tracked
+                            game_state_service.active_games[game_id]['state'] = db_state.state_data
+                            # Use timestamp as a simple version indicator for now
+                            loaded_version = db_state.last_updated.timestamp() if db_state.last_updated else 1
+                            game_state_service.active_games[game_id]['version'] = loaded_version
+                            current_app.logger.info(f"Loaded state version {loaded_version} for game {game_id}")
+                        else:
+                            # State not in DB, create a new GameState record
+                            current_app.logger.info(f"No state found in DB for game {game_id}. Creating new state record.")
+                            new_state_record = GameState(
+                                game_id=game_id,
+                                campaign_id=game.campaign_id,
+                                state_data=game.campaign.initial_state # Use initial_state from loaded campaign
+                            )
+                            db.session.add(new_state_record)
+                            try:
+                                db.session.commit()
+                                current_app.logger.info(f"Successfully created new GameState record for game {game_id}.")
+                                # Initialize the state in the service *after* successful DB commit
+                                game_state_service.join_game(game_id, 'system') # Ensure game is tracked
+                                game_state_service.active_games[game_id]['state'] = new_state_record.state_data
+                                game_state_service.active_games[game_id]['version'] = 1 # Initial version for new state
+                            except Exception as db_exc:
+                                db.session.rollback()
+                                current_app.logger.error(f"Failed to commit new GameState for game {game_id}: {db_exc}", exc_info=True)
+                                emit('error', {'message': 'Failed to save initial game state'}, room=request.sid)
+                                return
+
+                    # Retrieve the state from the service again (should be populated now)
+                    final_state_info = game_state_service.get_state(game_id)
+
+                    if not final_state_info or 'state' not in final_state_info:
+                        current_app.logger.error(f"Failed to retrieve state for game {game_id} even after load/create attempt.")
+                        raise ValueError("Game state retrieval failed")
+
+                    # Emit the state data currently held by the service
+                    # Note: Emitting only 'state' and 'version' as 'log' and 'actions' aren't directly available here.
+                    emit_data = {
+                        'state': final_state_info['state'], # Send the dictionary from the service
+                        'version': final_state_info['version'] # Include version
+                    }
+                    current_app.logger.info(f"Emitting game_state (v{emit_data['version']}) for game {game_id} to {request.sid}")
+                    emit('game_state', emit_data, room=request.sid)
+
+            except Exception as e:
+                current_app.logger.error(f"State request error (Game {game_id}): {str(e)}", exc_info=True)
+                emit('error', {
+                    'message': 'Failed to retrieve game state',
+                    'details': str(e)
+                }, room=request.sid)

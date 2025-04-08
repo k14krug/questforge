@@ -170,44 +170,70 @@ function performAction(action) {
 // --- State Rendering ---
 
 function renderGameState(state) {
-    // Basic rendering, improve as needed
-    // Check if state is valid
-    if (!state || typeof state !== 'object') {
-        return '<p class="text-danger">Error: Invalid game state received.</p>';
+    if (!state?.state_data) {
+        return '<p class="text-muted">No game state available</p>';
     }
     
-    // Implement state-specific rendering
-    // Use optional chaining and default values for safety
-    let html = '<div class="state-section mb-3">';
-    html += '<h5>Campaign Data</h5><pre class="bg-light p-2 rounded">' + JSON.stringify(state.campaign_data || {}, null, 2) + '</pre>';
-    html += '</div>';
-
-    html += '<div class="state-section mb-3">';
-    html += '<h5>Objectives</h5>';
-    if (state.objectives && state.objectives.length > 0) {
-        html += '<ul class="list-group">';
-        state.objectives.forEach(obj => { html += '<li class="list-group-item">' + obj + '</li>'; });
-        html += '</ul>';
-    } else {
-        html += '<p class="text-muted">None</p>';
-    }
-    html += '</div>';
+    let html = '<div class="game-state-content">';
     
-    // Add similar safe rendering for other sections...
-    // Example for Key Locations:
-     html += '<div class="state-section mb-3">';
-    html += '<h5>Key Locations</h5>';
-    if (state.key_locations && state.key_locations.length > 0) {
-        html += '<ul class="list-group">';
-        state.key_locations.forEach(loc => { html += '<li class="list-group-item">' + loc + '</li>'; });
-        html += '</ul>';
+    // Current Location
+    html += `<div class="mb-4 p-3 bg-light rounded">
+        <h5><i class="bi bi-geo-alt"></i> Current Location</h5>
+        <p class="lead">${state.state_data.current_location || 'Unknown'}</p>
+    </div>`;
+
+    // Objectives
+    html += '<div class="mb-4">';
+    html += '<h5><i class="bi bi-check2-circle"></i> Objectives</h5>';
+    if (state.state_data.objectives?.length) {
+        html += '<div class="list-group">';
+        state.state_data.objectives.forEach((obj, index) => {
+            const status = obj.completed ? 'text-success' : 'text-body';
+            html += `<div class="list-group-item d-flex justify-content-between align-items-center ${status}">
+                <span>${obj.description}</span>
+                ${obj.completed ? '<i class="bi bi-check2"></i>' : ''}
+            </div>`;
+        });
+        html += '</div>';
     } else {
-        html += '<p class="text-muted">None</p>';
+        html += '<p class="text-muted">No current objectives</p>';
     }
     html += '</div>';
 
-    // Add other sections similarly (conclusion_conditions, key_characters, major_plot_points, possible_branches)
+    // Key Information
+    html += '<div class="row">';
+    html += '<div class="col-md-6 mb-4">';
+    html += '<h5><i class="bi bi-people"></i> Key Characters</h5>';
+    if (state.state_data.key_characters?.length) {
+        html += '<div class="list-group">';
+        state.state_data.key_characters.forEach(char => {
+            html += `<div class="list-group-item">
+                <strong>${char.name}</strong>: ${char.description}
+            </div>`;
+        });
+        html += '</div>';
+    } else {
+        html += '<p class="text-muted">No known characters</p>';
+    }
+    html += '</div>';
 
+    html += '<div class="col-md-6 mb-4">';
+    html += '<h5><i class="bi bi-signpost-split"></i> Plot Points</h5>';
+    if (state.state_data.major_plot_points?.length) {
+        html += '<div class="list-group">';
+        state.state_data.major_plot_points.forEach(plot => {
+            html += `<div class="list-group-item">
+                <strong>${plot.title}</strong><br>${plot.description}
+            </div>`;
+        });
+        html += '</div>';
+    } else {
+        html += '<p class="text-muted">No active plot points</p>';
+    }
+    html += '</div>';
+    html += '</div>';
+
+    html += '</div>'; // Close game-state-content
     return html;
 }
 
