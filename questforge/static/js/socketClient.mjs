@@ -8,9 +8,10 @@ console.log("Initializing socketClient (no class)...");
 const socketClient = {
   socket: null,
   connected: false,
+  isConnecting: false,
   gameId: null,
   hasJoinedRoom: false,
-  onConnectCallbacks: [], // Keep callbacks array for potential use
+  onConnectCallbacks: [],
   onDisconnectCallbacks: [],
 
   connect: function(gameId) {
@@ -35,26 +36,25 @@ const socketClient = {
 
     try {
       this.socket = io({ path: '/socket.io/' });
-      const self = this; // Use self for clarity inside listeners
+      const self = this;
 
-      this.socket.on('connect', function() {
+      this.socket.on('connect', () => {
         console.log("Socket connected event");
         self.connected = true;
         self.isConnecting = false;
         self.hasJoinedRoom = false;
         console.log(`SocketIO connected successfully for game ${self.gameId}. Triggering connect callbacks.`);
-        // Trigger connect callbacks
-        self.onConnectCallbacks.forEach(function(cb) { cb(); });
+        self.onConnectCallbacks.forEach(function(cb) { if (typeof cb === 'function') cb(); });
       });
 
-      this.socket.on('disconnect', function(reason) {
+      this.socket.on('disconnect', (reason) => {
         console.log(`Socket disconnected: ${reason}`);
         const wasConnected = self.connected;
         self.connected = false;
         self.isConnecting = false;
         self.hasJoinedRoom = false;
         if (wasConnected) {
-            self.onDisconnectCallbacks.forEach(function(cb) { cb(); });
+            self.onDisconnectCallbacks.forEach(cb => cb());
         }
       });
 

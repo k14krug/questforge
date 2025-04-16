@@ -8,6 +8,7 @@ class GamePlayer(db.Model):
     __tablename__ = 'game_players'
     game_id = db.Column(db.Integer, db.ForeignKey('games.id'), primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    character_description = db.Column(db.Text, nullable=True) # Added field for player character description
     is_ready = db.Column(db.Boolean, default=False, nullable=False)
     join_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -28,7 +29,7 @@ class Game(db.Model):
     template = relationship('Template', backref='games')
     creator = relationship('User', foreign_keys=[created_by]) # Specify foreign key for creator
     campaign = relationship('Campaign', back_populates='game', uselist=False)
-    game_states = relationship('GameState', back_populates='game')
+    game_states = relationship('GameState', back_populates='game', order_by='desc(GameState.created_at)')
 
     # Use the association object for the players relationship
     player_associations = relationship('GamePlayer', back_populates='game', cascade="all, delete-orphan")

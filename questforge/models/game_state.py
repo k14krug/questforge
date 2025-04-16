@@ -80,6 +80,7 @@ class GameState(db.Model):
         default=list, 
         nullable=False
     )
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationship back to the Game

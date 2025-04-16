@@ -16,40 +16,81 @@ def build_context(game_state: GameState) -> str:
     if not game_state:
         return "Error: Invalid game state provided."
 
-    campaign = game_state.campaign
+    # Access campaign via game relationship
+    if not game_state.game:
+         return "Error: GameState object does not have a valid 'game' relationship."
+    
+    campaign = game_state.game.campaign
     if not campaign:
         # This shouldn't happen if data is consistent, but good to check
-        return "Error: Could not find associated campaign for the game state."
+        return f"Error: Could not find associated campaign for game {game_state.game_id}."
 
     context_lines = []
 
-    # 1. Campaign Overview
+    # 1. Campaign Overview & Goals
     context_lines.append("--- Campaign Context ---")
-    # Assuming campaign_data stores the initial description
-    description = campaign.campaign_data.get('description', 'No overall description available.')
-    context_lines.append(f"Overall Description: {description}")
+    campaign_data_dict = campaign.campaign_data or {}
+    summary = campaign_data_dict.get('campaign_summary', 'No overall summary available.') # Use campaign_summary if available
+    context_lines.append(f"Campaign Summary: {summary}")
+
+    # Format objectives clearly
     if campaign.objectives:
-        objectives_str = ", ".join(map(str, campaign.objectives)) # Handle non-string objectives
-        context_lines.append(f"Current Objectives: {objectives_str}")
+        context_lines.append("Overall Objective(s):")
+        # Assuming objectives is a list of strings or simple dicts
+        if isinstance(campaign.objectives, list):
+            for obj in campaign.objectives:
+                context_lines.append(f"- {str(obj)}") # Convert to string just in case
+        else: # Handle case where it might be a single string/dict
+             context_lines.append(f"- {str(campaign.objectives)}")
     else:
-        context_lines.append("Current Objectives: None defined.")
+        context_lines.append("Overall Objective(s): None defined.")
 
-    # 2. Current Game State
+    # Include AI-generated Key Elements from Campaign
+    if campaign.key_locations:
+        context_lines.append("Key Locations:")
+        for loc in campaign.key_locations:
+             context_lines.append(f"- {loc.get('name', 'Unknown Location')}: {loc.get('description', 'No description')}")
+    if campaign.key_characters:
+        context_lines.append("Key Characters:")
+        for char in campaign.key_characters:
+             context_lines.append(f"- {char.get('name', 'Unknown Character')} ({char.get('role', 'Unknown Role')}): {char.get('description', 'No description')}")
+    if campaign.major_plot_points:
+        context_lines.append("Major Plot Points:")
+        for i, plot in enumerate(campaign.major_plot_points):
+             context_lines.append(f"- Stage {i+1}: {str(plot)}") # Assuming plot points are strings
+
+    # 2. Current Game State & Progress
     context_lines.append("\n--- Current Game State ---")
+    context_lines.append(f"Current Location: {game_state.current_location or 'Unknown'}")
     if game_state.state_data and isinstance(game_state.state_data, dict):
-        # Format the state dictionary nicely
+        context_lines.append("Other State Details:")
         for key, value in game_state.state_data.items():
-            # Simple formatting, could be enhanced (e.g., handling lists better)
-            context_lines.append(f"- {key.replace('_', ' ').title()}: {json.dumps(value)}")
+            if key != 'location': # Avoid duplicating location
+                context_lines.append(f"- {key.replace('_', ' ').title()}: {json.dumps(value)}") # Use json.dumps for complex values
     else:
-        context_lines.append("No detailed state data available.")
+         context_lines.append("Other State Details: None available.")
 
-    # 3. Recent History
-    context_lines.append("\n--- Recent Events ---")
-    # Assuming game_state.recent_events stores the last N events/actions
-    if hasattr(game_state, 'recent_events') and game_state.recent_events:
-        for event in game_state.recent_events:
-            context_lines.append(f"- {event}")
+    # Include Progress Markers
+    if game_state.completed_objectives:
+         context_lines.append(f"Completed Objectives: {json.dumps(game_state.completed_objectives)}")
+    if game_state.discovered_locations:
+         context_lines.append(f"Discovered Locations: {json.dumps(game_state.discovered_locations)}")
+    if game_state.encountered_characters:
+         context_lines.append(f"Encountered Characters: {json.dumps(game_state.encountered_characters)}")
+    if game_state.completed_plot_points:
+         context_lines.append(f"Completed Plot Points: {json.dumps(game_state.completed_plot_points)}")
+
+
+    # 3. Recent History (Game Log)
+    context_lines.append("\n--- Recent Events (Game Log) ---")
+    # Use game_state.game_log for recent history
+    if game_state.game_log:
+        # Show last few log entries (e.g., last 5)
+        num_log_entries = 5 
+        recent_log = game_state.game_log[-num_log_entries:]
+        for entry in recent_log:
+             # Ensure entry is a string before appending
+             context_lines.append(f"- {str(entry)}") 
     else:
         context_lines.append("No recent events available.")
 

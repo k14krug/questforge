@@ -9,8 +9,11 @@ from ..models.game import Game, GamePlayer # Import GamePlayer
 from ..models.campaign import Campaign
 from ..models.template import Template
 from ..models.user import User # Make sure User is imported
+from ..models.api_usage_log import ApiUsageLog # Import the new model
 from ..extensions import db, socketio
 from .forms import GameForm
+from sqlalchemy import func # Import func for sum aggregation
+from decimal import Decimal # Import Decimal
 
 game_bp = Blueprint('game', __name__)
 
@@ -122,11 +125,24 @@ def play(game_id):
     """Main game play view"""
     game = Game.query.get_or_404(game_id)
     campaign = Campaign.query.filter_by(game_id=game_id).first()
-    
+
     if not campaign:
         return redirect(url_for('game.lobby', game_id=game_id))
-        
-    return render_template('game/play.html', game=game, campaign=campaign, user_id=current_user.id)
+
+    # Retrieve the current game state
+    game_state = game.game_states[-1] if game.game_states else None
+
+    # Calculate total cost for the current game
+    total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game_id).scalar()
+    total_cost = total_cost_query if total_cost_query is not None else Decimal('0.0')
+
+    return render_template('game/play.html', 
+                           game=game, 
+                           campaign=campaign, 
+                           user_id=current_user.id, 
+                           game_state=game_state, 
+                           game_log=game_state.game_log if game_state else [],
+                           total_cost=total_cost)
 
 @game_bp.route('/game/<int:game_id>/history')
 @login_required
@@ -149,8 +165,18 @@ def list_games():
     """Lists active games available to join."""
     # Query for games that are 'active' (created but not started)
     # Exclude games the current user has already joined? Or show all active? Let's show all for now.
-    active_games = Game.query.filter_by(status='active').order_by(Game.created_at.desc()).all()
-    return render_template('game/list.html', games=active_games)
+    all_games = Game.query.order_by(Game.created_at.desc()).all()
+    
+    # Calculate total cost for each game
+    game_costs = {}
+    for game in all_games:
+        # Query the sum of costs from ApiUsageLog, handle None result
+        total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game.id).scalar()
+        # Ensure total_cost is Decimal or 0
+        total_cost = total_cost_query if total_cost_query is not None else Decimal('0.0')
+        game_costs[game.id] = total_cost
+
+    return render_template('game/list.html', games=all_games, game_costs=game_costs)
 
 
 # Game API Endpoints

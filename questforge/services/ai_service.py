@@ -27,7 +27,9 @@ class AIService:
             self.client = None
         else:
             self.client = OpenAI(api_key=api_key)
-            self.model = os.getenv("OPENAI_MODEL") or "gpt-3.5-turbo"
+            # Remove self.model initialization here - fetch dynamically later
+            # self.model = os.getenv("OPENAI_MODEL") or "gpt-3.5-turbo" 
+            # Keep temperature and max_tokens if they are static per service instance
             self.temperature = float(os.getenv("OPENAI_TEMPERATURE") or 0.7)
             self.max_tokens = int(os.getenv("OPENAI_MAX_TOKENS") or 1024)
 
@@ -53,8 +55,12 @@ class AIService:
 
         generated_content = "" # Initialize to handle potential errors before assignment
         try:
+            # Fetch model from app config at time of call
+            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-3.5-turbo') # Default if not in config
+            app.logger.debug(f"Using model from config for generate_campaign: {model_to_use}")
+            
             response = self.client.chat.completions.create(
-                model=self.model,
+                model=model_to_use, # Use dynamically fetched model
                 messages=[
                     {"role": "system", "content": "You are a creative game master designing the beginning of a text-based adventure game according to the user's template and inputs. Output ONLY the requested JSON object."},
                     {"role": "user", "content": prompt}
@@ -69,15 +75,50 @@ class AIService:
             # Parse the JSON response
             parsed_data = json.loads(generated_content)
 
-            # TODO: Implement more robust validation, potentially using template.validate_ai_response
-            if not all(k in parsed_data for k in ['initial_description', 'initial_state', 'goals']):
-                 app.logger.error("AI response missing required keys.")
-                 # Consider adding 'key_npcs' validation if it becomes mandatory
-                 return None
+            # Validate the response structure based on the *new* expected keys from the revised prompt
+            required_top_level_keys = [
+                'campaign_objective', 
+                'generated_locations', 
+                'generated_characters', 
+                'generated_plot_points', 
+                'initial_scene'
+            ]
+            missing_keys = [k for k in required_top_level_keys if k not in parsed_data]
+            if missing_keys:
+                app.logger.error(f"AI campaign response missing required top-level keys: {missing_keys}")
+                app.logger.debug(f"Received data: {parsed_data}") # Log what was received
+                return None
 
-            # Basic validation passed (structure-wise)
-            app.logger.info("--- AI Service: Parsed campaign data successfully ---")
-            return parsed_data
+            # Validate the structure of 'initial_scene'
+            initial_scene = parsed_data.get('initial_scene', {})
+            if not isinstance(initial_scene, dict) or not all(k in initial_scene for k in ['description', 'state', 'goals']):
+                app.logger.error("AI campaign response 'initial_scene' is missing required keys ('description', 'state', 'goals') or is not a dictionary.")
+                app.logger.debug(f"Received initial_scene: {initial_scene}")
+                return None
+            if not isinstance(initial_scene.get('state'), dict):
+                 app.logger.error("AI campaign response 'initial_scene.state' is not a dictionary.")
+                 app.logger.debug(f"Received initial_scene state: {initial_scene.get('state')}")
+                 return None
+            if not isinstance(initial_scene.get('goals'), list):
+                 app.logger.error("AI campaign response 'initial_scene.goals' is not a list.")
+                 app.logger.debug(f"Received initial_scene goals: {initial_scene.get('goals')}")
+                 return None
+            
+            # Optional: Add basic type checks for other generated lists if needed
+            if not isinstance(parsed_data.get('generated_locations'), list):
+                 app.logger.warning("AI campaign response 'generated_locations' is not a list.") # Warning for now
+            if not isinstance(parsed_data.get('generated_characters'), list):
+                 app.logger.warning("AI campaign response 'generated_characters' is not a list.") # Warning for now
+            if not isinstance(parsed_data.get('generated_plot_points'), list):
+                 app.logger.warning("AI campaign response 'generated_plot_points' is not a list.") # Warning for now
+
+
+            # Validation passed for the new structure
+            app.logger.info("--- AI Service: Parsed campaign data successfully (new structure) ---")
+            # Extract usage data
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
+            return parsed_data, model_used, usage_data
 
         except json.JSONDecodeError as e:
             # Log the error and the content that failed to parse
@@ -134,9 +175,13 @@ class AIService:
 
         generated_content = "" # Initialize
         try:
+            # Fetch model from app config at time of call
+            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-3.5-turbo') # Default if not in config
+            app.logger.debug(f"Using model from config for generate_initial_scene: {model_to_use}")
+            
             app.logger.info(f"Attempting OpenAI API call for initial scene (Game {game.id})...")
             response = self.client.chat.completions.create(
-                model=self.model,
+                model=model_to_use, # Use dynamically fetched model
                 messages=[
                     # No specific system message needed if included in user prompt
                     {"role": "user", "content": prompt}
@@ -162,11 +207,13 @@ class AIService:
                  return None
 
             app.logger.info(f"--- AI Service: Parsed initial scene successfully for game {game.id} ---")
-            # Return only narrative and actions as per the function's goal
+            # Return narrative, actions, model, and usage
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
             return {
                 'narrative': parsed_data['narrative'],
                 'actions': parsed_data['actions']
-            }
+            }, model_used, usage_data
 
         except json.JSONDecodeError as e:
             app.logger.error(f"Error decoding initial scene JSON response: {e}")
@@ -207,8 +254,12 @@ class AIService:
         generated_content = "" # Initialize
         # 3. Call OpenAI API
         try:
+            # Fetch model from app config at time of call
+            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-3.5-turbo') # Default if not in config
+            app.logger.debug(f"Using model from config for get_response: {model_to_use}")
+            
             response = self.client.chat.completions.create(
-                model=self.model,
+                model=model_to_use, # Use dynamically fetched model
                 messages=[
                     # System message is now part of the prompt builder
                     {"role": "user", "content": prompt}
@@ -237,11 +288,13 @@ class AIService:
 
             app.logger.info("--- AI Service: Parsed response data successfully ---")
             # Rename 'content' to 'narrative' for consistency
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
             return {
                 'narrative': parsed_data['content'],
                 'state_changes': parsed_data['state_changes'],
                 'available_actions': parsed_data['available_actions']
-            }
+            }, model_used, usage_data
 
 
         except json.JSONDecodeError as e:

@@ -22,22 +22,43 @@ class GameStateService:
     def join_game(self, game_id, user_id):
         """Add player to game state"""
         if game_id not in self.active_games:
-            self.active_games[game_id] = {
-                'players': set(),
-                'state': {},
-                'version': 0,
-                'log': [],      # Initialize log for new game entry
-                'actions': []   # Initialize actions for new game entry
-            }
+            # Attempt to load from DB first if game exists but isn't active in memory
+            with current_app.app_context():
+                db_game_state = GameState.query.filter_by(game_id=game_id).first()
+                if db_game_state:
+                    current_app.logger.info(f"Loading existing game {game_id} state from DB into memory on join.")
+                    self.active_games[game_id] = {
+                        'players': set(),
+                        'state': db_game_state.state_data or {},
+                        'version': 1, # Or derive from timestamp/version field if added
+                        'log': db_game_state.game_log or [],
+                        'actions': db_game_state.available_actions or []
+                    }
+                else:
+                    # If not in DB either, initialize fresh
+                    current_app.logger.info(f"Initializing new game state in memory for game {game_id} on join.")
+                    self.active_games[game_id] = {
+                        'players': set(),
+                        'state': {},
+                        'version': 0,
+                        'log': [],
+                        'actions': []
+                    }
+        # Add the player regardless of whether state was loaded or initialized
         self.active_games[game_id]['players'].add(user_id)
+        current_app.logger.debug(f"Player {user_id} added to game {game_id}. Active players: {self.active_games[game_id]['players']}")
+
 
     def leave_game(self, game_id, user_id):
         """Remove player from game state"""
         if game_id in self.active_games:
             self.active_games[game_id]['players'].discard(user_id)
+            current_app.logger.debug(f"Player {user_id} removed from game {game_id}. Remaining players: {self.active_games[game_id]['players']}")
             # Check if this was the last player
             if not self.active_games[game_id]['players']:
                 current_app.logger.info(f"Last player left game {game_id}. Removing from active games.")
+                # Persist final state before removing? Optional.
+                # self.persist_state(game_id) # Example if needed
                 del self.active_games[game_id]
                 # Optionally clear history too
                 if game_id in self.state_history:
@@ -46,19 +67,35 @@ class GameStateService:
     def get_state(self, game_id):
         """Get current game state with version and ensure all necessary data is included"""
         if game_id not in self.active_games:
-             current_app.logger.warning(f"get_state called for inactive game_id: {game_id}")
-             return None # Return None if game isn't active in memory
+             current_app.logger.warning(f"get_state called for inactive game_id: {game_id}. Attempting DB load.")
+             # Attempt to load the LATEST state from DB if not in memory
+             with current_app.app_context():
+                 # Order by last_updated descending to get the most recent state
+                 # Assuming only ONE GameState record per game_id as per current update logic
+                 db_game_state = GameState.query.filter_by(game_id=game_id).order_by(GameState.last_updated.desc()).first()
+                 if db_game_state:
+                     current_app.logger.info(f"Loading latest game {game_id} state (ID: {db_game_state.id}) from DB into memory on get_state.")
+                     # Initialize the game in memory with data from the loaded record
+                     self.active_games[game_id] = {
+                         'players': set(), # Players will join via socket events
+                         'state': db_game_state.state_data or {},
+                         'version': 1, # Consider a real versioning mechanism later
+                         'log': db_game_state.game_log or [],
+                         'actions': db_game_state.available_actions or []
+                     }
+                     # Return the newly loaded state
+                     return self.active_games[game_id]
+                 else:
+                     current_app.logger.error(f"get_state: Game {game_id} not found in active games or DB.")
+                     return None # Game truly doesn't exist or wasn't initialized
 
-        # Safely retrieve GameState and Template from DB
-        # Use app_context for database operations if called outside request context
+        # Game is active in memory, proceed to retrieve its state
         with current_app.app_context():
             db_game_state = GameState.query.filter_by(game_id=game_id).first()
+
             if not db_game_state:
-                current_app.logger.warning(f"get_state: GameState record not found in DB for game {game_id}. Returning empty state.")
-                # Even if not in DB, if it's active, return memory state? Or error?
-                # Let's return what's in memory for now, but log warning.
-                # return {'version': 0, 'state': {}, 'log': [], 'actions': []} # Option 1: Empty
-                # Option 2: Return memory state if available
+                current_app.logger.error(f"get_state: GameState record not found in DB for active game {game_id}. Memory state might be stale.")
+                # Return memory state but log error
                 mem_state = self.active_games.get(game_id, {})
                 return {
                     'version': mem_state.get('version', 0),
@@ -67,53 +104,29 @@ class GameStateService:
                     'actions': mem_state.get('actions', [])
                  }
 
-            # Access Template via the game relationship
-            if not db_game_state.game:
-                 current_app.logger.error(f"get_state: GameState record {db_game_state.id} has no associated Game object loaded.")
-                 return {'version': 0, 'state': {}, 'log': [], 'actions': []} # Cannot proceed without game
+            # Game state exists in DB, ensure memory is synced for log/actions
+            current_memory_state = self.active_games[game_id]
 
-            template = db_game_state.game.template # Access template through game
-            if not template:
-                # This implies the game itself doesn't have a template_id or the relationship failed
-                current_app.logger.error(f"get_state: Template not found via game relationship for Game {game_id}. Game's template_id: {db_game_state.game.template_id}.")
-                # If template is missing, we can't determine initial state keys.
-                return {'version': 0, 'state': {}, 'log': [], 'actions': []}
+            # Sync log and actions from DB to memory if they seem empty/missing in memory
+            if not current_memory_state.get('log') and db_game_state.game_log:
+                 current_memory_state['log'] = db_game_state.game_log
+                 current_app.logger.debug(f"Synced game_log from DB to memory for game {game_id}")
+            if not current_memory_state.get('actions') and db_game_state.available_actions:
+                 current_memory_state['actions'] = db_game_state.available_actions
+                 current_app.logger.debug(f"Synced available_actions from DB to memory for game {game_id}")
 
-            # Now we know template and initial_state exist
-            initial_state = template.initial_state or {} # Default to empty dict if None
-            current_memory_state_dict = self.active_games[game_id]['state'].copy()
-
-            # Ensure all keys from initial_state are present in the current memory state
-            state_updated = False
-            for key in initial_state:
-                if key not in current_memory_state_dict:
-                    current_memory_state_dict[key] = initial_state[key]
-                    state_updated = True
-
-            # Update the service's state if keys were missing
-            if state_updated:
-                self.active_games[game_id]['state'] = current_memory_state_dict
-
-            # Ensure log/actions are loaded into memory state if not already present
-            if not self.active_games[game_id].get('log'):
-                 self.active_games[game_id]['log'] = db_game_state.game_log
-            if not self.active_games[game_id].get('actions'):
-                 self.active_games[game_id]['actions'] = db_game_state.available_actions
-
-
-            # Include log and actions from the DB record (or memory if already loaded)
+            # Return the potentially updated memory state
             return {
-                'version': self.active_games[game_id]['version'],
-                'state': current_memory_state_dict,
-                'log': self.active_games[game_id]['log'],
-                'actions': self.active_games[game_id]['actions']
+                'version': current_memory_state['version'],
+                'state': current_memory_state['state'],
+                'log': current_memory_state['log'],
+                'actions': current_memory_state['actions']
             }
 
     def get_state_diff(self, game_id, from_version):
         """Get state changes since specified version"""
-        # This method might need updating if history doesn't include log/actions
         current_state_info = self.get_state(game_id)
-        if not current_state_info: return {} # Handle case where game isn't active
+        if not current_state_info: return {}
 
         current_state_dict = current_state_info['state']
         current_version = current_state_info['version']
@@ -121,133 +134,104 @@ class GameStateService:
         if from_version >= current_version:
             return {}
 
-        # Get closest historical state (currently only stores 'state' dict)
         base_state_dict = self.state_history.get(game_id, {}).get(from_version)
         if not base_state_dict:
-            # If no history, return full current state (excluding log/actions for diff?)
-            # Or should diff include log/action changes? Needs decision.
-            # For now, returning only state dict diff.
-            return current_state_dict
+            return current_state_dict # Return full state if base version not found
 
-        # Calculate delta for the 'state' dictionary part
         diff = DeepDiff(
             base_state_dict,
             current_state_dict,
             ignore_order=True,
             report_repetition=True
         )
-
-        # How to represent log/action changes in diff? TBD.
-        # For now, just returning state diff.
         return {
             'from_version': from_version,
             'to_version': current_version,
-            'changes': diff # Only includes diff of 'state' dict
-            # 'log_diff': ... # Future: Add log diff representation
-            # 'actions_diff': ... # Future: Add actions diff representation
+            'changes': diff
         }
 
     def get_player_state(self, game_id, user_id):
         """Get player-specific state"""
-        # This likely doesn't need player_id unless filtering state later
         return {
-            'player_id': user_id, # Keep for potential future use
-            'game_state': self.get_state(game_id) # Return the full game state info
+            'player_id': user_id,
+            'game_state': self.get_state(game_id)
         }
 
     def update_state(self, game_id, state_changes=None, log_entry=None, actions=None, increment_version=False):
         """Update game state, log, and actions in DB and memory"""
         if game_id not in self.active_games:
             current_app.logger.warning(f"update_state called for inactive game_id: {game_id}")
-            return None # Indicate failure: game not active in memory
+            return None
 
-        # Use app_context for database operations
         with current_app.app_context():
-            # Get the GameState database record
             db_game_state = GameState.query.filter_by(game_id=game_id).first()
             if not db_game_state:
                 current_app.logger.error(f"update_state: GameState record not found in DB for game {game_id}")
-                return None # Indicate failure: record missing
+                return None
 
             # --- Update State Dictionary ---
             if state_changes:
-                # Get the Template object via the game relationship for validation
-                if not db_game_state.game:
-                     current_app.logger.error(f"update_state: GameState record {db_game_state.id} has no associated Game object loaded.")
-                     return None # Cannot validate without game/template
-                template = db_game_state.game.template
-                if not template:
-                    current_app.logger.error(f"update_state: Template not found via game relationship for Game {game_id}. Game's template_id: {db_game_state.game.template_id}.")
-                    return None # Indicate failure
-
-                initial_state = template.initial_state or {}
-                validated_changes = {}
+                # Apply changes directly, assuming AI provides valid structure
+                validated_changes = state_changes
                 current_memory_state_dict = self.active_games[game_id]['state'].copy()
+                current_memory_state_dict.update(validated_changes) # Update memory state
 
-                for key, value in state_changes.items():
-                    if key not in initial_state:
-                        current_app.logger.warning(f"update_state: Invalid state change key '{key}' for game {game_id}. Ignoring.")
-                        continue # Ignoring invalid keys
+                # Update state_data in the DB record
+                updated_db_state_data = db_game_state.state_data.copy() if db_game_state.state_data else {}
+                updated_db_state_data.update(validated_changes)
+                db_game_state.state_data = updated_db_state_data
+                # Update in-memory state dict
+                self.active_games[game_id]['state'] = current_memory_state_dict
+                current_app.logger.debug(f"Updated state dict for game {game_id}: {validated_changes}")
 
-                    # Basic type check (can be enhanced)
-                    if initial_state.get(key) is not None and not isinstance(value, type(initial_state[key])):
-                         current_app.logger.warning(f"update_state: Invalid type for key '{key}' in game {game_id}. Expected {type(initial_state[key])}, got {type(value)}. Ignoring.")
-                         continue # Ignoring type mismatches
-
-                    validated_changes[key] = value
-                    current_memory_state_dict[key] = value # Update memory state immediately
-
-                # Update state_data in the DB record by merging validated changes
-                if validated_changes:
-                    updated_db_state_data = db_game_state.state_data.copy()
-                    updated_db_state_data.update(validated_changes)
-                    db_game_state.state_data = updated_db_state_data
-                    # Update in-memory state dict
-                    self.active_games[game_id]['state'] = current_memory_state_dict
-                    current_app.logger.debug(f"Updated state dict for game {game_id}: {validated_changes}")
-
-
-            # --- Update Log ---
-            if log_entry is not None:
-                # Ensure game_log is treated as a list in DB object
+            # --- Update Log (AI Response) ---
+            if log_entry is not None: # log_entry here is the AI narrative
+                log_object = {"type": "ai", "content": log_entry}
+                # Ensure game_log is treated as a list in DB object and memory
                 if not isinstance(db_game_state.game_log, list):
-                    db_game_state.game_log = [] # Initialize if not a list
-                db_game_state.game_log.append(log_entry)
-                # Update in-memory log as well
+                    db_game_state.game_log = []
                 if 'log' not in self.active_games[game_id] or not isinstance(self.active_games[game_id]['log'], list):
                      self.active_games[game_id]['log'] = []
-                self.active_games[game_id]['log'].append(log_entry)
-                current_app.logger.debug(f"Appended log entry for game {game_id}")
 
+                db_game_state.game_log.append(log_object)
+                self.active_games[game_id]['log'].append(log_object)
+                current_app.logger.debug(f"Appended AI log entry for game {game_id}")
 
             # --- Update Actions ---
             if actions is not None:
                  if isinstance(actions, list):
                      db_game_state.available_actions = actions
-                     # Update in-memory actions
-                     self.active_games[game_id]['actions'] = actions
+                     self.active_games[game_id]['actions'] = actions # Update in-memory actions
                      current_app.logger.debug(f"Updated available actions for game {game_id}")
                  else:
                       current_app.logger.warning(f"update_state: 'actions' provided for game {game_id} was not a list. Ignoring.")
 
-
             # --- Increment Version ---
             if increment_version:
+                # Add state to history *before* incrementing version
+                if game_id not in self.state_history:
+                    self.state_history[game_id] = {}
+                # Store a copy of the state *before* this update
+                # Need to decide what exactly to store (just state dict, or full state_info?)
+                # Storing just the state dict for now for diffing purposes
+                self.state_history[game_id][self.active_games[game_id]['version']] = self.active_games[game_id]['state'].copy()
+
                 self.active_games[game_id]['version'] += 1
                 current_app.logger.info(f"Incremented version for game {game_id} to {self.active_games[game_id]['version']}")
 
-            # --- Commit changes to the database ---
-            try:
-                db.session.commit()
-                current_app.logger.debug(f"Successfully committed state update for game {game_id}")
-            except Exception as e:
-                db.session.rollback()
-                current_app.logger.error(f"Failed to commit state update for game {game_id}: {e}", exc_info=True)
-                # Should we revert in-memory changes too? Complex. For now, memory might be ahead of DB.
-                return None # Indicate failure
 
-            # Return the latest full state (including potentially updated log/actions)
-            # Call get_state again to ensure consistency after commit? Or trust in-memory? Trusting memory for now.
+            # --- Commit changes to the database ---
+            # Removed commit from here - should be handled by the caller (e.g., handle_player_action)
+            # try:
+            #     db.session.commit()
+            #     current_app.logger.debug(f"Successfully committed state update for game {game_id}")
+            # except Exception as e:
+            #     db.session.rollback() # Rollback should also be handled by caller
+            #     current_app.logger.error(f"Failed to commit state update for game {game_id}: {e}", exc_info=True)
+            #     # Revert in-memory changes? Difficult. Log error and potentially desync state.
+            #     return None # Indicate failure
+
+            # Return the latest full state from memory
             return {
                 'version': self.active_games[game_id]['version'],
                 'state': self.active_games[game_id]['state'],

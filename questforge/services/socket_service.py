@@ -2,13 +2,17 @@ from flask import current_app, request # Added request import
 from flask_socketio import join_room, leave_room, emit
 from flask_login import current_user
 from sqlalchemy.orm import joinedload # Import joinedload
+from sqlalchemy import func # Import func for sum aggregation
 from ..extensions import db
 from ..extensions.socketio import get_socketio
-from ..models import Game, User, GamePlayer, GameState, Template # Added GameState, Template
+from ..models import Game, User, GamePlayer, GameState, Template, ApiUsageLog # Added GameState, Template, ApiUsageLog
+from decimal import Decimal # For cost calculation
 
 socketio = get_socketio()
 from .game_state_service import game_state_service # Import the instance
 from .ai_service import ai_service # Import the singleton INSTANCE
+# Import the specific function needed, not a non-existent instance
+from .campaign_service import generate_campaign_structure 
 
 class SocketService:
     @staticmethod
@@ -164,28 +168,36 @@ class SocketService:
             game_id = data.get('game_id')
             user_id = data.get('user_id') # Get user_id from data
 
-            print(f"Handling start_game event for game {game_id} triggered by user {user_id}") # Add logging
+            print(f"Handling start_game event for game {game_id} triggered by user {user_id}")
 
-            if not game_id or not user_id: # Check for user_id too
-                emit('error', {'message': 'Missing game_id or user_id'})
-                return # Correct indentation
+            if not game_id or not user_id:
+                emit('error', {'message': 'Missing game_id or user_id'}, room=request.sid) # Emit to specific user
+                return
 
-            with current_app.app_context(): # Add app context
-                # Eagerly load the campaign relationship when fetching the game
-                game = db.session.query(Game).options(joinedload(Game.campaign)).get(game_id)
+            with current_app.app_context():
+                # Eagerly load template and player associations
+                game = db.session.query(Game).options(
+                    joinedload(Game.template), 
+                    joinedload(Game.player_associations).joinedload(GamePlayer.user) # Load users via association
+                ).get(game_id)
                 if not game:
                     current_app.logger.error(f"Start game request failed: Game {game_id} not found.")
-                    emit('error', {'message': 'Game not found'}) # Emit can be outside context
+                    emit('error', {'message': 'Game not found'}, room=request.sid)
+                    return
+                
+                if not game.template:
+                    current_app.logger.error(f"Start game request failed: Game {game_id} has no associated template.")
+                    emit('error', {'message': 'Game template not found'}, room=request.sid)
                     return
 
-                # Optional: Check if the user starting the game is the creator
-                if str(game.created_by) != str(user_id): # Compare as strings for safety
+                # Check if the user starting the game is the creator
+                if str(game.created_by) != str(user_id):
                      current_app.logger.warning(f"User {user_id} attempted to start game {game_id} but is not the creator ({game.created_by}).")
-                     emit('error', {'message': 'Only the game creator can start the game'})
+                     emit('error', {'message': 'Only the game creator can start the game'}, room=request.sid)
                      return
 
-                # Check if all players are ready
-                players = GamePlayer.query.filter_by(game_id=game_id).all()
+                # Check if all players are ready using the eager-loaded associations
+                players = game.player_associations 
                 player_count = len(players)
                 ready_players = [p for p in players if p.is_ready]
                 all_ready = len(ready_players) == player_count
@@ -193,100 +205,67 @@ class SocketService:
                 current_app.logger.info(f"Game {game_id}: Found {player_count} players, {len(ready_players)} are ready. All ready: {all_ready}") # Add logging
 
                 # Add minimum player check (e.g., >= 2)
-                if player_count < 2:
-                    current_app.logger.warning(f"Game {game_id}: Not enough players to start ({player_count}).")
-                    emit('error', {'message': 'Need at least 2 players to start.'})
+                if player_count < 1: # Allow starting solo for testing? Or enforce 2? Let's enforce 2 for now.
+                    current_app.logger.warning(f"Game {game_id}: Not enough players to start ({player_count}). Need at least 2.")
+                    emit('error', {'message': 'Need at least 2 players to start.'}, room=request.sid)
                     return
 
                 if not all_ready:
                     current_app.logger.warning(f"Game {game_id}: Not all players are ready.")
-                    emit('error', {'message': 'Not all players are ready'}) # Emit can be outside context
+                    emit('error', {'message': 'Not all players are ready'}, room=request.sid)
                     return
 
-                # Update game status
-                if game.status != 'in_progress': # Prevent starting multiple times
-                    game.status = 'in_progress'
-                    try:
-                        # Commit game status change first
-                        db.session.commit()
-                        current_app.logger.info(f"Game {game_id} status updated to 'in_progress'.")
+                # Check if game already has a campaign (meaning it was already started)
+                if game.campaign:
+                    current_app.logger.warning(f"Attempted to start game {game_id} which already has a campaign.")
+                    # Optionally re-emit game_started if needed, or just ignore
+                    emit('game_started', {'game_id': game_id}, room=game_id) # Re-emit for clients that missed it?
+                    return
 
-                        # --- Generate Initial State ---
-                        current_app.logger.info(f"Generating initial state for game {game_id}...")
-                        # Ensure GameState record exists or create it
-                        game_state = GameState.query.filter_by(game_id=game_id).first()
-                        if not game_state:
-                            current_app.logger.info(f"Creating initial GameState record for game {game_id}.")
-                            # Create GameState without campaign_id
-                            game_state = GameState(
-                                game_id=game_id,
-                                state_data=game.campaign.initial_state, # Use initial_state from game.campaign
-                                game_log=[],
-                                available_actions=[]
-                            )
-                            db.session.add(game_state)
-                            # Commit here to ensure game_state has an ID if needed by AI service
-                            db.session.commit() 
-                            current_app.logger.info(f"Initial GameState record created for game {game_id}.")
-                            # Initialize in-memory service state
-                            game_state_service.join_game(game_id, 'system')
-                            game_state_service.active_games[game_id]['state'] = game_state.state_data
-                            game_state_service.active_games[game_id]['version'] = 1
+                # --- Trigger Campaign Generation ---
+                current_app.logger.info(f"All players ready for game {game_id}. Triggering campaign generation.")
+                
+                # Gather player descriptions
+                player_descriptions = {
+                    str(p.user_id): p.character_description or f"Player {i+1}" # Use default if None
+                    for i, p in enumerate(players)
+                }
+                current_app.logger.info(f"Gathered player descriptions for game {game_id}: {player_descriptions}")
 
-                        # Call AI Service to get starting narrative/actions
+                try:
+                    # Call the campaign service to generate the campaign structure and initial state
+                    campaign_generated = generate_campaign_structure(
+                        game=game, 
+                        template=game.template, 
+                        player_descriptions=player_descriptions
+                    )
+
+                    if campaign_generated:
+                        current_app.logger.info(f"Campaign generation successful for game {game_id}.")
+
+                        # Update game status *after* successful generation
+                        game.status = 'in_progress'
                         try:
-                            # Use the imported ai_service INSTANCE
-                            initial_scene = ai_service.generate_initial_scene(game)
-                            if initial_scene: # Check if AI call was successful
-                                game_state.game_log = [initial_scene.get('narrative', 'The adventure begins!')]
-                                game_state.available_actions = initial_scene.get('actions', [])
-                            else: # Handle AI failure explicitly
-                                current_app.logger.error(f"AIService.generate_initial_scene returned None for game {game_id}.")
-                                game_state.game_log = ["Error: Could not generate starting scene."]
-                                game_state.available_actions = []
-                            db.session.commit()
-                            current_app.logger.info(f"Initial scene generated and saved for game {game_id}.")
-                            
-                            # Update in-memory state as well
-                            if game_id in game_state_service.active_games:
-                                game_state_service.active_games[game_id]['log'] = game_state.game_log
-                                game_state_service.active_games[game_id]['actions'] = game_state.available_actions
-                                # Optionally increment version again if desired after initial scene generation
-                                # game_state_service.active_games[game_id]['version'] += 1 
+                            db.session.commit()  # Commit status change
+                            current_app.logger.info(f"Game {game_id} status updated to 'in_progress'.")
 
-                        except Exception as ai_exc:
-                            current_app.logger.error(f"Error generating initial scene for game {game_id}: {ai_exc}", exc_info=True)
-                            # Decide how to handle - maybe start with default message?
-                            game_state.game_log = ["Error generating start. The adventure begins!"]
-                            game_state.available_actions = []
-                            db.session.commit() # Save default state on error
+                            # Emit game_started to the room
+                            current_app.logger.info(f"Emitting 'game_started' for game {game_id} to room {game_id}")
+                            emit('game_started', {'game_id': game_id}, room=game_id)
 
-                        # --- Emit game_started and initial state ---
-                        current_app.logger.info(f"Emitting 'game_started' for game {game_id} to room {game_id}")
-                        emit('game_started', {'game_id': game_id}, room=game_id)
-                        
-                        # --- Emit game_started and initial state ---
-                        current_app.logger.info(f"Emitting 'game_started' for game {game_id} to room {game_id}")
-                        emit('game_started', {'game_id': game_id}, room=game_id)
+                            # DO NOT emit initial state here. Client will request it upon loading play.html.
+                        except Exception as e:
+                            db.session.rollback()
+                            current_app.logger.error(f"Error updating game status to 'in_progress' for game {game_id}: {str(e)}", exc_info=True)
+                            emit('error', {'message': 'Failed to update game status.'}, room=request.sid)
+                    else:
+                        current_app.logger.error(f"Campaign generation failed for game {game_id}.")
+                        emit('error', {'message': 'Failed to generate campaign.'}, room=request.sid)
+                except Exception as e:
+                    current_app.logger.error(f"Error during campaign generation for game {game_id}: {str(e)}", exc_info=True)
+                    emit('error', {'message': 'An error occurred during campaign generation.'}, room=request.sid)
 
-                        # Construct the initial state payload directly using the updated game_state record
-                        # This ensures we send the just-generated log and actions
-                        final_emit_data = {
-                            'version': game_state_service.active_games.get(game_id, {}).get('version', 1),
-                            'state': game_state.state_data,
-                            'log': game_state.game_log,
-                            'actions': game_state.available_actions
-                        }
-                        current_app.logger.info(f"Emitting initial 'game_state' (v{final_emit_data['version']}) after start for game {game_id}")
-                        emit('game_state', final_emit_data, room=game_id)
-
-                    except Exception as e:
-                        db.session.rollback()
-                        current_app.logger.error(f"Error during game start process for game {game_id}: {str(e)}", exc_info=True)
-                        emit('error', {'message': 'Failed to start game'}) # Emit can be outside context
-                else:
-                     current_app.logger.warning(f"Attempted to start game {game_id} which is already in progress.")
-
+            # Removed the misplaced try...except block that was here
 
         @socketio.on('player_action')
         def handle_player_action(data):
@@ -294,47 +273,143 @@ class SocketService:
             game_id = data.get('game_id')
             user_id = data.get('user_id')
             action = data.get('action')
-            
+
             if not all([game_id, user_id, action]):
                 emit('error', {'message': 'Missing required fields'}, room=game_id)
                 return
 
             try:
-                # Get current game state
-                game_state = game_state_service.get_state(game_id)
-                if not game_state:
-                    raise ValueError("Game state not found")
+                # Fetch the GameState OBJECT from the database, eagerly loading game and campaign
+                with current_app.app_context(): # Ensure DB access is within context
+                    db_game_state = db.session.query(GameState).options(
+                        joinedload(GameState.game).joinedload(Game.campaign) # Eager load game -> campaign
+                    ).filter_by(game_id=game_id).first()
+
+                if not db_game_state:
+                    # Use the specific game_id in the error message
+                    raise ValueError(f"GameState record not found for game_id {game_id}")
                 
-                # Get AI response
-                ai_response = AIService.get_response(
-                    game_state=game_state,
-                    player_action=action,
-                    user_id=user_id
+                # --- Log the player's action ---
+                player_log = {"type": "player", "content": action}
+                if not isinstance(db_game_state.game_log, list):
+                    db_game_state.game_log = []
+                db_game_state.game_log.append(player_log)
+                if 'log' not in game_state_service.active_games[game_id] or not isinstance(game_state_service.active_games[game_id]['log'], list):
+                    game_state_service.active_games[game_id]['log'] = []
+                game_state_service.active_games[game_id]['log'].append(player_log)
+                current_app.logger.debug(f"Appended player log entry for game {game_id}")
+                
+                # Get AI response using the imported instance, passing the OBJECT
+                # The get_response method expects the GameState object
+                # Update call to handle new return signature: (response_data, model_used, usage_data)
+                ai_result = ai_service.get_response(
+                    game_state=db_game_state, # Pass the actual GameState object
+                    player_action=action      # Pass the action here
                 )
 
+                # Check if AI service failed
+                if not ai_result:
+                    current_app.logger.error(f"AI service failed to return a response for action '{action}' in game {game_id}")
+                    # Emit a specific error or raise to be caught below
+                    raise ValueError("AI service failed to respond")
+                    
+                # Unpack result
+                ai_response_data, model_used, usage_data = ai_result
+
+                # Log API Usage within the same app context
+                if usage_data:
+                    try:
+                        current_app.logger.info(f"Attempting to log usage for model: '{model_used}' (action)") 
+                        
+                        # Revised Pricing Lookup Logic
+                        pricing_config = current_app.config.get('OPENAI_PRICING', {})
+                        pricing_info = None
+                        matched_key = None
+
+                        # 1. Try exact match first
+                        if model_used in pricing_config:
+                            pricing_info = pricing_config[model_used]
+                            matched_key = model_used
+                            current_app.logger.info(f"Found exact pricing key '{matched_key}' for model '{model_used}' (action)")
+                        else:
+                            # 2. Iteratively remove suffix components
+                            model_parts = model_used.split('-')
+                            for i in range(len(model_parts) - 1, 0, -1):
+                                potential_key = '-'.join(model_parts[:i])
+                                if potential_key in pricing_config:
+                                    pricing_info = pricing_config[potential_key]
+                                    matched_key = potential_key
+                                    current_app.logger.info(f"Found partial pricing key '{matched_key}' for model '{model_used}' (action)")
+                                    break # Use the first partial match found
+                        
+                        cost = None
+                        prompt_tokens = usage_data.prompt_tokens
+                        completion_tokens = usage_data.completion_tokens
+                        total_tokens = usage_data.total_tokens
+
+                        if pricing_info:
+                            prompt_cost = (Decimal(prompt_tokens) / 1000) * Decimal(pricing_info['prompt'])
+                            completion_cost = (Decimal(completion_tokens) / 1000) * Decimal(pricing_info['completion'])
+                            cost = prompt_cost + completion_cost
+                            current_app.logger.info(f"Calculated cost for game {game_id} API call (action): ${cost:.6f}")
+                        else:
+                            current_app.logger.warning(f"No pricing info found for model '{model_used}'. Cost will be null.")
+
+                        usage_log = ApiUsageLog(
+                            game_id=game_id,
+                            model_name=model_used,
+                            prompt_tokens=prompt_tokens,
+                            completion_tokens=completion_tokens,
+                            total_tokens=total_tokens,
+                            cost=cost
+                        )
+                        db.session.add(usage_log)
+                        # Commit will happen after state update
+                        current_app.logger.info(f"Created ApiUsageLog entry for game {game_id} (Player Action)")
+                    except Exception as log_e:
+                        current_app.logger.error(f"Failed to create ApiUsageLog entry for game {game_id} (action): {log_e}", exc_info=True)
+                        # Don't necessarily fail the whole action if logging fails
+                else:
+                    current_app.logger.warning(f"No usage data returned from AI service for game {game_id} player action.")
+
+
                 # Update game state, log, and actions via the service
-                # Note: ai_response now contains 'narrative', 'state_changes', 'available_actions'
+                # Use ai_response_data now
                 updated_state_info = game_state_service.update_state(
                     game_id=game_id,
-                    state_changes=ai_response.get('state_changes'), # Pass state changes dict
-                    log_entry=ai_response.get('narrative'),       # Pass narrative as log entry
-                    actions=ai_response.get('available_actions'), # Pass new actions list
+                    state_changes=ai_response_data.get('state_changes'), # Pass state changes dict
+                    log_entry=ai_response_data.get('narrative'),       # Pass narrative as log entry
+                    actions=ai_response_data.get('available_actions'), # Pass new actions list
                     increment_version=True                        # Increment version on player action
                 )
 
                 if not updated_state_info:
-                     current_app.logger.error(f"Failed to update state after player action for game {game_id}")
-                     emit('error', {'message': 'Failed to update game state after action'}, room=game_id)
-                     return
+                     # Error already logged in update_state if DB issue occurred there
+                     # Rollback should happen in the except block below
+                     raise ValueError("Failed to update game state after action")
 
-                # Broadcast updated state to all players using the data returned by update_state
-                current_app.logger.info(f"Broadcasting game_state_update for game {game_id} (v{updated_state_info['version']})")
-                # updated_state_info contains {'version': V, 'state': {...}, 'log': [...], 'actions': [...]}
-                emit('game_state_update', updated_state_info, room=game_id) 
+                # If we reach here, both AI call and state update logic (in memory + DB object modification) were successful
+                # Now commit the transaction including the ApiUsageLog and the GameState changes
+                db.session.commit()
+                current_app.logger.info(f"Committed state update and usage log for game {game_id} after action '{action}'.")
+
+                # Recalculate total cost after commit
+                new_total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game_id).scalar()
+                new_total_cost = new_total_cost_query if new_total_cost_query is not None else Decimal('0.0')
+                
+                # Add the new total cost to the broadcast data
+                broadcast_data = updated_state_info.copy() # Avoid modifying the original dict
+                broadcast_data['total_cost'] = float(new_total_cost) # Convert Decimal to float for JSON serialization
+
+                # Broadcast updated state and cost to all players
+                current_app.logger.info(f"Broadcasting game_state_update for game {game_id} (v{broadcast_data['version']}) including total_cost: {broadcast_data['total_cost']:.4f}")
+                emit('game_state_update', broadcast_data, room=game_id)
 
             except Exception as e:
-                current_app.logger.error(f"Error processing action: {str(e)}")
-                emit('error', {'message': 'Failed to process action'}, room=game_id)
+                # Rollback the session in case of any error after AI call
+                db.session.rollback() 
+                current_app.logger.error(f"Error processing player action '{action}' in game {game_id}, rolling back transaction: {str(e)}", exc_info=True)
+                emit('error', {'message': 'Failed to process action'}, room=game_id) # Keep generic message for client
 
         @socketio.on('request_state')
         def handle_state_request(data):
@@ -355,64 +430,25 @@ class SocketService:
                         current_app.logger.warning(f"State request failed: Invalid game ID {game_id} from {request.sid}")
                         return
                     if not game.campaign: # Check if campaign relationship loaded
-                        current_app.logger.error(f"State request failed: Game {game_id} has no associated campaign template.")
-                        emit('error', {'message': 'Game campaign template not found'}, room=request.sid)
+                        current_app.logger.error(f"State request failed: Game {game_id} has no associated campaign.")
+                        emit('error', {'message': 'Game campaign not found'}, room=request.sid)
                         return
 
                     # Check if state is already in the service (in-memory)
+                    # The state *must* be in the service after campaign generation
                     state_info = game_state_service.get_state(game_id)
 
-                    # Check if state exists in memory and is not empty/default
                     if not state_info or not state_info.get('state'):
-                        current_app.logger.info(f"State for game {game_id} not found in service, checking DB.")
-                        # State not in memory, check the database
-                        db_state = GameState.query.filter_by(game_id=game_id).first()
-
-                        if db_state:
-                            # State found in DB, load it into the service
-                            current_app.logger.info(f"Loading existing state for game {game_id} from DB into service.")
-                            game_state_service.join_game(game_id, 'system') # Ensure game is tracked
-                            game_state_service.active_games[game_id]['state'] = db_state.state_data
-                            # Use timestamp as a simple version indicator for now
-                            loaded_version = db_state.last_updated.timestamp() if db_state.last_updated else 1
-                            game_state_service.active_games[game_id]['version'] = loaded_version
-                            current_app.logger.info(f"Loaded state version {loaded_version} for game {game_id}")
-                        else:
-                            # State not in DB, create a new GameState record
-                            current_app.logger.info(f"No state found in DB for game {game_id}. Creating new state record.")
-                            new_state_record = GameState(
-                                game_id=game_id,
-                                campaign_id=game.campaign_id,
-                                state_data=game.campaign.initial_state # Use initial_state from loaded campaign
-                            )
-                            db.session.add(new_state_record)
-                            try:
-                                db.session.commit()
-                                current_app.logger.info(f"Successfully created new GameState record for game {game_id}.")
-                                # Initialize the state in the service *after* successful DB commit
-                                game_state_service.join_game(game_id, 'system') # Ensure game is tracked
-                                game_state_service.active_games[game_id]['state'] = new_state_record.state_data
-                                game_state_service.active_games[game_id]['version'] = 1 # Initial version for new state
-                            except Exception as db_exc:
-                                db.session.rollback()
-                                current_app.logger.error(f"Failed to commit new GameState for game {game_id}: {db_exc}", exc_info=True)
-                                emit('error', {'message': 'Failed to save initial game state'}, room=request.sid)
-                                return
-
-                    # Retrieve the state from the service again (should be populated now)
-                    final_state_info = game_state_service.get_state(game_id)
-
-                    if not final_state_info or 'state' not in final_state_info:
-                        current_app.logger.error(f"Failed to retrieve state for game {game_id} even after load/create attempt.")
-                        raise ValueError("Game state retrieval failed")
+                        current_app.logger.error(f"No state found in GameStateService for game {game_id}. This is unexpected after campaign generation.")
+                        emit('error', {'message': 'Failed to retrieve game state. Please contact support.'}, room=request.sid)
+                        return
 
                     # Emit the state data currently held by the service
-                    # Emit the full state including log and actions
                     emit_data = {
-                        'state': final_state_info['state'],
-                        'version': final_state_info['version'],
-                        'log': final_state_info.get('log', []), # Include log, default to empty list
-                        'actions': final_state_info.get('actions', []) # Include actions, default to empty list
+                        'state': state_info['state'],
+                        'version': state_info['version'],
+                        'log': state_info.get('log', []), # Include log, default to empty list
+                        'actions': state_info.get('actions', []) # Include actions, default to empty list
                     }
                     current_app.logger.info(f"Emitting game_state (v{emit_data['version']}) with log/actions for game {game_id} to {request.sid}")
                     emit('game_state', emit_data, room=request.sid)
@@ -423,3 +459,48 @@ class SocketService:
                     'message': 'Failed to retrieve game state',
                     'details': str(e)
                 }, room=request.sid)
+
+        @socketio.on('update_character_description')
+        def handle_update_character_description(data):
+            """Handle player updating their character description."""
+            game_id = data.get('game_id')
+            user_id = data.get('user_id')
+            description = data.get('description', '').strip() # Get description, default to empty, strip whitespace
+
+            # Basic validation
+            if not game_id or not user_id:
+                emit('error', {'message': 'Missing game_id or user_id'}, room=request.sid)
+                return
+            
+            # Security check: Ensure the user updating is the one logged in
+            if str(current_user.id) != str(user_id):
+                 current_app.logger.warning(f"Security Alert: User {current_user.id} attempted to update description for user {user_id} in game {game_id}.")
+                 emit('error', {'message': 'Authorization error'}, room=request.sid)
+                 return
+
+            current_app.logger.info(f"Handling update_character_description for user {user_id} in game {game_id}.")
+
+            with current_app.app_context():
+                # Find the GamePlayer association
+                association = GamePlayer.query.filter_by(game_id=game_id, user_id=user_id).first()
+
+                if not association:
+                    current_app.logger.error(f"Update description failed: GamePlayer association not found for user {user_id} in game {game_id}.")
+                    emit('error', {'message': 'Player not found in this game'}, room=request.sid)
+                    return
+
+                # Update the description
+                association.character_description = description
+                
+                try:
+                    db.session.commit()
+                    current_app.logger.info(f"Successfully updated character description for user {user_id} in game {game_id}.")
+                    # Emit confirmation back to the specific user and potentially broadcast?
+                    # For now, just confirm back to the sender.
+                    emit('character_description_updated', {'user_id': user_id, 'status': 'success'}, room=request.sid) 
+                    # Optionally, broadcast the change to the room if needed in the future:
+                    # emit('player_description_changed', {'user_id': user_id, 'description': description}, room=game_id)
+                except Exception as e:
+                    db.session.rollback()
+                    current_app.logger.error(f"Database error updating character description for user {user_id} in game {game_id}: {str(e)}", exc_info=True)
+                    emit('error', {'message': 'Failed to save description'}, room=request.sid)

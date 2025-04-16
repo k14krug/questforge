@@ -2,13 +2,14 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Edit Template</h2>
+    <h2>Edit Template: {{ template.name }}</h2>
     <form method="POST" action="{{ url_for('template.edit_template', template_id=template.id) }}">
         {{ form.hidden_tag() }}
         
-        <div class="form-group">
+        {# --- Basic Info --- #}
+        <div class="mb-3">
             {{ form.name.label(class="form-label") }}
-            {{ form.name(class="form-control") }}
+            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
             {% if form.name.errors %}
                 <div class="invalid-feedback">
                     {% for error in form.name.errors %}
@@ -18,76 +19,115 @@
             {% endif %}
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
             {{ form.description.label(class="form-label") }}
             {{ form.description(class="form-control", rows=3) }}
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
             {{ form.category.label(class="form-label") }}
             {{ form.category(class="form-control") }}
         </div>
 
-        <div class="form-group">
-            {{ form.question_flow.label(class="form-label") }}
-            {{ form.question_flow(class="form-control", rows=5) }}
-            <small class="form-text text-muted">Enter valid JSON for the question flow</small>
+        {# --- High-Level Guidance Fields --- #}
+        <div class="mb-3">
+            {{ form.genre.label(class="form-label") }} <span class="text-danger">*</span>
+            {{ form.genre(class="form-select" + (" is-invalid" if form.genre.errors else "")) }}
+             {% if form.genre.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.genre.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
 
-        <div class="form-group">
-            {{ form.default_rules.label(class="form-label") }}
-            {{ form.default_rules(class="form-control", rows=5) }}
-            <small class="form-text text-muted">Enter valid JSON for default rules</small>
+        <div class="mb-3">
+            {{ form.core_conflict.label(class="form-label") }} <span class="text-danger">*</span>
+            {{ form.core_conflict(class="form-control" + (" is-invalid" if form.core_conflict.errors else ""), rows=3) }}
+             {% if form.core_conflict.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.core_conflict.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
 
-        <div class="form-group">
+        <div class="mb-3">
+            {{ form.theme.label(class="form-label") }}
+            {{ form.theme(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.desired_tone.label(class="form-label") }}
+            {{ form.desired_tone(class="form-select") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.world_description.label(class="form-label") }}
+            {{ form.world_description(class="form-control", rows=4) }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.scene_suggestions.label(class="form-label") }}
+            {{ form.scene_suggestions(class="form-control", rows=4) }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.player_character_guidance.label(class="form-label") }}
+            {{ form.player_character_guidance(class="form-control", rows=3) }}
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                {{ form.difficulty.label(class="form-label") }}
+                {{ form.difficulty(class="form-select") }}
+            </div>
+            <div class="col-md-6">
+                {{ form.estimated_length.label(class="form-label") }}
+                {{ form.estimated_length(class="form-select") }}
+            </div>
+        </div>
+
+        {# --- AI Interaction --- #}
+        <div class="mb-3">
             {{ form.ai_service_endpoint.label(class="form-label") }}
             {{ form.ai_service_endpoint(class="form-control") }}
         </div>
 
+        {# --- Removed Old JSON Fields --- #}
+        {# 
         <div class="form-group">
-            {{ form.campaign_data.label(class="form-label") }}
-            {{ form.campaign_data(class="form-control", rows=5) }}
-            <small class="form-text text-muted">Enter valid JSON for campaign data</small>
+            {{ form.question_flow.label(class="form-label") }} ...
         </div>
-
         <div class="form-group">
-            {{ form.objectives.label(class="form-label") }}
-            {{ form.objectives(class="form-control", rows=5) }}
-            <small class="form-text text-muted">Enter valid JSON for objectives</small>
+            {{ form.default_rules.label(class="form-label") }} ...
         </div>
-
         <div class="form-group">
-            {{ form.conclusion_conditions.label(class="form-label") }}
-            {{ form.conclusion_conditions(class="form-control", rows=5) }}
-            <small class="form-text text-muted">Enter valid JSON for conclusion conditions</small>
+            {{ form.campaign_data.label(class="form-label") }} ...
         </div>
-
         <div class="form-group">
-            {{ form.key_locations.label(class="form-label") }}
-            {{ form.key_locations(class="form-control", rows=5) }}
-            <small class="form-text text-muted">Enter valid JSON for key locations</small>
+            {{ form.objectives.label(class="form-label") }} ...
         </div>
-
         <div class="form-group">
-            {{ form.key_characters.label(class="form-label") }}
-            {{ form.key_characters(class="form-control", rows=5) }}
-            <small class="form-text text-muted">Enter valid JSON for key characters</small>
+            {{ form.conclusion_conditions.label(class="form-label") }} ...
         </div>
-
         <div class="form-group">
-            {{ form.major_plot_points.label(class="form-label") }}
-            {{ form.major_plot_points(class="form-control", rows=5) }}
-            <small class="form-text text-muted">Enter valid JSON for major plot points</small>
+            {{ form.key_locations.label(class="form-label") }} ...
         </div>
-
         <div class="form-group">
-            {{ form.possible_branches.label(class="form-label") }}
-            {{ form.possible_branches(class="form-control", rows=5) }}
-            <small class="form-text text-muted">Enter valid JSON for possible branches</small>
+            {{ form.key_characters.label(class="form-label") }} ...
         </div>
+        <div class="form-group">
+            {{ form.major_plot_points.label(class="form-label") }} ...
+        </div>
+        <div class="form-group">
+            {{ form.possible_branches.label(class="form-label") }} ...
+        </div>
+        #}
 
-        <div class="form-group mt-3">
+        <div class="form-group mt-4">
             <button type="submit" class="btn btn-primary">Update Template</button>
             <a href="{{ url_for('template.list_templates') }}" class="btn btn-secondary">Cancel</a>
         </div>

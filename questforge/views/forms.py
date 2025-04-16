@@ -44,32 +44,56 @@ class GameForm(FlaskForm):
         super(GameForm, self).__init__(*args, **kwargs)
         self.template.choices = [(template.id, template.name) for template in Template.query.all()]
 
-import json
-
-def validate_question_flow(form, field):
-    try:
-        question_flow = json.loads(field.data)
-        template = Template(question_flow=question_flow)
-        if not template.validate_question_flow():
-            raise ValidationError('Invalid question flow structure.')
-    except json.JSONDecodeError:
-        raise ValidationError('Invalid JSON format for Question Flow.')
+# Removed unused validate_question_flow function and json import
 
 class TemplateForm(FlaskForm):
     name = StringField('Template Name', validators=[DataRequired()])
-    description = TextAreaField('Description')
-    category = StringField('Category')
-    question_flow = TextAreaField('Question Flow (JSON)', validators=[validate_question_flow])
-    default_rules = TextAreaField('Default Rules (JSON)')
-    ai_service_endpoint = StringField('AI Service Endpoint')
-    
-    # Initial State Fields
-    campaign_data = TextAreaField('Campaign Data (JSON)')
-    objectives = TextAreaField('Objectives (JSON)')
-    conclusion_conditions = TextAreaField('Conclusion Conditions (JSON)')
-    key_locations = TextAreaField('Key Locations (JSON)')
-    key_characters = TextAreaField('Key Characters (JSON)')
-    major_plot_points = TextAreaField('Major Plot Points (JSON)')
-    possible_branches = TextAreaField('Possible Branches (JSON)')
+    description = TextAreaField('Description (Optional)')
+    category = StringField('Category (Optional)')
+
+    # New High-Level Guidance Fields
+    genre = SelectField('Genre', 
+                        choices=[
+                            ('', '-- Select Genre --'), 
+                            ('Fantasy', 'Fantasy'), 
+                            ('Sci-Fi', 'Sci-Fi'), 
+                            ('Mystery', 'Mystery'), 
+                            ('Horror', 'Horror'), 
+                            ('Adventure', 'Adventure')
+                        ], 
+                        validators=[DataRequired(message="Please select a genre.")])
+    core_conflict = TextAreaField('Core Conflict / Goal', 
+                                  validators=[DataRequired(message="Please describe the core conflict or goal.")],
+                                  render_kw={"placeholder": "e.g., Overthrow the evil king, Find the lost artifact, Solve the murder mystery"})
+    theme = StringField('Theme (Optional)', render_kw={"placeholder": "e.g., Exploration, Intrigue, Survival"})
+    desired_tone = SelectField('Desired Tone (Optional)', 
+                               choices=[
+                                   ('', '-- Select Tone --'), 
+                                   ('Serious', 'Serious'), 
+                                   ('Humorous', 'Humorous'), 
+                                   ('Gritty', 'Gritty'), 
+                                   ('Epic', 'Epic'), 
+                                   ('Lighthearted', 'Lighthearted')
+                               ])
+    world_description = TextAreaField('World Description (Optional)', render_kw={"placeholder": "Brief notes on the setting, magic system, key factions, etc."})
+    scene_suggestions = TextAreaField('Scene Suggestions (Optional)', render_kw={"placeholder": "Ideas for specific scenes, encounters, or locations (e.g., A chase through the market, A tense negotiation, A puzzle room)"})
+    player_character_guidance = TextAreaField('Player Character Guidance (Optional)', render_kw={"placeholder": "Suggestions or restrictions for players creating characters (e.g., 'All characters should be members of the resistance', 'Magic users are rare')"})
+    difficulty = SelectField('Difficulty (Optional)', 
+                             choices=[
+                                 ('', '-- Select Difficulty --'), 
+                                 ('Easy', 'Easy'), 
+                                 ('Medium', 'Medium'), 
+                                 ('Hard', 'Hard')
+                             ])
+    estimated_length = SelectField('Estimated Length (Optional)', 
+                                   choices=[
+                                       ('', '-- Select Length --'), 
+                                       ('Short', 'Short (1-2 sessions)'), 
+                                       ('Medium', 'Medium (3-5 sessions)'), 
+                                       ('Long', 'Long (6+ sessions)')
+                                   ])
+
+    # Kept Fields
+    ai_service_endpoint = StringField('AI Service Endpoint (Optional)')
     
     submit = SubmitField('Save Template')

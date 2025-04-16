@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/_messages.html" import flash_messages %}
 
 {% block content %}
 <div class="container-fluid game-container">
@@ -7,13 +8,26 @@
         <div class="col-md-8">
             <div class="game-state-container">
                 <div class="game-state-header">
-                    <h3 id="gameTitle" data-game-id="{{ game.id }}" data-user-id="{{ user_id }}">Game Title</h3>
-                    <div class="game-status">
-                        <span class="badge bg-primary">Active</span>
+                    {# Use the actual game name passed from the route #}
+                    <div class="d-flex justify-content-between align-items-center"> {# Flex container for title and badges #}
+                        <h3 id="gameTitle" data-game-id="{{ game.id }}" data-user-id="{{ user_id }}">{{ game.name | e }}</h3> 
+                        <div class="game-status ms-3"> {# Margin start for spacing #}
+                            <span class="badge bg-primary me-1">{{ game.status | e }}</span>
+                            {# Display cost if available and greater than 0 #}
+                            {# Add id="totalCostDisplay" for dynamic updates #}
+                            <span class="badge bg-info" id="totalCostDisplay">
+                                {% if total_cost > 0 %}
+                                    Cost: ${{ "%.4f"|format(total_cost) }}
+                                {% else %}
+                                    Cost: $0.0000 {# Display zero cost initially #}
+                                {% endif %}
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <div id="gameStateVisualization" class="game-state-visualization">
+                <div id="gameStateVisualization" class="game-state-visualization mt-3"> {# Add margin top #}
                     <!-- Dynamic game state will be rendered here -->
+                    <!-- Initial current location removed; will be rendered dynamically -->
                 </div>
             </div>
         </div>
@@ -30,12 +44,41 @@
                     </div>
                 </div>
 
+                {# Add Custom Action Input #}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Custom Action</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group">
+                            <input type="text" id="customActionInput" class="form-control" placeholder="Enter your action...">
+                            <button class="btn btn-outline-secondary" type="button" id="submitCustomAction">Submit</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card mt-3">
                     <div class="card-header">
                         <h5>Game Log</h5>
                     </div>
                     <div class="card-body game-log" id="gameLog">
-                        <!-- Game events will be logged here -->
+                    {% if game_log %}
+                        {% for entry in game_log %}
+                            {% if entry is mapping and entry.type is defined %}
+                                {% if entry.type == "player" %}
+                                    <div class="log-entry log-entry-player">{{ entry.content | e }}</div>
+                                {% elif entry.type == "ai" %}
+                                    <div class="log-entry log-entry-ai">{{ entry.content | e }}</div>
+                                {% else %}
+                                    <div class="log-entry">{{ entry | e }}</div>
+                                {% endif %}
+                            {% else %}
+                                <div class="log-entry">{{ entry | e }}</div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div>No game log entries yet.</div>
+                    {% endif %}
                     </div>
                 </div>
             </div>
@@ -63,6 +106,12 @@
     max-height: 300px;
     overflow-y: auto;
 }
+    .log-entry-player {
+        color: black;
+    }
+    .log-entry-ai {
+        color: #007bff;
+    }
 </style>
 
 {% endblock %}
@@ -81,21 +130,54 @@ window.currentUserId = '{{ user_id }}';
 // Listeners will be added inside the onReady callback
 
 function updateGameState(state) {
-    console.log("Updating game state display with:", state); // Add log
-    // Update visualization based on state
+    console.log("Updating game state display with:", state); 
+    
+    // Update Action Controls
+    if (state && state.actions) {
+        updateActionControls(state.actions);
+    } else {
+        updateActionControls([]); // Clear actions if none provided
+    }
+
+    // Update Game Log History Panel
+    if (state && state.log) {
+        updateGameLog(state.log); // Update the history panel
+    } else {
+        updateGameLog([]); // Clear log if none provided
+    }
+
+    // Update Main Game State Visualization (Current Scene)
     const gameStateVisualization = document.getElementById('gameStateVisualization');
     if (gameStateVisualization) {
-        gameStateVisualization.innerHTML = renderGameState(state);
+        // Preserve or create a static location element
+        let staticLocation = gameStateVisualization.querySelector('.static-location');
+        if (!staticLocation) {
+            staticLocation = document.createElement('p');
+            staticLocation.className = 'static-location';
+            // Prepend static location to existing content
+            gameStateVisualization.prepend(staticLocation);
+        }
+        staticLocation.innerText = `Current Location: ${state.state.location || "Unknown"}`;
+
+        // Update narrative section without overwriting the static location
+        let narrativeElem = gameStateVisualization.querySelector('.current-scene');
+        const narrative = (state && state.log && state.log.length > 0) ? state.log[state.log.length - 1] : "";
+        const narrativeHtml = renderCurrentScene(narrative);
+        if (narrativeElem) {
+            narrativeElem.outerHTML = narrativeHtml;
+        } else {
+            gameStateVisualization.insertAdjacentHTML('beforeend', narrativeHtml);
+        }
     } else {
         console.error("gameStateVisualization element not found");
     }
-    // Assuming state includes actions and log for simplicity here
-    // Add checks for existence before calling update functions
-    if (state && state.actions) {
-        updateActionControls(state.actions);
-    }
-    if (state && state.log) {
-        updateGameLog(state.log);
+
+    // Optionally, render other state data if needed separately
+    // renderOtherStateData(state.state); // Example if you have another function/area
+
+    // Update total cost display if present in the update
+    if (state && typeof state.total_cost !== 'undefined') {
+        updateTotalCostDisplay(state.total_cost);
     }
 }
 
@@ -108,15 +190,33 @@ function updateGameLog(log) {
         return;
     }
     gameLog.innerHTML = ''; // Clear previous logs
-    log.forEach(event => {
+    log.forEach(item => {
         const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry'; // Add a class for potential styling
-        // TODO: Format the event nicely (e.g., timestamp, player name?)
-        logEntry.innerText = typeof event === 'object' ? JSON.stringify(event) : event; 
+        logEntry.classList.add('log-entry');
+        if (typeof item === 'object' && item !== null && item.type) {
+            logEntry.innerText = item.content;
+            if (item.type === "player") {
+                logEntry.classList.add('log-entry-player');
+            } else if (item.type === "ai") {
+                logEntry.classList.add('log-entry-ai');
+            }
+        } else {
+            logEntry.innerText = item;
+        }
         gameLog.appendChild(logEntry);
     });
-    // Scroll to bottom?
     gameLog.scrollTop = gameLog.scrollHeight;
+}
+
+// New function to update the total cost display
+function updateTotalCostDisplay(cost) {
+    const costElement = document.getElementById('totalCostDisplay'); // Need to add this ID to the HTML element
+    if (costElement) {
+        // Format cost to 4 decimal places
+        costElement.textContent = `Cost: $${cost.toFixed(4)}`;
+    } else {
+        console.warn("totalCostDisplay element not found.");
+    }
 }
 
 function updateActionControls(actions) {
@@ -169,73 +269,26 @@ function performAction(action) {
 
 // --- State Rendering ---
 
-function renderGameState(state) {
-    if (!state?.state_data) {
-        return '<p class="text-muted">No game state available</p>';
-    }
-    
-    let html = '<div class="game-state-content">';
-    
-    // Current Location
-    html += `<div class="mb-4 p-3 bg-light rounded">
-        <h5><i class="bi bi-geo-alt"></i> Current Location</h5>
-        <p class="lead">${state.state_data.current_location || 'Unknown'}</p>
-    </div>`;
-
-    // Objectives
-    html += '<div class="mb-4">';
-    html += '<h5><i class="bi bi-check2-circle"></i> Objectives</h5>';
-    if (state.state_data.objectives?.length) {
-        html += '<div class="list-group">';
-        state.state_data.objectives.forEach((obj, index) => {
-            const status = obj.completed ? 'text-success' : 'text-body';
-            html += `<div class="list-group-item d-flex justify-content-between align-items-center ${status}">
-                <span>${obj.description}</span>
-                ${obj.completed ? '<i class="bi bi-check2"></i>' : ''}
-            </div>`;
-        });
-        html += '</div>';
+// New function to render just the current scene/narrative
+function renderCurrentScene(narrative) {
+    let html = '<div class="current-scene p-3">'; // Add padding
+    if (narrative) {
+        let content = "";
+        if (typeof narrative === 'object' && narrative !== null && narrative.content) {
+            content = narrative.content;
+        } else {
+            content = narrative;
+        }
+        html += `<p>${content}</p>`;
     } else {
-        html += '<p class="text-muted">No current objectives</p>';
+        html += '<p class="text-muted">Waiting for the story to unfold...</p>';
     }
     html += '</div>';
-
-    // Key Information
-    html += '<div class="row">';
-    html += '<div class="col-md-6 mb-4">';
-    html += '<h5><i class="bi bi-people"></i> Key Characters</h5>';
-    if (state.state_data.key_characters?.length) {
-        html += '<div class="list-group">';
-        state.state_data.key_characters.forEach(char => {
-            html += `<div class="list-group-item">
-                <strong>${char.name}</strong>: ${char.description}
-            </div>`;
-        });
-        html += '</div>';
-    } else {
-        html += '<p class="text-muted">No known characters</p>';
-    }
-    html += '</div>';
-
-    html += '<div class="col-md-6 mb-4">';
-    html += '<h5><i class="bi bi-signpost-split"></i> Plot Points</h5>';
-    if (state.state_data.major_plot_points?.length) {
-        html += '<div class="list-group">';
-        state.state_data.major_plot_points.forEach(plot => {
-            html += `<div class="list-group-item">
-                <strong>${plot.title}</strong><br>${plot.description}
-            </div>`;
-        });
-        html += '</div>';
-    } else {
-        html += '<p class="text-muted">No active plot points</p>';
-    }
-    html += '</div>';
-    html += '</div>';
-
-    html += '</div>'; // Close game-state-content
     return html;
 }
+
+// Optional: Function to render other state details if needed elsewhere
+// function renderOtherStateData(stateData) { ... }
 
 // --- Initial Setup ---
 const gameId = document.getElementById('gameTitle')?.dataset.gameId; // Get gameId early
@@ -297,6 +350,31 @@ if (gameId) {
 
 } else {
     console.error("Game ID not found in DOM, cannot initialize socket connection.");
+}
+
+// --- Custom Action Input Handler ---
+const customActionInput = document.getElementById('customActionInput');
+const submitCustomActionButton = document.getElementById('submitCustomAction');
+
+if (customActionInput && submitCustomActionButton) {
+    // Handle button click
+    submitCustomActionButton.addEventListener('click', () => {
+        const actionText = customActionInput.value.trim();
+        if (actionText) {
+            performAction(actionText); // Use the existing function to send the action
+            customActionInput.value = ''; // Clear the input field
+        }
+    });
+
+    // Handle Enter key press in the input field
+    customActionInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent default form submission if it were in a form
+            submitCustomActionButton.click(); // Trigger the button click handler
+        }
+    });
+} else {
+    console.error("Custom action input elements not found.");
 }
 
 </script>
