@@ -4,9 +4,9 @@
 <div class="container mt-4">
     <h2>Create New Game</h2>
     
-    <form id="gameCreationForm" action="/api/games/create" method="POST" onsubmit="submitGameForm(event)">
+    <form id="gameCreationForm" onsubmit="submitGameForm(event)">
         {{ form.hidden_tag() }}
-
+        
         <!-- Game Name -->
         <div class="form-group mb-4">
             <h4>1. Name Your Game</h4>
@@ -20,88 +20,154 @@
             {{ form.template(class="form-select", id="templateSelect") }}
         </div>
 
-        <!-- Dynamic Question Flow -->
-        <div id="questionFlow" class="mb-4">
-            <!-- Questions will be loaded here by JavaScript -->
+        <!-- Template Details Overrides -->
+        <div id="templateDetailsOverrides" class="mb-4" style="display: none;">
+            <h4>3. Customize Template Details (Optional)</h4>
+            <p class="text-muted">Override the default details from the selected template.</p>
+            <!-- Fields will be loaded via JavaScript based on template selection -->
+        </div>
+
+        <!-- Creator Customizations -->
+        <div id="customizationSection" class="mb-4">
+            <h4>4. Add Customizations (Optional)</h4>
+            <p class="text-muted">Provide additional details to guide the AI during campaign generation.</p>
+            
+            <div class="form-group mb-3">
+                <label for="customNpcs" class="form-label">Key NPCs:</label>
+                <textarea class="form-control" id="customNpcs" name="custom_npcs" rows="3" placeholder="e.g., 'Elara, the wise village elder', 'Grond, the grumpy blacksmith with a secret'"></textarea>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label for="customLocations" class="form-label">Important Locations:</label>
+                <textarea class="form-control" id="customLocations" name="custom_locations" rows="3" placeholder="e.g., 'The Whispering Caves', 'Old Man Willow's Glade'"></textarea>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="customPlotHooks" class="form-label">Specific Plot Hooks:</label>
+                <textarea class="form-control" id="customPlotHooks" name="custom_plot_hooks" rows="3" placeholder="e.g., 'A mysterious artifact was stolen from the temple', 'Rumors of a dragon sighted in the northern peaks'"></textarea>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="customRules" class="form-label">Special Rules or Mechanics:</label>
+                <textarea class="form-control" id="customRules" name="custom_rules" rows="3" placeholder="e.g., 'Magic is rare and dangerous', 'Players start with a unique family heirloom'"></textarea>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="customExclusions" class="form-label">Things to Exclude:</label>
+                <textarea class="form-control" id="customExclusions" name="custom_exclusions" rows="3" placeholder="e.g., 'No firearms', 'Avoid themes of betrayal within the party'"></textarea>
+            </div>
         </div>
 
         <div class="d-grid gap-2">
             <button type="submit" class="btn btn-primary btn-lg">Create Game</button>
         </div>
+        
+        <!-- Error Message Area -->
+        <div id="errorMessageArea" class="alert alert-danger mt-3" style="display:none;"></div>
     </form>
 
-    <link href="https://cdn.jsdelivr.net/npm/jsoneditor@9.5.6/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
-    <script src="https://cdn.jsdelivr.net/npm/jsoneditor@9.5.6/dist/jsoneditor.min.js"></script>
     <script>
     document.getElementById('templateSelect').addEventListener('change', function() {
         const templateId = this.value;
+        const templateDetailsOverridesDiv = document.getElementById('templateDetailsOverrides');
+        templateDetailsOverridesDiv.innerHTML = ''; // Clear previous content
+
         if (!templateId) {
-            document.getElementById('questionFlow').innerHTML = ''; // Clear questions if no template selected
+            templateDetailsOverridesDiv.style.display = 'none';
             return;
         }
-
-        console.log("DEBUG: Fetching questions for template ID:", templateId);
-                fetch(`/api/templates/${templateId}/questions`)
+        
+        console.log("DEBUG: Fetching template details for template ID:", templateId);
+        fetch(`/api/templates/${templateId}/details`)
             .then(response => response.json())
-            .then(data => {
-                console.log("DEBUG: Questions fetched successfully:", data);
-                const questions = data.questions;
-                const questionFlow = document.getElementById('questionFlow');
-                questionFlow.innerHTML = '<h4>3. Answer Template Questions</h4>';
+            .then(templateDetails => {
+                console.log("DEBUG: Template details fetched successfully:", templateDetails);
+                templateDetailsOverridesDiv.style.display = 'block'; // Show the section
 
-                questions.forEach((q, index) => {
+                // Define the fields to include and their labels
+                const fieldsToInclude = [
+                    { key: 'genre', label: 'Genre', type: 'text' },
+                    { key: 'core_conflict', label: 'Core Conflict / Goal', type: 'textarea' },
+                    { key: 'theme', label: 'Theme', type: 'text' },
+                    { key: 'desired_tone', label: 'Desired Tone', type: 'text' },
+                    { key: 'world_description', label: 'World Description', type: 'textarea' },
+                    { key: 'scene_suggestions', label: 'Scene Suggestions', type: 'textarea' },
+                    { key: 'player_character_guidance', label: 'Player Character Guidance', type: 'textarea' },
+                    { key: 'difficulty', label: 'Difficulty', type: 'text' },
+                    { key: 'estimated_length', label: 'Estimated Length', type: 'text' },
+                    { key: 'default_rules', label: 'Default Rules (JSON)', type: 'textarea' } // Added default_rules
+                ];
+
+                fieldsToInclude.forEach(fieldInfo => {
                     const div = document.createElement('div');
                     div.className = 'form-group mb-3';
-
+                    
                     const label = document.createElement('label');
                     label.className = 'form-label';
-                    label.htmlFor = `question-${index}`;
-                    label.textContent = q.text;
-
+                    label.htmlFor = `override_${fieldInfo.key}`;
+                    label.textContent = fieldInfo.label + ':';
+                    
                     let input;
-                    if (q.type === 'select' && q.options) {
-                        input = document.createElement('select');
-                        q.options.forEach(option => {
-                            const optionElement = document.createElement('option');
-                            optionElement.value = option;
-                            optionElement.textContent = option;
-                            input.appendChild(optionElement);
-                        });
+                    if (fieldInfo.type === 'textarea') {
+                        input = document.createElement('textarea');
+                        input.rows = 3; // Adjust rows as needed
                     } else {
                         input = document.createElement('input');
-                        input.type = q.type || 'text';
+                        input.type = fieldInfo.type || 'text';
                     }
+                    
                     input.className = 'form-control';
-                    input.id = `question-${index}`;
-                    input.name = `question_${q.key}`;
-                    input.required = true;
+                    input.id = `override_${fieldInfo.key}`;
+                    input.name = `override_${fieldInfo.key}`;
+                    input.value = templateDetails[fieldInfo.key] || ''; // Pre-fill with template data
 
                     div.appendChild(label);
                     div.appendChild(input);
-                    questionFlow.appendChild(div);
+                    templateDetailsOverridesDiv.appendChild(div);
                 });
             })
             .catch(error => {
-                console.error("DEBUG: Error fetching questions:", error);
+                console.error("DEBUG: Error fetching template details:", error);
+                templateDetailsOverridesDiv.innerHTML = '<p class="text-danger">Error loading template details.</p>';
+                templateDetailsOverridesDiv.style.display = 'block';
             });
     });
 
     function submitGameForm(event) {
         event.preventDefault();
-        const templateId = document.getElementById('templateSelect').value;
-        const gameName = document.getElementById('gameName').value;
-        const userInputs = {};
-
-        const questionInputs = document.querySelectorAll('#questionFlow input, #questionFlow select');
-        questionInputs.forEach(input => {
-            userInputs[input.name.replace('question_', '')] = input.value;
-        });
-
         const formData = {
-            template_id: templateId,
-            name: gameName,
-            user_inputs: userInputs
+            template_id: document.getElementById('templateSelect').value,
+            name: document.getElementById('gameName').value,
+            // Gather template overrides
+            template_overrides: Object.fromEntries(
+                Array.from(document.querySelectorAll('#templateDetailsOverrides input, #templateDetailsOverrides textarea'))
+                    .filter(input => input.value.trim() !== '') // Only include fields with values
+                    .map(input => [input.name.replace('override_', ''), input.value.trim()])
+            ),
+            creator_customizations: {
+                npcs: document.getElementById('customNpcs').value.trim(),
+                locations: document.getElementById('customLocations').value.trim(),
+                plot_hooks: document.getElementById('customPlotHooks').value.trim(),
+                rules: document.getElementById('customRules').value.trim(),
+                exclusions: document.getElementById('customExclusions').value.trim()
+            }
         };
+        
+        // Filter out empty creator customization fields before sending
+        for (const key in formData.creator_customizations) {
+            if (!formData.creator_customizations[key]) {
+                delete formData.creator_customizations[key];
+            }
+        }
+        if (Object.keys(formData.creator_customizations).length === 0) {
+             delete formData.creator_customizations; // Remove if entirely empty
+        }
+
+        // Remove template_overrides if entirely empty
+        if (Object.keys(formData.template_overrides).length === 0) {
+            delete formData.template_overrides;
+        }
+
 
         console.log("DEBUG: Payload being sent to /api/games/create:", formData);
         fetch('/api/games/create', {
@@ -113,15 +179,20 @@
         })
         .then(response => response.json())
         .then(data => {
+            const errorMessageArea = document.getElementById('errorMessageArea');
             if (data.error) {
-                alert(data.error);
+                errorMessageArea.textContent = data.error;
+                errorMessageArea.style.display = 'block'; // Show the error area
             } else {
+                errorMessageArea.style.display = 'none'; // Hide the error area
                 window.location.href = data.redirect_url;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Failed to create game');
+            const errorMessageArea = document.getElementById('errorMessageArea');
+            errorMessageArea.textContent = 'Failed to create game';
+            errorMessageArea.style.display = 'block';
         });
     }
     </script>

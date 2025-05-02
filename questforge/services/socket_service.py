@@ -1,8 +1,9 @@
 from flask import current_app, request # Added request import
 from flask_socketio import join_room, leave_room, emit
 from flask_login import current_user
-from sqlalchemy.orm import joinedload # Import joinedload
+from sqlalchemy.orm import joinedload, attributes # Import joinedload and attributes
 from sqlalchemy import func # Import func for sum aggregation
+import json # Import json for logging state_data
 from ..extensions import db
 from ..extensions.socketio import get_socketio
 from ..models import Game, User, GamePlayer, GameState, Template, ApiUsageLog # Added GameState, Template, ApiUsageLog
@@ -185,6 +186,15 @@ class SocketService:
                     emit('error', {'message': 'Game not found'}, room=request.sid)
                     return
                 
+                # Retrieve creator customizations
+                creator_customizations = game.creator_customizations
+                current_app.logger.info(f"Retrieved creator customizations for game {game_id}: {creator_customizations}")
+
+                if not game.template:
+                    current_app.logger.error(f"Start game request failed: Game {game_id} has no associated template.")
+                    emit('error', {'message': 'Game not found'}, room=request.sid)
+                    return
+                
                 if not game.template:
                     current_app.logger.error(f"Start game request failed: Game {game_id} has no associated template.")
                     emit('error', {'message': 'Game template not found'}, room=request.sid)
@@ -204,13 +214,14 @@ class SocketService:
                 
                 current_app.logger.info(f"Game {game_id}: Found {player_count} players, {len(ready_players)} are ready. All ready: {all_ready}") # Add logging
 
-                # Add minimum player check (e.g., >= 2)
-                if player_count < 1: # Allow starting solo for testing? Or enforce 2? Let's enforce 2 for now.
-                    current_app.logger.warning(f"Game {game_id}: Not enough players to start ({player_count}). Need at least 2.")
-                    emit('error', {'message': 'Need at least 2 players to start.'}, room=request.sid)
+                # Add minimum player check (allow 1 for single-player mode)
+                if player_count < 1:
+                    current_app.logger.warning(f"Game {game_id}: Not enough players to start ({player_count}). Need at least 1.")
+                    emit('error', {'message': 'Need at least 1 player to start.'}, room=request.sid)
                     return
 
-                if not all_ready:
+                # For single-player, readiness check is not strictly necessary, but keep for consistency
+                if player_count > 1 and not all_ready:
                     current_app.logger.warning(f"Game {game_id}: Not all players are ready.")
                     emit('error', {'message': 'Not all players are ready'}, room=request.sid)
                     return
@@ -237,7 +248,8 @@ class SocketService:
                     campaign_generated = generate_campaign_structure(
                         game=game, 
                         template=game.template, 
-                        player_descriptions=player_descriptions
+                        player_descriptions=player_descriptions,
+                        creator_customizations=creator_customizations # Pass customizations
                     )
 
                     if campaign_generated:
@@ -278,138 +290,224 @@ class SocketService:
                 emit('error', {'message': 'Missing required fields'}, room=game_id)
                 return
 
+            player_log = {"type": "player", "content": action} # Define player log early
+            updated_state_info = None # Define updated_state_info early
+            ai_result = None # Initialize ai_result
+
             try:
-                # Fetch the GameState OBJECT from the database, eagerly loading game and campaign
-                with current_app.app_context(): # Ensure DB access is within context
+                # --- Perform ALL DB operations within a single transaction ---
+                with current_app.app_context():
+                    # 1. Fetch GameState (no need to refresh initially, fetch gets latest)
                     db_game_state = db.session.query(GameState).options(
-                        joinedload(GameState.game).joinedload(Game.campaign) # Eager load game -> campaign
+                        joinedload(GameState.game).joinedload(Game.campaign)
                     ).filter_by(game_id=game_id).first()
 
-                if not db_game_state:
-                    # Use the specific game_id in the error message
-                    raise ValueError(f"GameState record not found for game_id {game_id}")
-                
-                # --- Log the player's action ---
-                player_log = {"type": "player", "content": action}
-                if not isinstance(db_game_state.game_log, list):
-                    db_game_state.game_log = []
-                db_game_state.game_log.append(player_log)
-                if 'log' not in game_state_service.active_games[game_id] or not isinstance(game_state_service.active_games[game_id]['log'], list):
-                    game_state_service.active_games[game_id]['log'] = []
-                game_state_service.active_games[game_id]['log'].append(player_log)
-                current_app.logger.debug(f"Appended player log entry for game {game_id}")
-                
-                # Get AI response using the imported instance, passing the OBJECT
-                # The get_response method expects the GameState object
-                # Update call to handle new return signature: (response_data, model_used, usage_data)
-                ai_result = ai_service.get_response(
-                    game_state=db_game_state, # Pass the actual GameState object
-                    player_action=action      # Pass the action here
-                )
-
-                # Check if AI service failed
-                if not ai_result:
-                    current_app.logger.error(f"AI service failed to return a response for action '{action}' in game {game_id}")
-                    # Emit a specific error or raise to be caught below
-                    raise ValueError("AI service failed to respond")
+                    if not db_game_state:
+                        raise ValueError(f"GameState record not found for game_id {game_id}")
                     
-                # Unpack result
-                ai_response_data, model_used, usage_data = ai_result
+                    # Log the state *as fetched* before AI call
+                    current_app.logger.debug(f"State data *before* AI call: {json.dumps(db_game_state.state_data)}")
 
-                # Log API Usage within the same app context
-                if usage_data:
-                    try:
-                        current_app.logger.info(f"Attempting to log usage for model: '{model_used}' (action)") 
+                    # --- Inventory Validation ---
+                    action_lower = action.lower()
+                    item_keywords = ["use ", "give ", "read ", "equip ", "combine "] # Note the space
+                    required_item = None
+                    keyword_found = None
+                    validation_passed = True # Assume validation passes unless proven otherwise
+
+                    for keyword in item_keywords:
+                        if action_lower.startswith(keyword):
+                            keyword_found = keyword
+                            # Final extraction fix v3: Capture the item name more intelligently
+                            parts = action_lower.split(keyword, 1)
+                            if len(parts) > 1:
+                                # Take the remainder and split by common prepositions/articles
+                                item_part = parts[1].strip()
+                                # Split by common prepositions/articles, stopping at the first one found
+                                for preposition in ["on", "at", "in", "to", "with", "the", "a", "an"]:
+                                    item_part = item_part.split(preposition, 1)[0].strip() # Take the first part before any preposition
+                                # Assign the cleaned item_part to required_item
+                                required_item = item_part
+                                current_app.logger.debug(f"Keyword '{keyword.strip()}' found. Extracted required_item: '{required_item}'")
+                            else:
+                                current_app.logger.debug(f"Keyword '{keyword.strip()}' found, but no item name followed.")
+                                required_item = None # Ensure required_item is None if nothing follows keyword
+                            break # Stop after first keyword match
+
+                    # Check if an item was successfully extracted
+                    if required_item:
+                        current_app.logger.info(f"Action '{action}' requires item: '{required_item}'")
+                        # Corrected key lookup: use 'current_inventory' based on logs
+                        inventory = db_game_state.state_data.get('current_inventory') 
                         
-                        # Revised Pricing Lookup Logic
-                        pricing_config = current_app.config.get('OPENAI_PRICING', {})
-                        pricing_info = None
-                        matched_key = None
-
-                        # 1. Try exact match first
-                        if model_used in pricing_config:
-                            pricing_info = pricing_config[model_used]
-                            matched_key = model_used
-                            current_app.logger.info(f"Found exact pricing key '{matched_key}' for model '{model_used}' (action)")
+                        if not isinstance(inventory, list):
+                            current_app.logger.warning(f"Inventory validation failed for game {game_id}: 'current_inventory' key missing or not a list in state_data.")
+                            emit('error', {'message': f"You don't seem to have a '{required_item}'."}, room=game_id)
+                            validation_passed = False
                         else:
-                            # 2. Iteratively remove suffix components
-                            model_parts = model_used.split('-')
-                            for i in range(len(model_parts) - 1, 0, -1):
-                                potential_key = '-'.join(model_parts[:i])
-                                if potential_key in pricing_config:
-                                    pricing_info = pricing_config[potential_key]
-                                    matched_key = potential_key
-                                    current_app.logger.info(f"Found partial pricing key '{matched_key}' for model '{model_used}' (action)")
-                                    break # Use the first partial match found
-                        
-                        cost = None
-                        prompt_tokens = usage_data.prompt_tokens
-                        completion_tokens = usage_data.completion_tokens
-                        total_tokens = usage_data.total_tokens
+                            # Normalize inventory items to lowercase strings for comparison
+                            inventory_lower = [str(item).lower() for item in inventory if isinstance(item, str)]
+                            required_item_lower = required_item.lower()
 
-                        if pricing_info:
-                            prompt_cost = (Decimal(prompt_tokens) / 1000) * Decimal(pricing_info['prompt'])
-                            completion_cost = (Decimal(completion_tokens) / 1000) * Decimal(pricing_info['completion'])
-                            cost = prompt_cost + completion_cost
-                            current_app.logger.info(f"Calculated cost for game {game_id} API call (action): ${cost:.6f}")
-                        else:
-                            current_app.logger.warning(f"No pricing info found for model '{model_used}'. Cost will be null.")
+                            # Check for exact match first
+                            exact_match_found = required_item_lower in inventory_lower
 
-                        usage_log = ApiUsageLog(
-                            game_id=game_id,
-                            model_name=model_used,
-                            prompt_tokens=prompt_tokens,
-                            completion_tokens=completion_tokens,
-                            total_tokens=total_tokens,
-                            cost=cost
+                            if exact_match_found:
+                                current_app.logger.info(f"Inventory validation passed (exact match) for game {game_id}: Item '{required_item}' found in inventory.")
+                                # validation_passed remains True (set initially)
+                            else:
+                                # No exact match found, now check for partial (startswith) match
+                                partial_match_found = False
+                                for item_in_inv_lower in inventory_lower:
+                                    if item_in_inv_lower.startswith(required_item_lower):
+                                        current_app.logger.info(f"Inventory validation passed (partial match): Inventory item '{item_in_inv_lower}' starts with required '{required_item_lower}'. Allowing action.")
+                                        partial_match_found = True
+                                        validation_passed = True 
+                                        break # Allow action based on first partial match
+                                
+                                # Only set validation_passed to False if NEITHER exact NOR partial match was found
+                                if not partial_match_found: 
+                                    current_app.logger.warning(f"Inventory validation failed for game {game_id}: Item '{required_item}' not found (exact or partial match) in current_inventory {inventory}.")
+                                    emit('error', {'message': f"You don't have a '{required_item}'."}, room=game_id)
+                                    validation_passed = False
+
+                    # 2. Call AI Service (only if validation passed)
+                    if validation_passed:
+                        ai_result = ai_service.get_response(
+                            game_state=db_game_state, # Pass the fetched object
+                            player_action=action
                         )
-                        db.session.add(usage_log)
-                        # Commit will happen after state update
-                        current_app.logger.info(f"Created ApiUsageLog entry for game {game_id} (Player Action)")
-                    except Exception as log_e:
-                        current_app.logger.error(f"Failed to create ApiUsageLog entry for game {game_id} (action): {log_e}", exc_info=True)
-                        # Don't necessarily fail the whole action if logging fails
-                else:
-                    current_app.logger.warning(f"No usage data returned from AI service for game {game_id} player action.")
+                        if not ai_result:
+                            # AI service itself failed after validation passed
+                            raise ValueError("AI service failed to respond after inventory check (or no check needed).")
+                    # else: ai_result remains None
+
+                    # 3. Add player action to log (ALWAYS happens)
+                    if not isinstance(db_game_state.game_log, list):
+                        db_game_state.game_log = []
+                    db_game_state.game_log.append(player_log)
+                    if game_id in game_state_service.active_games:
+                         if 'log' not in game_state_service.active_games[game_id] or not isinstance(game_state_service.active_games[game_id]['log'], list):
+                              game_state_service.active_games[game_id]['log'] = []
+                         game_state_service.active_games[game_id]['log'].append(player_log)
+                    current_app.logger.debug(f"Appended player log entry for game {game_id}")
+                    attributes.flag_modified(db_game_state, "game_log") # Flag game_log modification
+
+                    # 4. Process AI Result (if validation passed AND AI responded)
+                    if ai_result:
+                        # This block is now correctly indented relative to the outer 'with'
+                        ai_response_data, model_used, usage_data = ai_result
+
+                        # Update GameState object with AI response data
+                        updated_state_info = game_state_service.update_state(
+                            game_id=game_id, # Pass game_id for in-memory update
+                            user_id=user_id, # Pass the user_id of the player performing the action
+                            state_changes=ai_response_data.get('state_changes'),
+                            log_entry=ai_response_data.get('narrative'),
+                            actions=ai_response_data.get('available_actions'),
+                            increment_version=True # Version increments only on successful AI update
+                        )
+                        # This nested if is also correctly indented
+                        if not updated_state_info:
+                            raise ValueError("Failed to update game state via service after AI response")
+
+                        # Log API Usage
+                        if usage_data:
+                            try:
+                                current_app.logger.info(f"Attempting to log usage for model: '{model_used}' (action)")
+                                pricing_config = current_app.config.get('OPENAI_PRICING', {})
+                                pricing_info = None
+                                matched_key = None
+
+                                if model_used in pricing_config:
+                                    pricing_info = pricing_config[model_used]
+                                    matched_key = model_used
+                                    current_app.logger.info(f"Found exact pricing key '{matched_key}' for model '{model_used}' (action)")
+                                else:
+                                    model_parts = model_used.split('-')
+                                    for i in range(len(model_parts) - 1, 0, -1):
+                                        potential_key = '-'.join(model_parts[:i])
+                                        if potential_key in pricing_config:
+                                            pricing_info = pricing_config[potential_key]
+                                            matched_key = potential_key
+                                            current_app.logger.info(f"Found partial pricing key '{matched_key}' for model '{model_used}' (action)")
+                                            break
+
+                                cost = None
+                                prompt_tokens = usage_data.prompt_tokens
+                                completion_tokens = usage_data.completion_tokens
+                                total_tokens = usage_data.total_tokens
+
+                                if pricing_info:
+                                    prompt_cost = (Decimal(prompt_tokens) / 1000) * Decimal(pricing_info['prompt'])
+                                    completion_cost = (Decimal(completion_tokens) / 1000) * Decimal(pricing_info['completion'])
+                                    cost = prompt_cost + completion_cost
+                                    current_app.logger.info(f"Calculated cost for game {game_id} API call (action): ${cost:.6f}")
+                                else:
+                                    current_app.logger.warning(f"No pricing info found for model '{model_used}'. Cost will be null.")
+
+                                usage_log = ApiUsageLog(
+                                    game_id=game_id,
+                                    model_name=model_used,
+                                    prompt_tokens=prompt_tokens,
+                                    completion_tokens=completion_tokens,
+                                    total_tokens=total_tokens,
+                                    cost=cost
+                                )
+                                db.session.add(usage_log)
+                                current_app.logger.info(f"Created ApiUsageLog entry for game {game_id} (Player Action)")
+                            except Exception as log_e:
+                                current_app.logger.error(f"Failed to create ApiUsageLog entry for game {game_id} (action): {log_e}", exc_info=True)
+                                # Decide if this should cause a rollback - probably not
+                        else:
+                            current_app.logger.warning(f"No usage data returned from AI service for game {game_id} player action.")
+
+                        # Flag additional modified fields for commit
+                        attributes.flag_modified(db_game_state, "state_data")
+                        attributes.flag_modified(db_game_state, "available_actions")
+                        current_app.logger.debug(f"Flagged state_data, available_actions on db_game_state for commit.")
+                        # --- End of block executed only on successful AI response ---
+
+                    # Log state JUST BEFORE commit
+                    current_app.logger.debug(f"PRE-COMMIT state_data: {json.dumps(db_game_state.state_data)}")
+
+                    # 5. Commit the transaction (saves player log always, saves full state if AI ran)
+                    db.session.commit()
+                    if ai_result:
+                        current_app.logger.info(f"Committed full state update and usage log for game {game_id} after action '{action}'.")
+                    else:
+                        current_app.logger.info(f"Committed player log entry for game {game_id} after failed inventory check for action '{action}'.")
+
+                    # Log state JUST AFTER commit
+                    current_app.logger.debug(f"POST-COMMIT state_data: {json.dumps(db_game_state.state_data)}")
 
 
-                # Update game state, log, and actions via the service
-                # Use ai_response_data now
-                updated_state_info = game_state_service.update_state(
-                    game_id=game_id,
-                    state_changes=ai_response_data.get('state_changes'), # Pass state changes dict
-                    log_entry=ai_response_data.get('narrative'),       # Pass narrative as log entry
-                    actions=ai_response_data.get('available_actions'), # Pass new actions list
-                    increment_version=True                        # Increment version on player action
-                )
+                # --- Post-Commit Operations (Outside transaction, only if AI call was successful) ---
+                if ai_result and updated_state_info: # Only broadcast if the state was actually updated by AI and committed
+                    # Recalculate total cost after commit
+                    # Note: This query needs its own context now
+                    with current_app.app_context():
+                        new_total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game_id).scalar()
+                        new_total_cost = new_total_cost_query if new_total_cost_query is not None else Decimal('0.0')
 
-                if not updated_state_info:
-                     # Error already logged in update_state if DB issue occurred there
-                     # Rollback should happen in the except block below
-                     raise ValueError("Failed to update game state after action")
+                    # Prepare broadcast data using the info returned by update_state
+                    broadcast_data = updated_state_info.copy() # updated_state_info should be available here
+                    broadcast_data['total_cost'] = float(new_total_cost)
 
-                # If we reach here, both AI call and state update logic (in memory + DB object modification) were successful
-                # Now commit the transaction including the ApiUsageLog and the GameState changes
-                db.session.commit()
-                current_app.logger.info(f"Committed state update and usage log for game {game_id} after action '{action}'.")
+                    # Broadcast updated state and cost to all players
+                    current_app.logger.info(f"Broadcasting game_state_update for game {game_id} (v{broadcast_data['version']}) including total_cost: {broadcast_data['total_cost']:.4f}")
+                    emit('game_state_update', broadcast_data, room=game_id)
+                # else: # No broadcast if commit was skipped
+                #    current_app.logger.info(f"Skipping broadcast for game {game_id} as commit was skipped.")
 
-                # Recalculate total cost after commit
-                new_total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game_id).scalar()
-                new_total_cost = new_total_cost_query if new_total_cost_query is not None else Decimal('0.0')
-                
-                # Add the new total cost to the broadcast data
-                broadcast_data = updated_state_info.copy() # Avoid modifying the original dict
-                broadcast_data['total_cost'] = float(new_total_cost) # Convert Decimal to float for JSON serialization
-
-                # Broadcast updated state and cost to all players
-                current_app.logger.info(f"Broadcasting game_state_update for game {game_id} (v{broadcast_data['version']}) including total_cost: {broadcast_data['total_cost']:.4f}")
-                emit('game_state_update', broadcast_data, room=game_id)
 
             except Exception as e:
-                # Rollback the session in case of any error after AI call
-                db.session.rollback() 
+                # Rollback needed if any error occurred within the try block OR if inventory check failed and we need to ensure no partial changes
+                with current_app.app_context(): # Need context for rollback
+                    db.session.rollback()
                 current_app.logger.error(f"Error processing player action '{action}' in game {game_id}, rolling back transaction: {str(e)}", exc_info=True)
-                emit('error', {'message': 'Failed to process action'}, room=game_id) # Keep generic message for client
+                emit('error', {'message': 'Failed to process action'}, room=game_id)
+
 
         @socketio.on('request_state')
         def handle_state_request(data):

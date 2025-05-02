@@ -44,6 +44,35 @@
                     </div>
                 </div>
 
+                {# Player Locations Display Card #}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Player Locations</h5>
+                    </div>
+                    <div class="card-body" id="playerLocationsDisplay">
+                        {# Player locations will be rendered by JavaScript #}
+                        <p class="text-muted mb-0">Loading player locations...</p>
+                    </div>
+                </div>
+
+                {# Location History Display Card #}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Visited Locations</h5>
+                    </div>
+                    <div class="card-body" id="locationHistoryDisplay">
+                        {% if game_state and game_state.visited_locations %}
+                            <ul class="list-unstyled mb-0">
+                                {% for location in game_state.visited_locations %}
+                                    <li>{{ location | e }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted mb-0">No locations visited yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
                 {# Add Custom Action Input #}
                 <div class="card mt-3">
                     <div class="card-header">
@@ -54,6 +83,28 @@
                             <input type="text" id="customActionInput" class="form-control" placeholder="Enter your action...">
                             <button class="btn btn-outline-secondary" type="button" id="submitCustomAction">Submit</button>
                         </div>
+                    </div>
+                </div>
+
+                {# Inventory Display Card #}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Inventory</h5>
+                    </div>
+                    <div class="card-body" id="inventoryDisplay">
+                        {% if game_state and game_state.state_data and 'inventory' in game_state.state_data %}
+                            {% if game_state.state_data.inventory %}
+                                <ul class="list-unstyled mb-0"> {# Added mb-0 to remove default bottom margin #}
+                                    {% for item in game_state.state_data.inventory %}
+                                        <li>{{ item | e }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted mb-0">Inventory is empty.</p> {# Added mb-0 #}
+                            {% endif %}
+                        {% else %}
+                            <p class="text-muted mb-0">Inventory data not available.</p> {# Fallback if state_data or inventory key is missing, added mb-0 #}
+                        {% endif %}
                     </div>
                 </div>
 
@@ -172,8 +223,27 @@ function updateGameState(state) {
         console.error("gameStateVisualization element not found");
     }
 
-    // Optionally, render other state data if needed separately
-    // renderOtherStateData(state.state); // Example if you have another function/area
+    // Update Player Locations Display
+    if (state && state.player_locations) {
+        updatePlayerLocationsDisplay(state.player_locations);
+    } else {
+        updatePlayerLocationsDisplay({}); // Clear if no data
+    }
+
+    // Update Visited Locations Display
+    if (state && state.visited_locations) {
+        updateVisitedLocationsDisplay(state.visited_locations);
+    } else {
+        updateVisitedLocationsDisplay([]); // Clear if no data
+    }
+
+    // Update Inventory Display (using state.state.current_inventory or state.state.inventory)
+    const inventory = state?.state?.current_inventory ?? state?.state?.inventory; // Check both keys
+    if (inventory !== undefined) { // Check if key exists (even if empty list)
+        updateInventoryDisplay(inventory);
+    } else {
+        updateInventoryDisplay(null); // Indicate data not available
+    }
 
     // Update total cost display if present in the update
     if (state && typeof state.total_cost !== 'undefined') {
@@ -218,6 +288,69 @@ function updateTotalCostDisplay(cost) {
         console.warn("totalCostDisplay element not found.");
     }
 }
+
+// New function to update Player Locations display
+function updatePlayerLocationsDisplay(playerLocations) {
+    const displayElement = document.getElementById('playerLocationsDisplay');
+    if (!displayElement) {
+        console.error("playerLocationsDisplay element not found");
+        return;
+    }
+    let html = '<ul class="list-unstyled mb-0">';
+    if (playerLocations && Object.keys(playerLocations).length > 0) {
+        // Assuming playerLocations is an object like { 'user_id': 'location_name', ... }
+        // You might need to fetch usernames if you want to display them instead of IDs
+        for (const [userId, location] of Object.entries(playerLocations)) {
+            // TODO: Fetch username based on userId if needed for better display
+            html += `<li>Player ${userId}: ${location || 'Unknown'}</li>`; 
+        }
+    } else {
+        html += '<li class="text-muted">No player location data available.</li>';
+    }
+    html += '</ul>';
+    displayElement.innerHTML = html;
+}
+
+// New function to update Visited Locations display
+function updateVisitedLocationsDisplay(visitedLocations) {
+    const displayElement = document.getElementById('locationHistoryDisplay');
+    if (!displayElement) {
+        console.error("locationHistoryDisplay element not found");
+        return;
+    }
+    let html = '<ul class="list-unstyled mb-0">';
+    if (visitedLocations && visitedLocations.length > 0) {
+        visitedLocations.forEach(location => {
+            html += `<li>${location}</li>`; // Assuming location is a string
+        });
+    } else {
+        html += '<li class="text-muted">No locations visited yet.</li>';
+    }
+    html += '</ul>';
+    displayElement.innerHTML = html;
+}
+
+// New function to update Inventory display
+function updateInventoryDisplay(inventory) {
+    const displayElement = document.getElementById('inventoryDisplay');
+    if (!displayElement) {
+        console.error("inventoryDisplay element not found");
+        return;
+    }
+    let html = '<ul class="list-unstyled mb-0">';
+    if (inventory === null) {
+         html += '<li class="text-muted">Inventory data not available.</li>';
+    } else if (inventory && inventory.length > 0) {
+        inventory.forEach(item => {
+            html += `<li>${item}</li>`; // Assuming item is a string
+        });
+    } else {
+        html += '<li class="text-muted">Inventory is empty.</li>';
+    }
+    html += '</ul>';
+    displayElement.innerHTML = html;
+}
+
 
 function updateActionControls(actions) {
     const actionControls = document.getElementById('actionControls');

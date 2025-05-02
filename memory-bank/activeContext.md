@@ -1,11 +1,8 @@
 # Active Context
 
-## Current Focus: Implementing Delayed Campaign Generation (Phase 2)
+## Current Focus: Enhanced Game Creation (Phase 5)
 
-*   **Modify Game Creation API:** Simplify the game creation endpoint to only create the basic `Game` record.
-*   **Implement Lobby Start Logic:** Create the SocketIO handler (`handle_start_game`) to trigger campaign generation.
-*   **Implement Campaign Generation Service:** Create/modify the service function to orchestrate the AI call using the template and character data, then save the `Campaign` and `GameState`.
-*   **Implement Game Start Flow:** Ensure players are notified/redirected to the game interface after generation.
+*   **Initiate Phase 5:** Begin work on the tasks outlined in [./phase-5-enhanced-game-creation.md](./phase-5-enhanced-game-creation.md).
 
 ## Key References
 *   **Application Specification:** [../questforge-spec.md](../questforge-spec.md) - The definitive specification detailing architecture, models, and remaining work phases.
@@ -15,8 +12,19 @@
 *   **Template Creation Process:** [template_creation_process.md](./template_creation_process.md)
 *   **Game Creation Process:** [game_creation_process.md](./game_creation_process.md)
 *   **Project Intelligence:** [.clinerules](./.clinerules)
+*   **Phase 4 Details:** [./phase-4-gameplay-enhancements.md](./phase-4-gameplay-enhancements.md)
+*   **Phase 5 Details:** [./phase-5-enhanced-game-creation.md](./phase-5-enhanced-game-creation.md)
 
 ## Recent Changes (Completed Task)
+*   **Completed Phase 4: Gameplay Enhancements:** Successfully implemented Inventory Display, AI Prompt Guardrails, Location History, and Multiplayer Location Display.
+*   **Completed Phase 2 Verification:** Verified `campaign_service.generate_campaign_structure` and `socket_service.handle_start_game` function correctly for delayed campaign generation. No code changes needed.
+*   **Restructured Project Phases:** Introduced Phase 4 (Gameplay Enhancements) and Phase 5 (Enhanced Game Creation), shifting Testing & Deployment to Phase 6. Created corresponding detail files in the Memory Bank (`phase-4-gameplay-enhancements.md`, `phase-5-enhanced-game-creation.md`). Updated `progress.md` to reflect the new structure.
+*   **Completed Phase 3: AI Prompt Refinement:** Successfully updated `build_campaign_prompt` in `questforge/utils/prompt_builder.py` to better utilize `Template` fields (including `default_rules`) and `player_descriptions`, providing clearer instructions to the AI for generating more tailored campaign structures.
+*   **Implemented Inventory Display (Phase 4):** Added an inventory display section to `questforge/templates/game/play.html` to render items from `game_state.state_data.inventory`.
+*   **Implemented AI Prompt Guardrails (Phase 4):** Modified `build_response_prompt` in `questforge/utils/prompt_builder.py` to include instructions for the AI to evaluate player actions against game state and narrative consistency.
+*   **Implemented Location History (Phase 4):** Added `visited_locations` to `GameState` model, updated `game_state_service.py` to track visited locations, and modified frontend (`play.html`, `socketClient.mjs`) to display the history.
+*   **Implemented Multiplayer Location Display (Phase 4):** Modified `game_state_service.py` to track player locations in memory and updated frontend (`play.html`, `socketClient.mjs`) to display this information.
+*   **Implemented Single-Player Mode (Phase 4):** Modified `handle_start_game` in `questforge/services/socket_service.py` to allow games to be started with a single player.
 *   Created `questforge-spec.md` reflecting current codebase and defining remaining work phases.
 *   Updated `projectbrief.md`, `progress.md`, and this file (`activeContext.md`) to align with the new spec.
 *   Created `template_creation_process.md`.
@@ -65,17 +73,14 @@
     *   Updated `game.py` views (`list_games`, `play`) to calculate and pass total cost to templates.
     *   Updated `list.html` and `play.html` templates to display the calculated cost (dynamically on `play.html`).
     *   Updated `main.py` and `home.html` to display the configured `OPENAI_MODEL`.
-*   **Resolved Location Persistence Bug:** Modified `build_response_prompt` in `questforge/utils/prompt_builder.py` to require the AI to always include the current `location` in the `state_changes` JSON, ensuring the player's location is correctly maintained after AI responses.
+*   **Resolved Location Persistence Bug:** Modified `build_response_prompt` in `questforge/utils/prompt_builder.py` to require the AI to always include the current `location` in the `state_changes` JSON.
+*   **Added AI Context Logging:** Added debug logging in `questforge/services/ai_service.py` (`get_response` method) to print the exact context string being sent to the AI.
+*   **Resolved Stale Context/Location Issue:**
+    *   Identified and removed the redundant `current_location` column from the `GameState` model and database.
+    *   Modified `game_state_service.update_state` to assign *new* dict/list objects to `state_data`, `game_log`, and `available_actions` instead of updating in place, ensuring SQLAlchemy detects changes to these TEXT-based JSON fields.
+    *   Removed associated update/flagging logic for the deleted `current_location` column.
+*   **Fixed Campaign Data Type Handling:** Modified `build_context` in `questforge/utils/context_manager.py` to handle cases where `campaign.campaign_data` might be stored as a JSON string instead of a dictionary, preventing an `AttributeError`.
+*   **Implemented Log Rotation:** Replaced `FileHandler` with `RotatingFileHandler` in `questforge/__init__.py` to limit log file size (5MB) and keep backups (3).
 
-## Next Steps (Phase 2)
-*   **Modify Game Creation API:** Update `/api/games/create` (or equivalent) to only create `Game` and `GamePlayer` records.
-*   **Implement Lobby Start Logic:** Update `handle_start_game` in `socket_service.py` to trigger campaign generation.
-*   **Implement Campaign Generation Service:** Update `campaign_service.py` to handle generation using template + character data.
-*   **Implement Game Start Flow:** Ensure `handle_start_game` notifies players to load the game interface.
-*   **(Phase 3) Revise AI Prompt:** Update `build_campaign_prompt` in `prompt_builder.py`.
-
-## Decisions & Considerations
-*   Refine prompt structures in `prompt_builder.py` iteratively based on AI performance.
-*   Determine specific strategy for context management (`context_manager.py`).
-*   The `question_flow` field has been removed from the template.
-*   The AI will generate the campaign structure based on high-level guidance and player character descriptions.
+## Next Steps (Phase 5)
+*   **Initiate Phase 5: Enhanced Game Creation:** Begin work on the tasks outlined in [./phase-5-enhanced-game-creation.md](./phase-5-enhanced-game-creation.md).

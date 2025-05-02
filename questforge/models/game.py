@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from questforge.extensions import db
-from sqlalchemy import ForeignKey, Table, Column, Integer, String, DateTime, Boolean
+from sqlalchemy import ForeignKey, Table, Column, Integer, String, DateTime, Boolean, JSON
 from sqlalchemy.orm import relationship
 
 # Association object for the many-to-many relationship between Game and User
@@ -25,7 +25,8 @@ class Game(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, ForeignKey('users.id'))
     status = db.Column(db.String(20), default='active')
-    
+    creator_customizations = db.Column(db.JSON, nullable=True) # Added field for creator customizations
+
     template = relationship('Template', backref='games')
     creator = relationship('User', foreign_keys=[created_by]) # Specify foreign key for creator
     campaign = relationship('Campaign', back_populates='game', uselist=False)

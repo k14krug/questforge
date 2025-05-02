@@ -1,8 +1,3 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
-from flask_login import login_required, current_user
-from ..models.game import Game, GamePlayer # Import GamePlayer
-from ..models.campaign import Campaign
-from ..models.template import Template
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash, abort
 from flask_login import login_required, current_user
 from ..models.game import Game, GamePlayer # Import GamePlayer
@@ -14,6 +9,8 @@ from ..extensions import db, socketio
 from .forms import GameForm
 from sqlalchemy import func # Import func for sum aggregation
 from decimal import Decimal # Import Decimal
+from ..services import ai_service # Import ai_service
+import traceback # Import traceback
 
 game_bp = Blueprint('game', __name__)
 
@@ -35,29 +32,19 @@ def create_game_old():
     
     try:
         template = Template.query.get(data['template_id'])
+        template_overrides = data.get('template_overrides', {}) # Get template overrides, default to empty dict
+        creator_customizations = data.get('creator_customizations', {}) # Get customizations, default to empty dict
+        
         if not template:
             return jsonify({'status': 'error', 'message': 'Template not found'}), 404
             
         game = Game(
             name=data['name'],
             template_id=template.id,
-            created_by=current_user.id
+            created_by=current_user.id,
+            creator_customizations=creator_customizations # Save customizations
         )
         db.session.add(game)
-        
-        # Create initial campaign from template
-        campaign = Campaign(
-            game_id=game.id,
-            template_id=template.id,
-            campaign_data=template.initial_state.get('campaign_data', {}),
-            objectives=template.initial_state.get('objectives', []),
-            conclusion_conditions=template.initial_state.get('conclusion_conditions', []),
-            key_locations=template.initial_state.get('key_locations', []),
-            key_characters=template.initial_state.get('key_characters', []),
-            major_plot_points=template.initial_state.get('major_plot_points', []),
-            possible_branches=template.initial_state.get('possible_branches', [])
-        )
-        db.session.add(campaign)
         db.session.flush() # Flush to get game.id before creating GamePlayer
 
         # Add creator as first player using the association object
@@ -66,19 +53,46 @@ def create_game_old():
 
         db.session.commit()
 
-        return jsonify({
-            'status': 'success',
-            'data': game.to_dict(),
-            'redirect_url': url_for('game.lobby', game_id=game.id)
-        })
+        # Trigger campaign generation (asynchronous or synchronous based on design)
+        # For now, let's assume a synchronous call for simplicity
+        try:
+            # Pass template_overrides and creator_customizations to the AI service
+            campaign_data = ai_service.generate_campaign(
+                template, 
+                template_overrides=template_overrides, 
+                creator_customizations=creator_customizations
+            )
+            
+            # Save the generated campaign data
+            campaign = Campaign(
+                game_id=game.id,
+                campaign_data=campaign_data # Store the full AI response
+            )
+            db.session.add(campaign)
+            db.session.commit()
+
+            # Update the game with the campaign ID
+            game.campaign_id = campaign.id
+            db.session.commit()
+
+            # Redirect to the game lobby or play page
+            return jsonify({'success': True, 'message': 'Game created successfully!', 'redirect_url': url_for('game.lobby', game_id=game.id)}), 201
+
+        except Exception as e:
+            # Rollback the game creation if campaign generation fails
+            db.session.rollback()
+            # Log the full exception traceback for detailed debugging
+            print(f"Error generating campaign: {str(e)}")
+            print(traceback.format_exc()) 
+            return jsonify({'error': f'Failed to generate campaign: {e}'}), 500
+
     except Exception as e:
         db.session.rollback()
-        db.session.rollback()
         # Log the full exception traceback for detailed debugging
-        import traceback
-        print(f"Error creating game: {str(e)}")
+        print(f"Error during initial game creation steps: {str(e)}")
         print(traceback.format_exc()) 
         return jsonify({'status': 'error', 'message': 'Internal server error during game creation.'}), 500
+
 
 @game_bp.route('/game/<int:game_id>/lobby')
 @login_required

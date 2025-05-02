@@ -4,6 +4,7 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationE
 from questforge.models.user import User
 from questforge.models.template import Template
 from questforge.extensions import db
+import json # Import json for validation
 
 class RegistrationForm(FlaskForm):
     username = StringField('Username',
@@ -97,3 +98,19 @@ class TemplateForm(FlaskForm):
     ai_service_endpoint = StringField('AI Service Endpoint (Optional)')
     
     submit = SubmitField('Save Template')
+
+    def validate_questions(self, field):
+        """Validate that the questions field contains valid JSON."""
+        if field.data: # Only validate if data is provided
+            try:
+                parsed_json = json.loads(field.data)
+                if not isinstance(parsed_json, list):
+                     raise ValidationError('Questions must be a valid JSON list.')
+                # Optional: Add more specific validation for the structure of each object in the list
+                for item in parsed_json:
+                    if not isinstance(item, dict) or not all(k in item for k in ['key', 'text']):
+                         raise ValidationError('Each question object must be a dictionary with at least "key" and "text" fields.')
+            except json.JSONDecodeError:
+                raise ValidationError('Invalid JSON format for questions.')
+            except Exception as e: # Catch other potential errors during validation
+                 raise ValidationError(f'Error validating questions JSON: {e}')

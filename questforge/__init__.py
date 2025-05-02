@@ -1,6 +1,7 @@
 import logging
 import os
-from logging import FileHandler, StreamHandler # Import handlers
+from logging import StreamHandler # Import StreamHandler
+from logging.handlers import RotatingFileHandler # Import RotatingFileHandler
 from flask import Flask
 from .extensions import db, login_manager, bcrypt, migrate, init_socketio
 from .services.socket_service import SocketService
@@ -16,10 +17,13 @@ def create_app(config_name='default'):
     os.makedirs(log_dir, exist_ok=True) # Ensure log directory exists
 
     # Define handlers
-    file_handler = FileHandler(os.path.join(log_dir, 'campaign_service_test.log'), mode='a')
-    file_handler.setLevel(logging.DEBUG)
+    # Use RotatingFileHandler for the file logger
+    log_file_path = os.path.join(log_dir, 'questforge.log') # Use a more general log file name
+    # Rotate logs at 5MB, keep 3 backups
+    file_handler = RotatingFileHandler(log_file_path, maxBytes=5*1024*1024, backupCount=3) 
+    file_handler.setLevel(logging.DEBUG) # Log DEBUG and above to file
     file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s [in %(pathname)s:%(lineno)d]' # Add path/line info
     ))
 
     console_handler = StreamHandler()

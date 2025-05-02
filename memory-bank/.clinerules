@@ -70,8 +70,3 @@
 - Costs are calculated based on token counts (returned by `AIService`) and pricing defined in the `OPENAI_PRICING` dictionary in `config.py`.
 - **Important:** The `OPENAI_PRICING` dictionary keys should be the base model names (e.g., `gpt-4o-mini`). The cost calculation logic attempts an exact match first, then iteratively removes trailing components from the API-returned model name (e.g., `gpt-4o-mini-2024-07-18`) until a matching key is found in the config. Ensure base model names in the config cover expected API model variants.
 - The `AIService` fetches the configured `OPENAI_MODEL` from `current_app.config` at the time of each API call to ensure the correct model is requested.
-
-## New .clinerules
-- The template redesign shifts the focus from detailed template definitions to high-level guidance, empowering the AI to generate more of the campaign structure.
-- Campaign generation is now delayed until after players have joined the lobby and defined their characters, allowing the AI to tailor the campaign to the specific party.
-- Player character descriptions are stored in the `game_players` table.

@@ -25,19 +25,35 @@
 
 ## Remaining Work (Phased Approach from Spec)
 
-**Phase 2: Delayed Campaign Generation**
+**Phase 1: Template Redesign & Character Definition (Completed)**
+*   (Details omitted for brevity - see above)
 
-*   Modify the `/api/games/create` endpoint to only create the basic `Game` record.
-*   Implement the delayed campaign generation logic, triggered by a SocketIO event (e.g., `start_game`) from the lobby.
-*   This logic will fetch the template, gather all player character descriptions from `game_players`, call `build_campaign_prompt` and `ai_service.generate_campaign`, and save the returned campaign structure and initial state.
+**Phase 2: Delayed Campaign Generation (Completed)**
 
-**Phase 3: AI Prompt Refinement**
+*   **Modify Game Creation API:** **(Completed)** Updated the `/api/games/create-game` endpoint (`questforge/views/game.py`) to only create the basic `Game` and `GamePlayer` records, removing premature `Campaign` creation.
+*   **Implement Lobby Start Logic:** **(Verified)** Confirmed the `handle_start_game` SocketIO event (`questforge/services/socket_service.py`) correctly triggers the campaign generation process.
+*   **Implement Campaign Generation Service:** **(Verified)** Confirmed the service logic (`campaign_service.generate_campaign_structure`) correctly orchestrates AI interaction and saves the `Campaign` and initial `GameState`. No code changes were needed.
+*   **Implement Game Start Flow:** **(Verified)** Confirmed the `handle_start_game` function in `socket_service.py` correctly emits the `game_started` event only after successful campaign generation. No code changes were needed.
 
-*   Revise `build_campaign_prompt` to use the new template fields and player character descriptions to request a comprehensive campaign structure from the AI.
+**Phase 3: AI Prompt Refinement (Completed)**
 
-**Phase 4: Testing & Deployment Prep (Medium Priority - Ongoing)**
+*   **Revise AI Campaign Prompt:** **(Completed)** Updated `build_campaign_prompt` in `questforge/utils/prompt_builder.py` to better utilize `Template` fields (including `default_rules`) and `player_descriptions`, providing clearer instructions to the AI for generating more tailored campaign structures.
 
-*   Write unit & integration tests for new components (character definition, delayed generation).
+**Phase 4: Gameplay Enhancements (Completed)** (See [./phase-4-gameplay-enhancements.md](./phase-4-gameplay-enhancements.md) for details)
+
+*   Implement Inventory Display on `play.html`. **(Completed)**
+*   Add AI Prompt Guardrails to `build_response_prompt`. **(Completed)**
+*   Implement Location History tracking and display. **(Completed)**
+*   Implement Multiplayer Location Display. **(Completed)**
+*   Enable Single-Player Mode. **(Completed)**
+
+**Phase 5: Enhanced Game Creation (Current)** (Needs Planning - See [./phase-5-enhanced-game-creation.md](./phase-5-enhanced-game-creation.md) for initial thoughts)
+
+*   Allow game creators to add customizations on top of templates before campaign generation.
+
+**Phase 6: Testing & Deployment Prep** (Medium Priority - Ongoing)
+
+*   Write unit & integration tests for new components (Phases 1-5).
 *   Write tests for SocketIO handlers & gameplay.
 *   Increase overall test coverage.
 *   Verify/test production configuration (Gunicorn, Systemd, Nginx).

@@ -9,6 +9,11 @@ from questforge.utils.prompt_builder import build_campaign_prompt, build_respons
 # We will need a new prompt builder function, import placeholder
 # from questforge.utils.prompt_builder import build_initial_scene_prompt
 from questforge.utils.context_manager import build_context
+from typing import Dict, Optional, Tuple, Any # Import Dict, Optional, Tuple, and Any for type hinting
+import requests # Import requests for API calls
+from decimal import Decimal # Import Decimal for cost calculation
+from ..models.api_usage_log import ApiUsageLog # Import ApiUsageLog
+from ..extensions import db # Import db
 
 class AIService:
     """Service for handling AI interactions, including campaign generation and responses."""
@@ -33,30 +38,31 @@ class AIService:
             self.temperature = float(os.getenv("OPENAI_TEMPERATURE") or 0.7)
             self.max_tokens = int(os.getenv("OPENAI_MAX_TOKENS") or 1024)
 
-    def generate_campaign(self, template: Template, user_inputs: dict):
+    def generate_campaign(self, template: Template, template_overrides: Optional[Dict[str, Any]] = None, creator_customizations: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Generates the initial campaign structure based on a template and user inputs.
-
+        Generates campaign data using the AI based on a template, template overrides, and creator customizations.
+        
         Args:
-            template: The Template object used as a base.
-            user_inputs: A dictionary of user responses to template questions.
-
+            template: The Template object to base the campaign on.
+            template_overrides: Optional dictionary of fields to override from the template.
+            creator_customizations: Optional dictionary of creator-provided customizations.
+            
         Returns:
-            A dictionary representing the generated campaign structure (e.g., description, initial state)
-            or None if generation fails.
+            A dictionary containing the generated campaign data.
         """
         app = current_app._get_current_object()
         if not self.client:
             app.logger.error("OpenAI client not initialized. Cannot generate campaign.")
-            return None
+            return {"error": "AI service not available."}
 
-        prompt = build_campaign_prompt(template, user_inputs)
+        # Build the prompt using the prompt_builder, passing overrides and customizations
+        prompt = build_campaign_prompt(template, template_overrides, creator_customizations) # Pass overrides and customizations
         app.logger.debug(f"--- AI Service: Generating campaign with prompt ---\n{prompt}\n-------------------------------------------------")
 
         generated_content = "" # Initialize to handle potential errors before assignment
         try:
             # Fetch model from app config at time of call
-            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-3.5-turbo') # Default if not in config
+            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-4o') # Default to gpt-4o if not in config
             app.logger.debug(f"Using model from config for generate_campaign: {model_to_use}")
             
             response = self.client.chat.completions.create(
@@ -87,22 +93,22 @@ class AIService:
             if missing_keys:
                 app.logger.error(f"AI campaign response missing required top-level keys: {missing_keys}")
                 app.logger.debug(f"Received data: {parsed_data}") # Log what was received
-                return None
+                return {"error": f"AI response missing required keys: {', '.join(missing_keys)}"}
 
             # Validate the structure of 'initial_scene'
             initial_scene = parsed_data.get('initial_scene', {})
             if not isinstance(initial_scene, dict) or not all(k in initial_scene for k in ['description', 'state', 'goals']):
                 app.logger.error("AI campaign response 'initial_scene' is missing required keys ('description', 'state', 'goals') or is not a dictionary.")
                 app.logger.debug(f"Received initial_scene: {initial_scene}")
-                return None
+                return {"error": "Invalid 'initial_scene' structure in AI response."}
             if not isinstance(initial_scene.get('state'), dict):
                  app.logger.error("AI campaign response 'initial_scene.state' is not a dictionary.")
                  app.logger.debug(f"Received initial_scene state: {initial_scene.get('state')}")
-                 return None
+                 return {"error": "Invalid 'initial_scene.state' structure in AI response."}
             if not isinstance(initial_scene.get('goals'), list):
                  app.logger.error("AI campaign response 'initial_scene.goals' is not a list.")
                  app.logger.debug(f"Received initial_scene goals: {initial_scene.get('goals')}")
-                 return None
+                 return {"error": "Invalid 'initial_scene.goals' structure in AI response."}
             
             # Optional: Add basic type checks for other generated lists if needed
             if not isinstance(parsed_data.get('generated_locations'), list):
@@ -118,17 +124,24 @@ class AIService:
             # Extract usage data
             usage_data = response.usage if response.usage else None
             model_used = response.model
+            
+            # Log API usage - need game_id here, but it's not available. Log against template creator for now.
+            # This logging needs to be moved to the game creation endpoint where game_id is known.
+            # For now, just return the data.
+            # log_api_usage(...) 
+
+            # Return parsed data, model used, and usage data
             return parsed_data, model_used, usage_data
 
         except json.JSONDecodeError as e:
             # Log the error and the content that failed to parse
             app.logger.error(f"Error decoding AI JSON response: {e}")
             app.logger.error(f"Raw content that failed JSON parsing: {generated_content}")
-            return None
+            return {"error": "AI response content is not valid JSON", "raw_content": generated_content}
         except Exception as e:
             # Log other potential errors
             app.logger.error(f"Error calling OpenAI API or processing response: {e}", exc_info=True)
-            return None # Fixed the syntax error here
+            return {"error": f"Failed to call AI service: {e}"}
 
     def generate_initial_scene(self, game: Game) -> dict | None:
         """
@@ -174,6 +187,7 @@ class AIService:
         app.logger.debug(f"--- AI Service: Generating initial scene with prompt ---\n{prompt}\n-------------------------------------------------")
 
         generated_content = "" # Initialize
+        # 3. Call OpenAI API
         try:
             # Fetch model from app config at time of call
             model_to_use = app.config.get('OPENAI_MODEL', 'gpt-3.5-turbo') # Default if not in config
@@ -210,10 +224,24 @@ class AIService:
             # Return narrative, actions, model, and usage
             usage_data = response.usage if response.usage else None
             model_used = response.model
+            
+            # Log API usage - need game_id here, which is available
+            # log_api_usage(
+            #     user_id=game.created_by, # Log against the game creator
+            #     model_name=model_used,
+            #     prompt_tokens=usage_data.prompt_tokens if usage_data else 0,
+            #     completion_tokens=usage_data.completion_tokens if usage_data else 0,
+            #     total_tokens=usage_data.total_tokens if usage_data else 0,
+            #     cost=calculate_cost(model_used, {'prompt_tokens': usage_data.prompt_tokens if usage_data else 0, 'completion_tokens': usage_data.completion_tokens if usage_data else 0}),
+            #     endpoint='generate_initial_scene',
+            #     game_id=game.id
+            # )
+
             return {
                 'narrative': parsed_data['narrative'],
                 'actions': parsed_data['actions']
-            }, model_used, usage_data
+            }
+
 
         except json.JSONDecodeError as e:
             app.logger.error(f"Error decoding initial scene JSON response: {e}")
@@ -246,6 +274,9 @@ class AIService:
         if context.startswith("Error:"):
             app.logger.error(f"Error building context: {context}")
             return None
+        
+        # Log the built context before building the prompt
+        app.logger.debug(f"--- AI Service: Context built for get_response ---\n{context}\n-------------------------------------------------")
 
         # 2. Build Prompt
         prompt = build_response_prompt(context, player_action)
@@ -290,11 +321,27 @@ class AIService:
             # Rename 'content' to 'narrative' for consistency
             usage_data = response.usage if response.usage else None
             model_used = response.model
-            return {
+            
+            # Log API usage - need game_id here, which is available via game_state.game_id
+            # log_api_usage(
+            #     user_id=game_state.game.created_by, # Log against the game creator
+            #     model_name=model_used,
+            #     prompt_tokens=usage_data.prompt_tokens if usage_data else 0,
+            #     completion_tokens=usage_data.completion_tokens if usage_data else 0,
+            #     total_tokens=usage_data.total_tokens if usage_data else 0,
+            #     cost=calculate_cost(model_used, {'prompt_tokens': usage_data.prompt_tokens if usage_data else 0, 'completion_tokens': usage_data.completion_tokens if usage_data else 0}),
+            #     endpoint='get_response',
+            #     game_id=game_state.game_id
+            # )
+            
+            response_dict = {
                 'narrative': parsed_data['content'],
                 'state_changes': parsed_data['state_changes'],
                 'available_actions': parsed_data['available_actions']
-            }, model_used, usage_data
+            }
+
+            # Return the dictionary, model used, and usage data as a tuple
+            return response_dict, model_used, usage_data
 
 
         except json.JSONDecodeError as e:
@@ -302,8 +349,105 @@ class AIService:
             app.logger.error(f"Raw content: {generated_content}")
             return None
         except Exception as e:
-            app.logger.error(f"Error calling OpenAI API or processing response: {e}", exc_info=True)
+            app.logger.error(f"Error generating response: {e}", exc_info=True)
             return None
+
+# Helper functions for API calls and cost calculation (moved from game.py)
+def call_openai_api(prompt: str, model: str = 'gpt-4o') -> Tuple[Dict[str, Any], Decimal]:
+    """
+    Calls the OpenAI API with the given prompt and model.
+    
+    Args:
+        prompt: The prompt string to send to the AI.
+        model: The name of the OpenAI model to use.
+        
+    Returns:
+        A tuple containing the JSON response from the API and the calculated cost.
+    """
+    api_key = current_app.config.get('OPENAI_API_KEY')
+    if not api_key:
+        raise ValueError("OpenAI API key not configured.")
+
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "response_format": { "type": "json_object" } # Request JSON object output
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+        response_data = response.json()
+        
+        # Calculate cost
+        cost = calculate_cost(model, response_data.get('usage', {}))
+        
+        return response_data, cost
+
+    except requests.exceptions.RequestException as e:
+        print(f"HTTP Request failed: {e}")
+        raise # Re-raise the exception after logging
+
+def calculate_cost(model: str, usage: Dict[str, int]) -> Decimal:
+    """
+    Calculates the cost of an API call based on the model and token usage.
+    
+    Args:
+        model: The name of the model used.
+        usage: A dictionary containing 'prompt_tokens' and 'completion_tokens'.
+        
+    Returns:
+        The calculated cost as a Decimal.
+    """
+    pricing = current_app.config.get('OPENAI_PRICING', {})
+    
+    prompt_tokens = usage.get('prompt_tokens', 0)
+    completion_tokens = usage.get('completion_tokens', 0)
+    
+    # Get pricing per 1M tokens
+    prompt_cost_per_million = pricing.get(model, {}).get('prompt', 0)
+    completion_cost_per_million = pricing.get(model, {}).get('completion', 0)
+    
+    # Calculate cost
+    prompt_cost = (Decimal(prompt_tokens) / Decimal(1_000_000)) * Decimal(prompt_cost_per_million)
+    completion_cost = (Decimal(completion_tokens) / Decimal(1_000_000)) * Decimal(completion_cost_per_million)
+    
+    total_cost = prompt_cost + completion_cost
+    
+    return total_cost.quantize(Decimal('0.000001')) # Quantize to 6 decimal places
+
+def log_api_usage(user_id: int, model_name: str, prompt_tokens: int, completion_tokens: int, total_tokens: int, cost: Decimal, endpoint: str, game_id: Optional[int] = None):
+    """
+    Logs API usage to the database.
+    
+    Args:
+        user_id: The ID of the user who initiated the action.
+        model_name: The name of the AI model used.
+        prompt_tokens: Number of tokens in the prompt.
+        completion_tokens: Number of tokens in the completion.
+        total_tokens: Total number of tokens.
+        cost: The calculated cost of the API call.
+        endpoint: A string identifying the API endpoint or action.
+        game_id: Optional ID of the game associated with the usage.
+    """
+    log_entry = ApiUsageLog(
+        user_id=user_id,
+        model_name=model_name,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+        cost=cost,
+        endpoint=endpoint,
+        game_id=game_id
+    )
+    db.session.add(log_entry)
+    db.session.commit() # Commit immediately for logging
+
 
 # Singleton instance
 ai_service = AIService()

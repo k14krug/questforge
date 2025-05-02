@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, current_app
 from flask_login import login_required
 from ..models.user import User
 from .forms import GameForm
@@ -7,7 +7,8 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def home():
-    return render_template('main/home.html')
+    ai_model = current_app.config.get('OPENAI_MODEL', 'Not Configured')
+    return render_template('main/home.html', ai_model=ai_model)
 
 @main_bp.route('/about')
 def about():

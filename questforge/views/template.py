@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, jsonify, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify # Added jsonify back
 from flask_login import login_required, current_user
-import json
+import json # Import json for parsing/dumping
 from ..models.template import Template
 from ..extensions import db
 from ..views.forms import TemplateForm
@@ -11,7 +11,7 @@ template_bp = Blueprint('template', __name__)
 @login_required
 def list_templates():
     """List all available templates"""
-    fix_question_flow()
+    # fix_question_flow() # Removed call to potentially conflicting data fixing function
     templates = Template.query.filter_by(created_by=current_user.id).all()
     return render_template('template/list.html', templates=templates)
 
@@ -21,48 +21,32 @@ def create_template():
     """Create a new template"""
     form = TemplateForm()
 
-    # Set default values for JSON fields on GET request
-    if request.method == 'GET':
-        form.question_flow.data = '[{"text": "What is your name?", "type": "text", "key": "name"}]'
-        form.default_rules.data = '{"start_location": "Town Square", "win_condition": "Defeat the Dragon"}'
-        form.campaign_data.data = '{"setting": "Fantasy world", "theme": "Heroic adventure"}'
-        form.objectives.data = '[{"name": "Defeat the dragon", "description": "Slay the ancient dragon terrorizing the kingdom"}]'
-        form.conclusion_conditions.data = '[{"type": "objective", "id": 1, "description": "Main objective completed"}]'
-        form.key_locations.data = '[{"name": "Dark Forest", "description": "A dangerous forest full of monsters"}]'
-        form.key_characters.data = '[{"name": "King Arthur", "role": "Ruler of the kingdom"}]'
-        form.major_plot_points.data = '[{"name": "Dragon Attack", "description": "The dragon attacks the capital city"}]'
-        form.possible_branches.data = '[{"name": "Negotiate", "description": "Try to negotiate with the dragon"}]'
+    # Removed default value setting for old JSON fields
 
     if form.validate_on_submit():
-        try:
-            template = Template(
-                name=form.name.data,
-                description=form.description.data,
-                created_by=current_user.id,
-                category=form.category.data,
-                question_flow=json.loads(form.question_flow.data),
-                default_rules=json.loads(form.default_rules.data),
-                ai_service_endpoint=form.ai_service_endpoint.data,
-                initial_state={
-                    'campaign_data': json.loads(form.campaign_data.data),
-                    'objectives': json.loads(form.objectives.data),
-                    'conclusion_conditions': json.loads(form.conclusion_conditions.data),
-                    'key_locations': json.loads(form.key_locations.data),
-                    'key_characters': json.loads(form.key_characters.data),
-                    'major_plot_points': json.loads(form.major_plot_points.data),
-                    'possible_branches': json.loads(form.possible_branches.data)
-                }
-            )
-            if not template.validate_question_flow():
-                flash('Invalid question flow structure.', 'danger')
-                return render_template('template/create.html', form=form)
-            db.session.add(template)
-            db.session.commit()
-            flash('Template created successfully!', 'success')
-            return redirect(url_for('template.list_templates'))
-        except json.JSONDecodeError:
-            flash('Invalid JSON format in one or more fields.', 'danger')
-            return render_template('template/create.html', form=form)
+        # Instantiate Template with new fields directly from the form
+        template = Template(
+            name=form.name.data,
+            description=form.description.data,
+            created_by=current_user.id,
+            category=form.category.data,
+            genre=form.genre.data,
+            core_conflict=form.core_conflict.data,
+            theme=form.theme.data,
+            desired_tone=form.desired_tone.data,
+            world_description=form.world_description.data,
+            scene_suggestions=form.scene_suggestions.data,
+            player_character_guidance=form.player_character_guidance.data,
+            difficulty=form.difficulty.data,
+            estimated_length=form.estimated_length.data,
+            ai_service_endpoint=form.ai_service_endpoint.data
+        )
+        
+        db.session.add(template)
+        db.session.commit()
+        flash('Template created successfully!', 'success')
+        return redirect(url_for('template.list_templates'))
+        # Removed JSON parsing and related error handling
         
     return render_template('template/create.html', form=form)
 
@@ -75,42 +59,33 @@ def edit_template(template_id):
     if template.created_by != current_user.id:
         flash('You can only edit your own templates', 'danger')
         return redirect(url_for('template.list_templates'))
-        
-    # Populate form with template data including initial_state
+
+    # Use obj=template for initial population of simple fields on GET
+    # Use obj=template for initial population of simple fields on GET
     form = TemplateForm(obj=template)
-    if template.initial_state:
-        form.campaign_data.data = template.initial_state.get('campaign_data', '')
-        form.objectives.data = template.initial_state.get('objectives', '')
-        form.conclusion_conditions.data = template.initial_state.get('conclusion_conditions', '')
-        form.key_locations.data = template.initial_state.get('key_locations', '')
-        form.key_characters.data = template.initial_state.get('key_characters', '')
-        form.major_plot_points.data = template.initial_state.get('major_plot_points', '')
-        form.possible_branches.data = template.initial_state.get('possible_branches', '')
-    
-    if form.validate_on_submit():
-        try:
-            form.populate_obj(template)
-            template.question_flow = json.loads(form.question_flow.data)
-            template.default_rules = json.loads(form.default_rules.data)
-            template.initial_state = {
-                'campaign_data': json.loads(form.campaign_data.data),
-                'objectives': json.loads(form.objectives.data),
-                'conclusion_conditions': json.loads(form.conclusion_conditions.data),
-                'key_locations': json.loads(form.key_locations.data),
-                'key_characters': json.loads(form.key_characters.data),
-                'major_plot_points': json.loads(form.major_plot_points.data),
-                'possible_branches': json.loads(form.possible_branches.data)
-            }
-            if not template.validate_question_flow():
-                flash('Invalid question flow structure.', 'danger')
-                return render_template('template/edit.html', form=form, template=template)
-            db.session.commit()
-            flash('Template updated successfully!', 'success')
-            return redirect(url_for('template.list_templates'))
-        except json.JSONDecodeError:
-            flash('Invalid JSON format in one or more fields.', 'danger')
-            return render_template('template/edit.html', form=form, template=template)
-        
+
+    if form.validate_on_submit(): # Process POST request
+        # Update template object with data from the new form fields
+        template.name = form.name.data
+        template.description = form.description.data
+        template.category = form.category.data
+        template.genre = form.genre.data
+        template.core_conflict = form.core_conflict.data
+        template.theme = form.theme.data
+        template.desired_tone = form.desired_tone.data
+        template.world_description = form.world_description.data
+        template.scene_suggestions = form.scene_suggestions.data
+        template.player_character_guidance = form.player_character_guidance.data
+        template.difficulty = form.difficulty.data
+        template.estimated_length = form.estimated_length.data
+        template.ai_service_endpoint = form.ai_service_endpoint.data
+
+        db.session.commit() # Save all changes
+        flash('Template updated successfully!', 'success')
+        return redirect(url_for('template.list_templates'))
+        # Removed JSON parsing and related error handling
+
+    # Render the form for GET request (or if validation failed on POST)
     return render_template('template/edit.html', form=form, template=template)
 
 @template_bp.route('/template/<int:template_id>/delete', methods=['POST'])
@@ -128,43 +103,56 @@ def delete_template(template_id):
     flash('Template deleted successfully', 'success')
     return redirect(url_for('template.list_templates'))
 
-@template_bp.route('/api/template/<int:template_id>/questions')
-@login_required
-def get_raw_template_questions(template_id):
-    """Get template questions for game creation"""
+
+# Removed potentially conflicting data fixing function
+# @template_bp.route('/template/fix_question_flow')
+# @login_required
+# def fix_question_flow():
+#     """Temporary route to fix question_flow data in templates"""
+#     templates = Template.query.filter_by(created_by=current_user.id).all()
+    
+#     for template in templates:
+#         try:
+#             if isinstance(template.question_flow, dict):
+#                 # If it's already a dict, skip parsing
+#                 question_flow = template.question_flow
+#             else:
+#                 question_flow = json.loads(template.question_flow)
+#                 if isinstance(question_flow, list):
+#                     new_question_flow = {str(i): q for i, q in enumerate(question_flow)}
+#                     template.question_flow = new_question_flow
+#                     db.session.add(template)
+#         except (TypeError, json.JSONDecodeError):
+#             # Handle cases where question_flow is None or not a valid JSON string
+#             pass
+            
+#     db.session.commit()
+#     flash('Question flow data fixed successfully!', 'success')
+#     return redirect(url_for('template.list_templates'))
+
+# --- API Endpoint for Template Details ---
+
+@template_bp.route('/api/templates/<int:template_id>/details', methods=['GET'])
+@login_required # Ensure only logged-in users can access
+def get_template_details(template_id):
+    """API endpoint to get the full details for a specific template."""
     template = Template.query.get_or_404(template_id)
     
-    if not template.question_flow:
-        return jsonify({'status': 'error', 'message': 'No questions defined for this template'}), 404
-    
+    # Return template details as JSON
     return jsonify({
-        'status': 'success',
-        'template_name': template.name,
-        'template_description': template.description,
-        'questions': template.question_flow.get('questions', [])
+        'id': template.id,
+        'name': template.name,
+        'description': template.description,
+        'category': template.category,
+        'genre': template.genre,
+        'core_conflict': template.core_conflict,
+        'theme': template.theme,
+        'desired_tone': template.desired_tone,
+        'world_description': template.world_description,
+        'scene_suggestions': template.scene_suggestions,
+        'player_character_guidance': template.player_character_guidance,
+        'difficulty': template.difficulty,
+        'estimated_length': template.estimated_length,
+        'default_rules': template.default_rules, # Include default_rules
+        'ai_service_endpoint': template.ai_service_endpoint
     })
-
-@template_bp.route('/template/fix_question_flow')
-@login_required
-def fix_question_flow():
-    """Temporary route to fix question_flow data in templates"""
-    templates = Template.query.filter_by(created_by=current_user.id).all()
-    
-    for template in templates:
-        try:
-            if isinstance(template.question_flow, dict):
-                # If it's already a dict, skip parsing
-                question_flow = template.question_flow
-            else:
-                question_flow = json.loads(template.question_flow)
-                if isinstance(question_flow, list):
-                    new_question_flow = {str(i): q for i, q in enumerate(question_flow)}
-                    template.question_flow = new_question_flow
-                    db.session.add(template)
-        except (TypeError, json.JSONDecodeError):
-            # Handle cases where question_flow is None or not a valid JSON string
-            pass
-            
-    db.session.commit()
-    flash('Question flow data fixed successfully!', 'success')
-    return redirect(url_for('template.list_templates'))

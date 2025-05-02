@@ -2,24 +2,12 @@ from datetime import datetime
 from questforge.extensions import db
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.types import TypeDecorator, Text
+# Removed TypeDecorator, Text imports as JSONEncodedDict is removed
 import sqlalchemy as sa
-import json
-from sqlalchemy.dialects.sqlite import JSON # Import JSON specifically for SQLite if needed
+# Removed json import as it's implicitly handled by sa.JSON
+# Removed dialect-specific JSON import
 
-class JSONEncodedDict(TypeDecorator):
-    """Custom JSON type to handle JSON fields in SQLite."""
-    impl = Text
-
-    def process_bind_param(self, value, dialect):
-        if value is None:
-            return None
-        return json.dumps(value)
-
-    def process_result_value(self, value, dialect):
-        if value is None:
-            return None
-        return json.loads(value)
+# Removed JSONEncodedDict class definition
 
 class GameState(db.Model):
     """Tracks live campaign state according to questforge-spec.md v1.2
@@ -43,43 +31,24 @@ class GameState(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     game_id = db.Column(db.Integer, db.ForeignKey('games.id'), nullable=False) # Ensure game_id is not nullable
     # Removed campaign_id
-    current_location = db.Column(db.String(100), nullable=True) # This might belong in state_data?
-    completed_objectives = db.Column(
-        sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'),
-        default=list
-    )
-    discovered_locations = db.Column(
-        sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'),
-        default=list
-    )
-    encountered_characters = db.Column(
-        sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'),
-        default=list
-    )
-    completed_plot_points = db.Column(
-        sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'),
-        default=list
-    )
-    player_decisions = db.Column(
-        sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'),
-        default=list
-    )
-    state_data = db.Column(
-        sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'),
-        nullable=False
-    )
+    # Removed redundant current_location column - location is stored within state_data JSON
+    
+    # Using standard sa.JSON, assuming backend DB supports native JSON
+    completed_objectives = db.Column(sa.JSON, default=list)
+    discovered_locations = db.Column(sa.JSON, default=list)
+    encountered_characters = db.Column(sa.JSON, default=list)
+    completed_plot_points = db.Column(sa.JSON, default=list)
+    player_decisions = db.Column(sa.JSON, default=list)
+    state_data = db.Column(sa.JSON, nullable=False)
+    
     current_branch = db.Column(db.String(50), default='main')
     campaign_complete = db.Column(db.Boolean, default=False)
-    game_log = db.Column(
-        sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'), 
-        default=list, 
-        nullable=False
-    )
-    available_actions = db.Column(
-        sa.JSON().with_variant(JSONEncodedDict(), 'sqlite'), 
-        default=list, 
-        nullable=False
-    )
+    
+    # Using standard sa.JSON
+    game_log = db.Column(sa.JSON, default=list, nullable=False)
+    available_actions = db.Column(sa.JSON, default=list, nullable=False)
+    visited_locations = db.Column(sa.JSON, default=list, nullable=False) # Added visited_locations field
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -99,12 +68,12 @@ class GameState(db.Model):
             'player_decisions': [],
             'current_branch': 'main',
             'campaign_complete': False,
-            'game_log': [], # Add to default state data if needed, though DB default is usually sufficient
-            'available_actions': [] # Add to default state data if needed
+            # Removed game_log and available_actions from here, rely on DB default
         }
         # Initialize DB columns directly if not relying solely on state_data
-        self.game_log = []
-        self.available_actions = []
+        # Rely on DB defaults for JSON lists now
+        # self.game_log = [] 
+        # self.available_actions = []
         
     def __repr__(self):
         return f'<GameState {self.id}>'

@@ -29,7 +29,21 @@ def build_context(game_state: GameState) -> str:
 
     # 1. Campaign Overview & Goals
     context_lines.append("--- Campaign Context ---")
-    campaign_data_dict = campaign.campaign_data or {}
+    
+    # Ensure campaign_data is treated as a dictionary
+    campaign_data_raw = campaign.campaign_data
+    campaign_data_dict = {}
+    if isinstance(campaign_data_raw, str):
+        try:
+            campaign_data_dict = json.loads(campaign_data_raw)
+        except json.JSONDecodeError:
+            # Log error or handle case where string is not valid JSON
+            campaign_data_dict = {} # Default to empty dict on error
+    elif isinstance(campaign_data_raw, dict):
+        campaign_data_dict = campaign_data_raw
+    else:
+         campaign_data_dict = {} # Default if it's None or unexpected type
+
     summary = campaign_data_dict.get('campaign_summary', 'No overall summary available.') # Use campaign_summary if available
     context_lines.append(f"Campaign Summary: {summary}")
 
@@ -61,11 +75,12 @@ def build_context(game_state: GameState) -> str:
 
     # 2. Current Game State & Progress
     context_lines.append("\n--- Current Game State ---")
-    context_lines.append(f"Current Location: {game_state.current_location or 'Unknown'}")
-    if game_state.state_data and isinstance(game_state.state_data, dict):
+    current_state_dict = game_state.state_data or {}
+    context_lines.append(f"Current Location: {current_state_dict.get('location', 'Unknown')}") # Get location from state_data
+    if current_state_dict:
         context_lines.append("Other State Details:")
-        for key, value in game_state.state_data.items():
-            if key != 'location': # Avoid duplicating location
+        for key, value in current_state_dict.items():
+            if key != 'location': # Avoid duplicating location if it exists
                 context_lines.append(f"- {key.replace('_', ' ').title()}: {json.dumps(value)}") # Use json.dumps for complex values
     else:
          context_lines.append("Other State Details: None available.")

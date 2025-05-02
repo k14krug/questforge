@@ -27,6 +27,7 @@ class Template(db.Model):
     player_character_guidance = db.Column(db.Text) # Optional: Notes for players creating characters
     difficulty = db.Column(db.String(20)) # Optional: e.g., Easy, Medium, Hard
     estimated_length = db.Column(db.String(20)) # Optional: e.g., Short, Medium, Long
+    default_rules = db.Column(db.JSON) # New: Default rules for campaign generation
 
     # AI Interaction Fields (Kept)
     version = db.Column(db.String(20), default='1.0.0') # Metadata
@@ -42,9 +43,10 @@ class Template(db.Model):
     creator = relationship('User', backref='created_templates')
 
     # Updated __init__ to reflect new fields
-    def __init__(self, name, description, created_by, category=None, genre=None, core_conflict=None, 
-                 theme=None, desired_tone=None, world_description=None, scene_suggestions=None, 
-                 player_character_guidance=None, difficulty=None, estimated_length=None, 
+    def __init__(self, name, description, created_by, category=None, genre=None, core_conflict=None,
+                 theme=None, desired_tone=None, world_description=None, scene_suggestions=None,
+                 player_character_guidance=None, difficulty=None, estimated_length=None,
+                 default_rules=None, # Added default_rules
                  version='1.0.0', ai_service_endpoint=None, **kwargs): # Added **kwargs for flexibility
         self.name = name
         self.description = description
@@ -59,6 +61,7 @@ class Template(db.Model):
         self.player_character_guidance = player_character_guidance
         self.difficulty = difficulty
         self.estimated_length = estimated_length
+        self.default_rules = default_rules # Added default_rules assignment
         self.version = version
         self.ai_service_endpoint = ai_service_endpoint
         # Handle potential extra arguments if needed, or remove **kwargs if strict matching is desired
