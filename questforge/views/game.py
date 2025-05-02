@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash, abort
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash, abort, current_app
 from flask_login import login_required, current_user
 from ..models.game import Game, GamePlayer # Import GamePlayer
 from ..models.campaign import Campaign
@@ -150,9 +150,13 @@ def play(game_id):
     total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game_id).scalar()
     total_cost = total_cost_query if total_cost_query is not None else Decimal('0.0')
 
+    # Get the AI model from config
+    ai_model = current_app.config.get('OPENAI_MODEL', 'Not Configured')
+
     return render_template('game/play.html', 
                            game=game, 
-                           campaign=campaign, 
+                           campaign=campaign,
+                           ai_model=ai_model, # Pass AI model to template
                            user_id=current_user.id, 
                            game_state=game_state, 
                            game_log=game_state.game_log if game_state else [],

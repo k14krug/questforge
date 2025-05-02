@@ -105,6 +105,33 @@
                         {% else %}
                             <p class="text-muted mb-0">Inventory data not available.</p> {# Fallback if state_data or inventory key is missing, added mb-0 #}
                         {% endif %}
+            </div>
+        </div>
+
+        <!-- AI Model Info -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>AI Model</h5>
+            </div>
+            <div class="card-body" id="aiModelInfo">
+                <p>Using model: <strong>{{ ai_model | e }}</strong></p>
+            </div>
+        </div>
+
+        <!-- Game Objective -->
+        <div class="card mt-3">
+            <div class="card-header">
+                        <h5>Objective</h5>
+                    </div>
+                    <div class="card-body" id="gameObjective">
+                        {# Display the objective data from the campaign object #}
+                        {% if campaign and campaign.objectives %}
+                            {# Assuming objectives is a dict/JSON object. Adjust access as needed. #}
+                            {# For now, just display the raw JSON to see structure #}
+                            <pre>{{ campaign.objectives | tojson(indent=2) }}</pre> 
+                        {% else %}
+                            <p class="text-muted">Objective not available.</p>
+                        {% endif %}
                     </div>
                 </div>
 
