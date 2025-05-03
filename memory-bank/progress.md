@@ -22,14 +22,6 @@
     *   Created `ApiUsageLog` model and database table.
     *   Implemented logic in services (`ai_service`, `campaign_service`, `socket_service`) to record API call details (model, tokens) and calculate cost based on `config.py` pricing.
     *   Updated UI (`list.html`, `play.html`, `home.html`) to display cost information and configured model.
-*   **Game Conclusion Logic Fix (Completed):**
-    *   Modified `socket_service.py` to correctly merge the complete state from `game_state_service` into the DB `GameState` object, re-fetch the object after commit, and call `check_conclusion` with the refreshed state.
-    *   Fixed issues with SQLAlchemy JSON field mutation tracking by explicitly assigning a copy of the updated state dictionary to force change detection.
-    *   Fixed `campaign_service.py` to correctly access the campaign ID via `game_state.game.campaign.id`.
-    *   Added missing `import json` in `campaign_service.py` to fix a `NameError` during logging.
-    *   Enhanced logging in `campaign_service.py` (`check_conclusion`) for better debugging.
-    *   Updated `prompt_builder.py` (`build_response_prompt`) to explicitly instruct the AI to include conclusion-related state keys in its `state_changes`.
-    *   Fixed campaign generation JSON truncation by increasing `max_tokens` to 4000 in `ai_service.py`.
 
 ## Remaining Work (Phased Approach from Spec)
 
@@ -55,22 +47,13 @@
 *   Implement Multiplayer Location Display. **(Completed)**
 *   Enable Single-Player Mode. **(Completed)**
 
-**Phase 5: Narrative Guidance & Objective Enforcement (Implementation Complete, Testing Paused)** (See [./narrative_guidance_plan.md](./narrative_guidance_plan.md) for details)
-*   Implemented required/optional plot points distinction. **(Completed)**
-*   Added logic to track plot progression (`turns_since_plot_progress`). **(Completed)**
-*   Enhanced AI prompts (`build_response_prompt`) to include objective focus, provide hints when stuck, and report plot achievement. **(Completed)**
-*   Updated `socket_service` to handle plot tracking, stuck detection, and pass info to AI/conclusion check. **(Completed)**
-*   Updated `check_conclusion` to verify required plot points are met. **(Completed)**
-*   **Testing Pending:** Requires testing of objective enforcement, AI hints, and conclusion logic.
-*   **Log Update Issue Pending:** Dynamic log update in `play.html` still needs diagnosis and fix.
-*   **(Task Paused)** User requested pause to create game data generation tool first.
+**Phase 5: Enhanced Game Creation (Current)** (Needs Planning - See [./phase-5-enhanced-game-creation.md](./phase-5-enhanced-game-creation.md) for initial thoughts)
 
-**Phase 6: Enhanced Game Creation (Next)** (Needs Planning - See [./phase-5-enhanced-game-creation.md](./phase-5-enhanced-game-creation.md) for initial thoughts - *Note: Renumbered from original Phase 5*)
 *   Allow game creators to add customizations on top of templates before campaign generation.
 
-**Phase 7: Testing & Deployment Prep** (Medium Priority - Ongoing - *Note: Renumbered from original Phase 6*)
+**Phase 6: Testing & Deployment Prep** (Medium Priority - Ongoing)
 
-*   Write unit & integration tests for new components (Phases 1-6).
+*   Write unit & integration tests for new components (Phases 1-5).
 *   Write tests for SocketIO handlers & gameplay.
 *   Increase overall test coverage.
 *   Verify/test production configuration (Gunicorn, Systemd, Nginx).

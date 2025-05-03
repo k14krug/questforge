@@ -73,8 +73,7 @@ class AIService:
                 ],
                 response_format={ "type": "json_object" }, # Request JSON output
                 temperature=self.temperature,
-                # Override max_tokens specifically for campaign generation, as it needs more space
-                max_tokens=4000 
+                max_tokens=self.max_tokens
             )
             generated_content = response.choices[0].message.content
             app.logger.debug(f"--- AI Service: Received raw response ---\n{generated_content}\n------------------------------------------")
@@ -138,13 +137,11 @@ class AIService:
             # Log the error and the content that failed to parse
             app.logger.error(f"Error decoding AI JSON response: {e}")
             app.logger.error(f"Raw content that failed JSON parsing: {generated_content}")
-            # Return None for all expected values to prevent unpacking error
-            return None, None, None 
+            return {"error": "AI response content is not valid JSON", "raw_content": generated_content}
         except Exception as e:
             # Log other potential errors
             app.logger.error(f"Error calling OpenAI API or processing response: {e}", exc_info=True)
-            # Return None for all expected values to prevent unpacking error
-            return None, None, None
+            return {"error": f"Failed to call AI service: {e}"}
 
     def generate_initial_scene(self, game: Game) -> dict | None:
         """
@@ -254,23 +251,16 @@ class AIService:
             app.logger.error(f"Error generating initial scene: {e}", exc_info=True)
             return None
 
-    # Updated signature to accept new arguments
-    def get_response(self, game_state: GameState, player_action: str, is_stuck: bool = False, next_required_plot_point: Optional[str] = None) -> Optional[Tuple[Dict[str, Any], str, Optional[Dict[str, int]]]]:
+    def get_response(self, game_state: GameState, player_action: str) -> dict | None:
         """
-        Gets the AI's response to a player's action within the current game context,
-        potentially including guidance if the player seems stuck.
+        Gets the AI's response to a player's action within the current game context.
 
         Args:
             game_state: The current GameState object.
             player_action: The action taken by the player (string).
-            is_stuck: Boolean indicating if the player might be stuck.
-            next_required_plot_point: Optional string describing the next required plot point.
 
         Returns:
-            A tuple containing:
-                - A dictionary with 'narrative', 'state_changes', 'available_actions'.
-                - The model name used (string).
-                - Usage data dictionary (Optional[Dict[str, int]]).
+            A dictionary containing the AI's narrative response ('content') and
             any resulting 'state_changes' (dictionary), and 'available_actions' (list).
             Returns None on failure.
         """
@@ -288,13 +278,8 @@ class AIService:
         # Log the built context before building the prompt
         app.logger.debug(f"--- AI Service: Context built for get_response ---\n{context}\n-------------------------------------------------")
 
-        # 2. Build Prompt - Pass new arguments
-        prompt = build_response_prompt(
-            context=context,
-            player_action=player_action,
-            is_stuck=is_stuck,
-            next_required_plot_point=next_required_plot_point
-        )
+        # 2. Build Prompt
+        prompt = build_response_prompt(context, player_action)
         app.logger.debug(f"--- AI Service: Getting response with prompt ---\n{prompt}\n---------------------------------------------")
 
         generated_content = "" # Initialize

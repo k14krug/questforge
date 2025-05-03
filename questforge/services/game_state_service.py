@@ -330,21 +330,14 @@ class GameStateService:
             self.active_games[game_id]['version'] += 1
             current_app.logger.info(f"Incremented version for game {game_id} to {self.active_games[game_id]['version']}")
 
-        # Ensure visited_locations is part of the state dictionary being returned
-        current_state_dict = self.active_games[game_id]['state']
-        current_state_dict['visited_locations'] = self.active_games[game_id].get('visited_locations', [])
-        # Optionally include player_locations if needed by consumers of the 'state' dict
-        # current_state_dict['player_locations'] = self.active_games[game_id].get('player_locations', {})
-
         # Return the latest full state from memory (as DB commit happens later)
-        # The 'state' dictionary now contains visited_locations
         return {
             'version': self.active_games[game_id]['version'],
-            'state': current_state_dict, # This now includes visited_locations
+            'state': self.active_games[game_id]['state'],
             'log': self.active_games[game_id]['log'],
             'actions': self.active_games[game_id]['actions'],
-            # Keep player_locations separate for now unless needed inside 'state'
-            'player_locations': self.active_games[game_id].get('player_locations', {})
+            'visited_locations': self.active_games[game_id].get('visited_locations', []), # Include visited_locations
+            'player_locations': self.active_games[game_id].get('player_locations', {}) # Include player_locations
         }
 
 # Singleton instance

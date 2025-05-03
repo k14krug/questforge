@@ -4,15 +4,16 @@ from flask_login import current_user
 from sqlalchemy.orm import joinedload, attributes # Import joinedload and attributes
 from sqlalchemy import func # Import func for sum aggregation
 import json # Import json for logging state_data
-from ..extensions import db, get_socketio # Import get_socketio from extensions.py
+from ..extensions import db
+from ..extensions.socketio import get_socketio
 from ..models import Game, User, GamePlayer, GameState, Template, ApiUsageLog # Added GameState, Template, ApiUsageLog
 from decimal import Decimal # For cost calculation
 
 socketio = get_socketio()
 from .game_state_service import game_state_service # Import the instance
 from .ai_service import ai_service # Import the singleton INSTANCE
-# Import the specific functions needed
-from .campaign_service import generate_campaign_structure, check_conclusion
+# Import the specific function needed, not a non-existent instance
+from .campaign_service import generate_campaign_structure 
 
 class SocketService:
     @staticmethod
@@ -307,37 +308,6 @@ class SocketService:
                     # Log the state *as fetched* before AI call
                     current_app.logger.debug(f"State data *before* AI call: {json.dumps(db_game_state.state_data)}")
 
-                    # --- Narrative Guidance Logic ---
-                    # Ensure state_data is a dict
-                    if not isinstance(db_game_state.state_data, dict):
-                        db_game_state.state_data = {} # Initialize if not dict
-
-                    # Task 3.1: Increment turns_since_plot_progress
-                    turns_key = 'turns_since_plot_progress'
-                    current_turns = db_game_state.state_data.get(turns_key, 0)
-                    db_game_state.state_data[turns_key] = current_turns + 1
-                    current_app.logger.debug(f"Game {game_id}: Incremented {turns_key} to {db_game_state.state_data[turns_key]}")
-
-                    # Task 3.2: Identify next required plot point
-                    next_required_plot_point_desc = None
-                    all_plot_points = db_game_state.game.campaign.major_plot_points
-                    completed_plots = db_game_state.completed_plot_points or [] # Ensure list
-                    if isinstance(all_plot_points, list):
-                        for plot_point in all_plot_points:
-                            if isinstance(plot_point, dict) and plot_point.get('required') is True:
-                                description = plot_point.get('description')
-                                if description and description not in completed_plots:
-                                    next_required_plot_point_desc = description
-                                    break # Found the first uncompleted required point
-                    current_app.logger.debug(f"Game {game_id}: Next required plot point: {next_required_plot_point_desc}")
-
-                    # Task 3.3: Determine if stuck
-                    STUCK_THRESHOLD = 3 # Define threshold
-                    is_stuck = db_game_state.state_data[turns_key] >= STUCK_THRESHOLD
-                    current_app.logger.debug(f"Game {game_id}: Is player stuck? {is_stuck} (Turns: {db_game_state.state_data[turns_key]})")
-                    # --- End Narrative Guidance Logic ---
-
-
                     # --- Inventory Validation ---
                     action_lower = action.lower()
                     item_keywords = ["use ", "give ", "read ", "equip ", "combine "] # Note the space
@@ -402,13 +372,10 @@ class SocketService:
                                     validation_passed = False
 
                     # 2. Call AI Service (only if validation passed)
-                    # Task 3.4: Pass narrative guidance info to AI Service
                     if validation_passed:
                         ai_result = ai_service.get_response(
                             game_state=db_game_state, # Pass the fetched object
-                            player_action=action,
-                            is_stuck=is_stuck, # Pass stuck status
-                            next_required_plot_point=next_required_plot_point_desc # Pass next objective
+                            player_action=action
                         )
                         if not ai_result:
                             # AI service itself failed after validation passed
@@ -431,36 +398,11 @@ class SocketService:
                         # This block is now correctly indented relative to the outer 'with'
                         ai_response_data, model_used, usage_data = ai_result
 
-                        # Task 3.5: Process achieved_plot_point from AI response
-                        state_changes = ai_response_data.get('state_changes')
-                        achieved_plot_desc = None
-                        plot_point_achieved_this_turn = False
-                        if isinstance(state_changes, dict):
-                            achieved_plot_desc = state_changes.pop('achieved_plot_point', None) # Use pop to remove if present
-
-                        if achieved_plot_desc:
-                            current_app.logger.info(f"Game {game_id}: AI indicated plot point achieved: '{achieved_plot_desc}'")
-                            # Ensure completed_plot_points is a list
-                            if not isinstance(db_game_state.completed_plot_points, list):
-                                db_game_state.completed_plot_points = []
-                            # Add if not already present
-                            if achieved_plot_desc not in db_game_state.completed_plot_points:
-                                db_game_state.completed_plot_points.append(achieved_plot_desc)
-                                attributes.flag_modified(db_game_state, "completed_plot_points")
-                                current_app.logger.debug(f"Game {game_id}: Added '{achieved_plot_desc}' to completed_plot_points.")
-                            else:
-                                current_app.logger.debug(f"Game {game_id}: Plot point '{achieved_plot_desc}' already completed.")
-                            # Reset stuck counter
-                            db_game_state.state_data[turns_key] = 0
-                            plot_point_achieved_this_turn = True
-                            current_app.logger.debug(f"Game {game_id}: Reset {turns_key} to 0 due to plot point achievement.")
-                        # --- End Plot Point Achievement Processing ---
-
-                        # Update GameState object with AI response data (state_changes might have been modified)
+                        # Update GameState object with AI response data
                         updated_state_info = game_state_service.update_state(
                             game_id=game_id, # Pass game_id for in-memory update
                             user_id=user_id, # Pass the user_id of the player performing the action
-                            state_changes=state_changes, # Pass potentially modified state_changes
+                            state_changes=ai_response_data.get('state_changes'),
                             log_entry=ai_response_data.get('narrative'),
                             actions=ai_response_data.get('available_actions'),
                             increment_version=True # Version increments only on successful AI update
@@ -520,30 +462,14 @@ class SocketService:
                         else:
                             current_app.logger.warning(f"No usage data returned from AI service for game {game_id} player action.")
 
-                        # --- Apply the complete updated state from game_state_service to the DB object ---
-                        # updated_state_info contains the fully processed state including visited_locations etc.
-                        # We already updated db_game_state.state_data[turns_key] and potentially db_game_state.completed_plot_points
-                        # The game_state_service.update_state call also updates db_game_state.state_data with other changes.
-                        # We just need to ensure state_data is flagged.
-                        attributes.flag_modified(db_game_state, "state_data") # Flag state_data modification (covers turns counter)
-                        # completed_plot_points was already flagged if modified
-                        current_app.logger.debug(f"Game {game_id}: Flagged state_data as modified.")
-                        # The rest of the state application logic inside update_state handles merging other changes.
-
-                        # Update available actions on DB object using the processed actions
-                        if updated_state_info and 'actions' in updated_state_info:
-                             db_game_state.available_actions = updated_state_info['actions'] # Use actions from the service
-                             attributes.flag_modified(db_game_state, "available_actions") # Flag available_actions modification
-                             current_app.logger.debug(f"Updated db_game_state.available_actions from game_state_service for game {game_id}")
-                        # else: # Log if actions are missing?
-
+                        # Flag additional modified fields for commit
+                        attributes.flag_modified(db_game_state, "state_data")
+                        attributes.flag_modified(db_game_state, "available_actions")
+                        current_app.logger.debug(f"Flagged state_data, available_actions on db_game_state for commit.")
                         # --- End of block executed only on successful AI response ---
 
                     # Log state JUST BEFORE commit
                     current_app.logger.debug(f"PRE-COMMIT state_data: {json.dumps(db_game_state.state_data)}")
-                    current_app.logger.debug(f"PRE-COMMIT game_log: {json.dumps(db_game_state.game_log)}")
-                    current_app.logger.debug(f"PRE-COMMIT available_actions: {json.dumps(db_game_state.available_actions)}")
-
 
                     # 5. Commit the transaction (saves player log always, saves full state if AI ran)
                     db.session.commit()
@@ -555,80 +481,28 @@ class SocketService:
                     # Log state JUST AFTER commit
                     current_app.logger.debug(f"POST-COMMIT state_data: {json.dumps(db_game_state.state_data)}")
 
-                    # --- Post-Commit Operations (Outside transaction) ---
-                    game_concluded = False # Flag to track conclusion
-                    if ai_result and updated_state_info: # Only check conclusion and broadcast if AI updated state
-                        # 6. Check for game conclusion AFTER commit using the committed state data
-                        try:
-                            # Extract necessary data *before* potential session issues
-                            campaign = db_game_state.game.campaign # Get campaign object
-                            campaign_conditions = campaign.conclusion_conditions
-                            major_plot_points = campaign.major_plot_points # Get plot points
-                            # Use the state data from the DB object which includes our direct modifications
-                            committed_state_data = db_game_state.state_data
-                            completed_plot_points_list = db_game_state.completed_plot_points # Get completed plots
 
-                            current_app.logger.info(f"Checking conclusion for game {game_id} using committed state data.")
-                            current_app.logger.debug(f"Conditions: {json.dumps(campaign_conditions)}")
-                            current_app.logger.debug(f"Major Plot Points: {json.dumps(major_plot_points)}")
-                            # Log the exact state data being passed to the function
-                            current_app.logger.debug(f"State Data being passed to check_conclusion: {json.dumps(committed_state_data)}")
-                            current_app.logger.debug(f"Completed Plot Points being passed: {json.dumps(completed_plot_points_list)}")
+                # --- Post-Commit Operations (Outside transaction, only if AI call was successful) ---
+                if ai_result and updated_state_info: # Only broadcast if the state was actually updated by AI and committed
+                    # Recalculate total cost after commit
+                    # Note: This query needs its own context now
+                    with current_app.app_context():
+                        new_total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game_id).scalar()
+                        new_total_cost = new_total_cost_query if new_total_cost_query is not None else Decimal('0.0')
 
+                    # Prepare broadcast data using the info returned by update_state
+                    broadcast_data = updated_state_info.copy() # updated_state_info should be available here
+                    broadcast_data['total_cost'] = float(new_total_cost)
 
-                            # Pass the extracted data directly to check_conclusion
-                            # NOTE: check_conclusion needs modification to accept major_plot_points and completed_plot_points_list
-                            game_concluded = check_conclusion(
-                                game_id=game_id, # Pass the game_id
-                                campaign_conditions=campaign_conditions,
-                                major_plot_points=major_plot_points, # Pass plot points
-                                current_state_data=committed_state_data,
-                                completed_plot_points=completed_plot_points_list # Pass completed plots
-                            )
-                            if game_concluded:
-                                current_app.logger.info(f"Game conclusion detected for game {game_id}.")
-                                # Update game status in DB - re-fetch Game object here is safer
-                                game = db.session.get(Game, game_id)
-                                if game:
-                                    game.status = 'completed'
-                                    db.session.commit()
-                                    current_app.logger.info(f"Game {game_id} status updated to 'completed'.")
-                                else:
-                                    current_app.logger.error(f"Could not find game {game_id} to update status to completed.")
-                        except Exception as conc_e:
-                            current_app.logger.error(f"Error during conclusion check for game {game_id}: {conc_e}", exc_info=True)
-                            # Proceed with normal state update even if conclusion check fails
+                    # Broadcast updated state and cost to all players
+                    current_app.logger.info(f"Broadcasting game_state_update for game {game_id} (v{broadcast_data['version']}) including total_cost: {broadcast_data['total_cost']:.4f}")
+                    emit('game_state_update', broadcast_data, room=game_id)
+                # else: # No broadcast if commit was skipped
+                #    current_app.logger.info(f"Skipping broadcast for game {game_id} as commit was skipped.")
 
-                        # 7. Broadcast appropriate event
-                        if game_concluded:
-                            # Emit game_concluded event
-                            # Include final state details if needed
-                            final_state_data = updated_state_info.copy() # Use the latest in-memory state info
-                            # Recalculate cost one last time
-                            new_total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game_id).scalar()
-                            final_state_data['total_cost'] = float(new_total_cost_query if new_total_cost_query is not None else Decimal('0.0'))
-                            # Add a conclusion message?
-                            final_state_data['conclusion_message'] = "The adventure has concluded!" # Example message
-                            current_app.logger.info(f"Broadcasting game_concluded for game {game_id}")
-                            emit('game_concluded', final_state_data, room=game_id)
-                        else:
-                            # Broadcast normal game_state_update
-                            # Recalculate total cost after commit
-                            new_total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game_id).scalar()
-                            new_total_cost = new_total_cost_query if new_total_cost_query is not None else Decimal('0.0')
-
-                            # Prepare broadcast data using the info returned by update_state
-                            broadcast_data = updated_state_info.copy()
-                            broadcast_data['total_cost'] = float(new_total_cost)
-
-                            # Broadcast updated state and cost to all players
-                            current_app.logger.info(f"Broadcasting game_state_update for game {game_id} (v{broadcast_data['version']}) including total_cost: {broadcast_data['total_cost']:.4f}")
-                            emit('game_state_update', broadcast_data, room=game_id)
-                    # else: # No broadcast if commit was skipped (e.g., inventory check failed)
-                    #    current_app.logger.info(f"Skipping broadcast for game {game_id} as commit was skipped.")
 
             except Exception as e:
-                # Rollback needed if any error occurred within the try block
+                # Rollback needed if any error occurred within the try block OR if inventory check failed and we need to ensure no partial changes
                 with current_app.app_context(): # Need context for rollback
                     db.session.rollback()
                 current_app.logger.error(f"Error processing player action '{action}' in game {game_id}, rolling back transaction: {str(e)}", exc_info=True)
