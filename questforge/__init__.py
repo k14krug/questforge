@@ -1,9 +1,12 @@
 import logging
+import logging
 import os
 from logging import StreamHandler # Import StreamHandler
 from logging.handlers import RotatingFileHandler # Import RotatingFileHandler
 from flask import Flask
-from .extensions import db, login_manager, bcrypt, migrate, init_socketio
+# Correct imports now that extensions/__init__.py is removed
+# All instances are in questforge/extensions.py
+from .extensions import db, bcrypt, login_manager, migrate, init_socketio 
 from .services.socket_service import SocketService
 
 def create_app(config_name='default'):
@@ -49,6 +52,7 @@ def create_app(config_name='default'):
     bcrypt.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+    # Remove csrf init
     socketio = init_socketio(app) # SocketIO initialized after logging
 
     # Set login view
@@ -67,12 +71,14 @@ def create_app(config_name='default'):
     from .views.campaign_api import campaign_api_bp
     from .views.game import game_bp
     from .views.template import template_bp
+    # Remove admin import
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(campaign_api_bp)
     app.register_blueprint(game_bp)
     app.register_blueprint(template_bp)
+    # Remove admin registration
 
     # Register socket handlers
     SocketService.register_handlers()

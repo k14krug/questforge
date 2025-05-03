@@ -68,8 +68,13 @@ class GameState(db.Model):
             'player_decisions': [],
             'current_branch': 'main',
             'campaign_complete': False,
+            'turns_since_plot_progress': 0, # Added for AI guidance trigger
             # Removed game_log and available_actions from here, rely on DB default
         }
+        # Ensure the provided state_data also gets the default if missing
+        if state_data and 'turns_since_plot_progress' not in self.state_data:
+            self.state_data['turns_since_plot_progress'] = 0
+            
         # Initialize DB columns directly if not relying solely on state_data
         # Rely on DB defaults for JSON lists now
         # self.game_log = [] 

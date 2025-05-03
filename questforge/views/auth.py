@@ -1,8 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from questforge.models.user import User
-from questforge.extensions import db, login_manager
-from questforge.extensions.bcrypt import bcrypt
+from questforge.extensions import db, login_manager, bcrypt # Corrected bcrypt import
 from .forms import RegistrationForm, LoginForm
 
 auth_bp = Blueprint('auth', __name__)

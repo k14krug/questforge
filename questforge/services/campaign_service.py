@@ -1,4 +1,5 @@
 import logging
+import json # Import the json module
 from flask import current_app
 from questforge.models.game import Game
 from questforge.models.campaign import Campaign
@@ -167,7 +168,33 @@ def generate_campaign_structure(game: Game, template: Template, player_descripti
         # Set attributes *after* object creation
         initial_game_state.campaign_id = new_campaign.id
         initial_game_state.current_location = initial_state_dict.get('location')
-        initial_game_state.game_log = [initial_narrative]
+
+        # --- Format and add conclusion conditions to initial log ---
+        conditions_text = "INFO: To conclude this adventure, the following conditions must be met:"
+        if new_campaign.conclusion_conditions and isinstance(new_campaign.conclusion_conditions, list):
+            for condition in new_campaign.conclusion_conditions:
+                if isinstance(condition, dict):
+                    cond_type = condition.get('type')
+                    if cond_type == 'state_key_equals':
+                        conditions_text += f"\n- State key '{condition.get('key', 'N/A')}' must equal '{condition.get('value', 'N/A')}'"
+                    elif cond_type == 'state_key_exists':
+                        conditions_text += f"\n- State key '{condition.get('key', 'N/A')}' must exist"
+                    elif cond_type == 'state_key_contains':
+                        conditions_text += f"\n- State key '{condition.get('key', 'N/A')}' must contain '{condition.get('value', 'N/A')}'"
+                    elif cond_type == 'location_visited':
+                        conditions_text += f"\n- Location '{condition.get('location', 'N/A')}' must be visited"
+                    else:
+                        conditions_text += f"\n- Unknown condition type: {json.dumps(condition)}"
+                else:
+                    conditions_text += f"\n- Malformed condition: {condition}"
+        else:
+            conditions_text += "\n- No specific conclusion conditions defined."
+        
+        # Combine conditions text with the initial narrative
+        combined_initial_log = [conditions_text, initial_narrative]
+        initial_game_state.game_log = combined_initial_log
+        # --- End conclusion conditions formatting ---
+
         initial_game_state.available_actions = initial_actions
         db.session.add(initial_game_state)
         logger.info(f"Created initial GameState object for game {game_id}")
@@ -180,8 +207,11 @@ def generate_campaign_structure(game: Game, template: Template, player_descripti
         # Import the service instance here to avoid circular import at top level
         from .game_state_service import game_state_service
         game_state_service.join_game(game_id, 'system') # Ensure game entry exists
+        # Ensure the initial state includes turns_since_plot_progress
+        if 'turns_since_plot_progress' not in initial_state_dict:
+            initial_state_dict['turns_since_plot_progress'] = 0
         game_state_service.active_games[game_id]['state'] = initial_state_dict
-        game_state_service.active_games[game_id]['log'] = [initial_narrative]
+        game_state_service.active_games[game_id]['log'] = combined_initial_log # Use the combined log
         game_state_service.active_games[game_id]['actions'] = initial_actions
         game_state_service.active_games[game_id]['version'] = 1 # Initial version
         logger.info(f"Initialized game state in memory for game {game_id}")
@@ -238,115 +268,167 @@ def update_campaign_state(game_state: GameState, player_action: str):
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error during campaign creation for game {game_state.game_id}: {str(e)}", exc_info=True)
+        logger.error(f"Error during campaign state update for game {game_state.game_id}: {str(e)}", exc_info=True) # Corrected log message
         return False
 
-def check_conclusion(game_state: GameState):
+# Updated function signature
+def check_conclusion(game_id: int, campaign_conditions: List[Dict], major_plot_points: List[Dict], current_state_data: Dict, completed_plot_points: List[str]) -> bool:
     """
-    Checks if the game has reached a conclusion based on the current game state.
+    Checks if the game has reached a conclusion based on required plot points
+    and specific conclusion conditions being met in the current state data.
 
     Args:
-        game_state: The current GameState object.
+        game_id: The ID of the game (for logging).
+        campaign_conditions: A list of conclusion condition dictionaries from the Campaign.
+        major_plot_points: The list of plot point objects (with 'description' and 'required' keys).
+        current_state_data: The current state data dictionary to check against.
+        completed_plot_points: A list of descriptions of the plot points already completed.
+
 
     Returns:
         True if the game has concluded, False otherwise.
     """
     logger = current_app.logger
     try:
-        logger.info(f"Checking conclusion for game {game_state.game_id}, campaign {game_state.campaign_id}")
+        logger.info(f"Checking conclusion for game {game_id}")
+        state_data = current_state_data or {} # Ensure state_data is a dict
+        completed_plots_set = set(completed_plot_points or []) # Use a set for efficient lookup
 
-        # 1. Get campaign
-        campaign = db.session.get(Campaign, game_state.campaign_id)
-        if not campaign:
-            logger.error(f"Campaign with id {game_state.campaign_id} not found")
+        # --- Pre-Check 1: Check if all REQUIRED plot points are completed ---
+        if isinstance(major_plot_points, list):
+            for plot_point in major_plot_points:
+                if isinstance(plot_point, dict) and plot_point.get('required') is True:
+                    description = plot_point.get('description')
+                    if not description:
+                        logger.warning(f"Game {game_id}: Found required plot point with no description: {plot_point}. Cannot check completion.")
+                        return False # Treat malformed required plot point as failure
+                    if description not in completed_plots_set:
+                        logger.info(f"Game {game_id}: Conclusion check failed: Required plot point not completed: '{description}'")
+                        return False # A required plot point is not yet completed
+            logger.debug(f"Game {game_id}: All required plot points completed.")
+        else:
+            logger.warning(f"Game {game_id}: Major plot points data is not a list: {major_plot_points}. Cannot check required points.")
+            # Decide if this should prevent conclusion - likely yes if plot points are expected
             return False
 
-        # 2. Get conclusion conditions from campaign
-        conclusion_conditions = campaign.conclusion_conditions
-        if not conclusion_conditions:
-            logger.info("No conclusion conditions defined for this campaign")
-            return False # No conditions defined, game cannot conclude based on this check.
+        # --- Pre-Check 2: Check if ANY conclusion conditions are defined ---
+        # If all required plot points are done, but no specific conditions exist,
+        # the game might conclude based on plot points alone.
+        # However, the original logic implies conditions are needed if present.
+        if not campaign_conditions:
+            logger.info(f"Game {game_id}: All required plot points completed, and no specific conclusion conditions defined. Concluding.")
+            # If reaching this point means all required plot points are done,
+            # and there are no other conditions, the game concludes.
+            # However, let's stick to the original flow: if conditions *are* defined, they *must* be met.
+            # If no conditions are defined, maybe it shouldn't conclude automatically?
+            # For now, let's assume if conditions list is empty/invalid, we proceed as if they are met (vacuously true).
+            # Revisit this logic if needed. Let's log a warning if conditions are missing but required plots are done.
+            logger.warning(f"Game {game_id}: All required plot points met, but no specific conclusion_conditions defined in campaign. Proceeding as if conditions met.")
+            # return True # Uncomment this if completing all required plot points is sufficient when no conditions exist
 
-        # 3. Check if conclusion conditions are met
-        if not isinstance(conclusion_conditions, list):
-            logger.warning(f"Conclusion conditions for campaign {campaign.id} are not a list: {conclusion_conditions}. Cannot evaluate.")
-            return False
+        # --- Check Specific Conclusion Conditions (Only if defined) ---
+        if not isinstance(campaign_conditions, list):
+            logger.warning(f"Conclusion conditions for game {game_id} are not a list: {campaign_conditions}. Treating as met (vacuously true).")
+            # If conditions are malformed, maybe treat as met? Or fail? Let's treat as met for now.
+            all_conditions_met = True
+        elif not campaign_conditions: # Empty list
+             logger.debug(f"Game {game_id}: No specific conclusion conditions to check.")
+             all_conditions_met = True # No conditions means they are all met
+        else:
+            # Conditions list exists and is not empty, evaluate them
+            all_conditions_met = True # Assume true until a condition fails
+            logger.debug(f"Evaluating conclusion conditions for game {game_id} against state_data: {json.dumps(state_data)}") # Log the state being checked
 
-        all_conditions_met = True # Assume true until a condition fails
-        state_data = game_state.state_data or {} # Ensure state_data is a dict
+            for i, condition in enumerate(campaign_conditions): # Add index for logging
+                logger.debug(f"Game {game_id}: Checking condition #{i+1}: {condition}") # Log the condition being checked
+                if not isinstance(condition, dict):
+                    logger.warning(f"Game {game_id}: Skipping invalid condition #{i+1} (not a dict): {condition}")
+                    all_conditions_met = False
+                    break # If one condition is invalid, we can't be sure, so fail the check
 
-        for condition in conclusion_conditions:
-            if not isinstance(condition, dict):
-                logger.warning(f"Skipping invalid condition (not a dict): {condition}")
-                all_conditions_met = False
-                break # If one condition is invalid, we can't be sure, so fail the check
+                condition_type = condition.get('type')
+                condition_met = False # Assume false for this specific condition
 
-            condition_type = condition.get('type')
-            condition_met = False # Assume false for this specific condition
-
-            try:
-                if condition_type == 'state_key_equals':
-                    key = condition.get('key')
-                    expected_value = condition.get('value')
-                    if key is not None:
-                        condition_met = state_data.get(key) == expected_value
-                        logger.debug(f"Checking state_key_equals: key='{key}', expected='{expected_value}', actual='{state_data.get(key)}', met={condition_met}")
-                    else:
-                        logger.warning(f"Invalid state_key_equals condition (missing key): {condition}")
-
-                elif condition_type == 'state_key_exists':
-                    key = condition.get('key')
-                    if key is not None:
-                        condition_met = key in state_data
-                        logger.debug(f"Checking state_key_exists: key='{key}', met={condition_met}")
-                    else:
-                        logger.warning(f"Invalid state_key_exists condition (missing key): {condition}")
-
-                elif condition_type == 'state_key_contains':
-                    key = condition.get('key')
-                    value_to_contain = condition.get('value')
-                    if key is not None and value_to_contain is not None:
-                        actual_value = state_data.get(key)
-                        if isinstance(actual_value, (list, str)):
-                            condition_met = value_to_contain in actual_value
-                            logger.debug(f"Checking state_key_contains: key='{key}', expected_to_contain='{value_to_contain}', actual='{actual_value}', met={condition_met}")
+                try:
+                    if condition_type == 'state_key_equals':
+                        key = condition.get('key')
+                        expected_value = condition.get('value')
+                        actual_value = state_data.get(key) # Get actual value once
+                        if key is not None:
+                            # Special handling for boolean comparison if expected value is bool
+                            if isinstance(expected_value, bool):
+                                condition_met = str(actual_value).lower() == str(expected_value).lower()
+                            else:
+                                condition_met = actual_value == expected_value
+                            logger.debug(f"  Game {game_id}: Condition #{i+1} [state_key_equals]: key='{key}', expected='{expected_value}' (type: {type(expected_value)}), actual='{actual_value}' (type: {type(actual_value)}), met={condition_met}")
                         else:
-                            logger.debug(f"Checking state_key_contains: key='{key}' value is not list or string: {actual_value}")
+                            logger.warning(f"  Game {game_id}: Condition #{i+1} [state_key_equals]: Invalid (missing key): {condition}")
+
+                    elif condition_type == 'state_key_exists':
+                        key = condition.get('key')
+                        if key is not None:
+                            condition_met = key in state_data
+                            logger.debug(f"  Game {game_id}: Condition #{i+1} [state_key_exists]: key='{key}', exists={condition_met}")
+                        else:
+                            logger.warning(f"  Game {game_id}: Condition #{i+1} [state_key_exists]: Invalid (missing key): {condition}")
+
+                    elif condition_type == 'state_key_contains':
+                        key = condition.get('key')
+                        value_to_contain = condition.get('value')
+                        actual_value = state_data.get(key) # Get actual value once
+                        if key is not None and value_to_contain is not None:
+                            # Convert expected value to string for robust comparison
+                            value_to_contain_str = str(value_to_contain)
+                            if isinstance(actual_value, list):
+                                # Check if any item in the list *equals* the value_to_contain_str
+                                condition_met = any(str(item) == value_to_contain_str for item in actual_value)
+                            elif isinstance(actual_value, str):
+                                # Check if the string *contains* the value_to_contain_str
+                                condition_met = value_to_contain_str in actual_value
+                            else: # Handle other types like bool or int stored in state
+                                condition_met = value_to_contain_str == str(actual_value)
+
+                            logger.debug(f"  Game {game_id}: Condition #{i+1} [state_key_contains]: key='{key}', expected_to_contain='{value_to_contain_str}', actual='{actual_value}', met={condition_met}")
+                        else:
+                            logger.warning(f"  Game {game_id}: Condition #{i+1} [state_key_contains]: Invalid (missing key or value): {condition}")
+
+                    elif condition_type == 'location_visited':
+                        location_name = condition.get('location')
+                        # Ensure 'visited_locations' exists and is a list in state_data
+                        visited_locations = state_data.get('visited_locations')
+                        if location_name is not None and isinstance(visited_locations, list):
+                            condition_met = location_name in visited_locations
+                            logger.debug(f"  Game {game_id}: Condition #{i+1} [location_visited]: location='{location_name}', visited={visited_locations}, met={condition_met}")
+                        elif not isinstance(visited_locations, list):
+                             logger.warning(f"  Game {game_id}: Condition #{i+1} [location_visited]: Invalid - 'visited_locations' in state_data is not a list or missing. Value: {visited_locations}")
+                             condition_met = False # Explicitly set to false
+                        else: # location_name is None
+                            logger.warning(f"  Game {game_id}: Condition #{i+1} [location_visited]: Invalid (missing location): {condition}")
+
                     else:
-                        logger.warning(f"Invalid state_key_contains condition (missing key or value): {condition}")
+                        logger.warning(f"  Game {game_id}: Condition #{i+1}: Unsupported type: {condition_type}")
 
-                elif condition_type == 'location_visited':
-                    location_name = condition.get('location')
-                    visited_locations = state_data.get('visited_locations', []) # Assume visited_locations is stored in state_data
-                    if location_name is not None and isinstance(visited_locations, list):
-                        condition_met = location_name in visited_locations
-                        logger.debug(f"Checking location_visited: location='{location_name}', visited={visited_locations}, met={condition_met}")
-                    elif not isinstance(visited_locations, list):
-                         logger.warning(f"Invalid location_visited check: 'visited_locations' in state_data is not a list.")
-                    else:
-                        logger.warning(f"Invalid location_visited condition (missing location): {condition}")
+                except Exception as eval_e:
+                     logger.error(f"  Game {game_id}: Condition #{i+1}: Error evaluating condition {condition}: {eval_e}", exc_info=True)
+                     condition_met = False # Treat evaluation errors as condition not met
 
-                else:
-                    logger.warning(f"Unsupported conclusion condition type: {condition_type}")
+                if not condition_met:
+                    all_conditions_met = False
+                    logger.info(f"Game {game_id}: Conclusion check failed: Condition #{i+1} not met: {condition}")
+                    break # No need to check further if one condition fails
 
-            except Exception as eval_e:
-                 logger.error(f"Error evaluating condition {condition}: {eval_e}", exc_info=True)
-                 condition_met = False # Treat evaluation errors as condition not met
-
-            if not condition_met:
-                all_conditions_met = False
-                logger.info(f"Conclusion check failed: Condition not met: {condition}")
-                break # No need to check further if one condition fails
-
-        if all_conditions_met:
-            logger.info(f"All conclusion conditions met for game {game_state.game_id}.")
+        # --- Final Decision ---
+        # Conclusion requires all required plot points AND all defined conditions to be met.
+        # If we passed the plot point check and all_conditions_met is still True, conclude.
+        if all_conditions_met: # This is True if all required plot points passed AND all defined conditions passed (or no conditions were defined)
+            logger.info(f"Conclusion check PASSED for game {game_id}.")
             return True
         else:
-            # logger.info(f"Not all conclusion conditions met for game {game_state.game_id}.") # Already logged which one failed
+            # Failure was already logged (either missing required plot point or failed condition)
             return False
 
     except Exception as e:
-        logger.error(f"Error checking conclusion for game {game_state.game_id}: {str(e)}", exc_info=True)
+        logger.error(f"Error checking conclusion for game {game_id}: {str(e)}", exc_info=True)
         return False
 
 # TODO: Implement other campaign service functions as needed

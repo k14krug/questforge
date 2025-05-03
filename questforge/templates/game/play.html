@@ -13,28 +13,22 @@
                         <h3 id="gameTitle" data-game-id="{{ game.id }}" data-user-id="{{ user_id }}">{{ game.name | e }}</h3> 
                         <div class="game-status ms-3"> {# Margin start for spacing #}
                             <span class="badge bg-primary me-1">{{ game.status | e }}</span>
-                            {# Display cost if available and greater than 0 #}
-                            {# Add id="totalCostDisplay" for dynamic updates #}
-                            <span class="badge bg-info" id="totalCostDisplay">
-                                {% if total_cost > 0 %}
-                                    Cost: ${{ "%.4f"|format(total_cost) }}
-                                {% else %}
-                                    Cost: $0.0000 {# Display zero cost initially #}
-                                {% endif %}
-                            </span>
+                            {# Cost display removed from here #}
                         </div>
                     </div>
                 </div>
-                <div id="gameStateVisualization" class="game-state-visualization mt-3"> {# Add margin top #}
-                    <!-- Dynamic game state will be rendered here -->
-                    <!-- Initial current location removed; will be rendered dynamically -->
+                {# Main area will now be the scrollable log #}
+                <div id="mainGameLog" class="game-log-main mt-3"> 
+                    <!-- Dynamic game log will be rendered here by JS -->
+                    <p class="text-muted p-3">Loading game log...</p> 
                 </div>
             </div>
         </div>
 
-        <!-- Player Controls -->
+        <!-- Player Controls & Info -->
         <div class="col-md-4">
             <div class="player-controls">
+                {# --- Always Visible Controls --- #}
                 <div class="card">
                     <div class="card-header">
                         <h5>Available Actions</h5>
@@ -44,37 +38,8 @@
                     </div>
                 </div>
 
-                {# Player Locations Display Card #}
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h5>Player Locations</h5>
-                    </div>
-                    <div class="card-body" id="playerLocationsDisplay">
-                        {# Player locations will be rendered by JavaScript #}
-                        <p class="text-muted mb-0">Loading player locations...</p>
-                    </div>
-                </div>
-
-                {# Location History Display Card #}
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h5>Visited Locations</h5>
-                    </div>
-                    <div class="card-body" id="locationHistoryDisplay">
-                        {% if game_state and game_state.visited_locations %}
-                            <ul class="list-unstyled mb-0">
-                                {% for location in game_state.visited_locations %}
-                                    <li>{{ location | e }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <p class="text-muted mb-0">No locations visited yet.</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                {# Add Custom Action Input #}
-                <div class="card mt-3">
+                {# Add Custom Action Input - Kept outside tabs for easy access #}
+                <div class="card mt-3 mb-3"> {# Added mb-3 for spacing before tabs #}
                     <div class="card-header">
                         <h5>Custom Action</h5>
                     </div>
@@ -86,110 +51,147 @@
                     </div>
                 </div>
 
-                {# Inventory Display Card #}
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h5>Inventory</h5>
-                    </div>
-                    <div class="card-body" id="inventoryDisplay">
-                        {% if game_state and game_state.state_data and 'inventory' in game_state.state_data %}
-                            {% if game_state.state_data.inventory %}
-                                <ul class="list-unstyled mb-0"> {# Added mb-0 to remove default bottom margin #}
-                                    {% for item in game_state.state_data.inventory %}
-                                        <li>{{ item | e }}</li>
-                                    {% endfor %}
-                                </ul>
-                            {% else %}
-                                <p class="text-muted mb-0">Inventory is empty.</p> {# Added mb-0 #}
-                            {% endif %}
-                        {% else %}
-                            <p class="text-muted mb-0">Inventory data not available.</p> {# Fallback if state_data or inventory key is missing, added mb-0 #}
-                        {% endif %}
-            </div>
-        </div>
+                {# --- Tabbed Information Area --- #}
+                <ul class="nav nav-tabs" id="infoTab" role="tablist">
+                    {# Log tab removed #}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="state-tab" data-bs-toggle="tab" data-bs-target="#state-tab-pane" type="button" role="tab" aria-controls="state-tab-pane" aria-selected="true">State</button> 
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="info-tab-button" data-bs-toggle="tab" data-bs-target="#info-tab-pane" type="button" role="tab" aria-controls="info-tab-pane" aria-selected="false">Info</button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="infoTabContent">
+                    {# Log Tab Pane Removed #}
 
-        <!-- AI Model Info -->
-        <div class="card mt-3">
-            <div class="card-header">
-                <h5>AI Model</h5>
-            </div>
-            <div class="card-body" id="aiModelInfo">
-                <p>Using model: <strong>{{ ai_model | e }}</strong></p>
-            </div>
-        </div>
+                    {# State Tab Pane (Now active by default) #}
+                    <div class="tab-pane fade show active" id="state-tab-pane" role="tabpanel" aria-labelledby="state-tab" tabindex="0">
+                        <div class="card rounded-0 rounded-bottom"> {# Remove top rounding, keep bottom #}
+                            <div class="card-body">
+                                {# Inventory #}
+                                <h6 class="card-subtitle mb-2 text-muted">Inventory</h6>
+                                <div id="inventoryDisplay" class="mb-3"> {# Add margin bottom #}
+                                    {% if game_state and game_state.state_data and 'inventory' in game_state.state_data %}
+                                        {% if game_state.state_data.inventory %}
+                                            <ul class="list-unstyled mb-0">
+                                                {% for item in game_state.state_data.inventory %}
+                                                    <li>{{ item | e }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <p class="text-muted mb-0">Inventory is empty.</p>
+                                        {% endif %}
+                                    {% else %}
+                                        <p class="text-muted mb-0">Inventory data not available.</p>
+                                    {% endif %}
+                                </div>
+                                <hr> {# Separator #}
+                                {# Player Locations #}
+                                <h6 class="card-subtitle my-2 text-muted">Player Locations</h6>
+                                <div id="playerLocationsDisplay" class="mb-3"> {# Add margin bottom #}
+                                    <p class="text-muted mb-0">Loading player locations...</p>
+                                </div>
+                                <hr> {# Separator #}
+                                {# Visited Locations #}
+                                <h6 class="card-subtitle my-2 text-muted">Visited Locations</h6>
+                                <div id="locationHistoryDisplay">
+                                    {% if game_state and game_state.visited_locations %}
+                                        <ul class="list-unstyled mb-0">
+                                            {% for location in game_state.visited_locations %}
+                                                <li>{{ location | e }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p class="text-muted mb-0">No locations visited yet.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        <!-- Game Objective -->
-        <div class="card mt-3">
-            <div class="card-header">
-                        <h5>Objective</h5>
+                    {# Info Tab Pane #}
+                    <div class="tab-pane fade" id="info-tab-pane" role="tabpanel" aria-labelledby="info-tab-button" tabindex="0">
+                        <div class="card rounded-0 rounded-bottom"> {# Remove top rounding, keep bottom #}
+                            <div class="card-body">
+                                {# Game Objective #}
+                                <h6 class="card-subtitle mb-2 text-muted">Objective</h6>
+                                <div id="gameObjective" class="mb-3"> {# Add margin bottom #}
+                                    {% if campaign and campaign.objectives %}
+                                        <pre>{{ campaign.objectives | tojson(indent=2) }}</pre>
+                                    {% else %}
+                                        <p class="text-muted mb-0">Objective not available.</p>
+                                    {% endif %}
+                                </div>
+                                <hr> {# Separator #}
+                                {# AI Model Info #}
+                                <h6 class="card-subtitle my-2 text-muted">AI Model</h6>
+                                <div id="aiModelInfo" class="mb-3"> {# Add margin bottom #}
+                                    <p class="mb-0">Using model: <strong>{{ ai_model | e }}</strong></p>
+                                </div>
+                                <hr> {# Separator #}
+                                {# Cost Display Moved Here #}
+                                <h6 class="card-subtitle my-2 text-muted">Total Cost</h6>
+                                <div id="totalCostDisplayWrapper">
+                                    <span class="badge bg-info" id="totalCostDisplay">
+                                        {% if total_cost > 0 %}
+                                            Cost: ${{ "%.4f"|format(total_cost) }}
+                                        {% else %}
+                                            Cost: $0.0000 {# Display zero cost initially #}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body" id="gameObjective">
-                        {# Display the objective data from the campaign object #}
-                        {% if campaign and campaign.objectives %}
-                            {# Assuming objectives is a dict/JSON object. Adjust access as needed. #}
-                            {# For now, just display the raw JSON to see structure #}
-                            <pre>{{ campaign.objectives | tojson(indent=2) }}</pre> 
-                        {% else %}
-                            <p class="text-muted">Objective not available.</p>
-                        {% endif %}
-                    </div>
-                </div>
+                </div> {# End Tab Content #}
 
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h5>Game Log</h5>
-                    </div>
-                    <div class="card-body game-log" id="gameLog">
-                    {% if game_log %}
-                        {% for entry in game_log %}
-                            {% if entry is mapping and entry.type is defined %}
-                                {% if entry.type == "player" %}
-                                    <div class="log-entry log-entry-player">{{ entry.content | e }}</div>
-                                {% elif entry.type == "ai" %}
-                                    <div class="log-entry log-entry-ai">{{ entry.content | e }}</div>
-                                {% else %}
-                                    <div class="log-entry">{{ entry | e }}</div>
-                                {% endif %}
-                            {% else %}
-                                <div class="log-entry">{{ entry | e }}</div>
-                            {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        <div>No game log entries yet.</div>
-                    {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+            </div> {# End player-controls #}
+        </div> {# End col-md-4 #}
+    </div> {# End row #}
+</div> {# End container-fluid #}
 
 <style>
 .game-container {
     padding: 20px;
     height: 100vh;
 }
-.game-state-visualization {
+/* Style for the main log area */
+.game-log-main {
     border: 1px solid #dee2e6;
     border-radius: 5px;
-    padding: 15px;
-    min-height: 400px;
+    /* Adjust height as needed, maybe use viewport height minus header/footer */
+    height: calc(100vh - 150px); /* Example height calculation */
+    overflow-y: auto;
     background-color: #f8f9fa;
+    padding: 15px; /* Add padding inside */
+    /* display: flex; */ /* Flexbox removed */
+    /* flex-direction: column-reverse; */ /* Removed */
 }
 .player-controls {
     position: sticky;
     top: 20px;
 }
 .game-log {
-    max-height: 300px;
-    overflow-y: auto;
+    /* Remove max-height from tabbed log style */
+    /* overflow-y: auto; */ /* Removed */
 }
-    .log-entry-player {
-        color: black;
-    }
-    .log-entry-ai {
-        color: #007bff;
-    }
+.log-entry { /* General style for log entries */
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    background-color: #ffffff; /* White background for entries */
+    border: 1px solid #e9ecef;
+}
+.log-entry-player {
+    color: black;
+    /* Optional: Add specific background or border */
+    /* border-left: 3px solid #6c757d; */
+}
+.log-entry-ai {
+    color: #0d6efd; /* Bootstrap primary blue */
+    /* Optional: Add specific background or border */
+    /* border-left: 3px solid #0d6efd; */
+}
 </style>
 
 {% endblock %}
@@ -224,31 +226,8 @@ function updateGameState(state) {
         updateGameLog([]); // Clear log if none provided
     }
 
-    // Update Main Game State Visualization (Current Scene)
-    const gameStateVisualization = document.getElementById('gameStateVisualization');
-    if (gameStateVisualization) {
-        // Preserve or create a static location element
-        let staticLocation = gameStateVisualization.querySelector('.static-location');
-        if (!staticLocation) {
-            staticLocation = document.createElement('p');
-            staticLocation.className = 'static-location';
-            // Prepend static location to existing content
-            gameStateVisualization.prepend(staticLocation);
-        }
-        staticLocation.innerText = `Current Location: ${state.state.location || "Unknown"}`;
-
-        // Update narrative section without overwriting the static location
-        let narrativeElem = gameStateVisualization.querySelector('.current-scene');
-        const narrative = (state && state.log && state.log.length > 0) ? state.log[state.log.length - 1] : "";
-        const narrativeHtml = renderCurrentScene(narrative);
-        if (narrativeElem) {
-            narrativeElem.outerHTML = narrativeHtml;
-        } else {
-            gameStateVisualization.insertAdjacentHTML('beforeend', narrativeHtml);
-        }
-    } else {
-        console.error("gameStateVisualization element not found");
-    }
+    // Main Game State Visualization (narrative) is now handled by updateGameLog targeting #mainGameLog
+    // Old logic for #gameStateVisualization removed.
 
     // Update Player Locations Display
     if (state && state.player_locations) {
@@ -280,32 +259,49 @@ function updateGameState(state) {
 
 // --- UI Update Functions ---
 
+// Updated function to target the main log area and display latest first
 function updateGameLog(log) {
-    const gameLog = document.getElementById('gameLog');
-    if (!gameLog) {
-        console.error("gameLog element not found");
+    console.log('updateGameLog received:', log); // Add log to check received data
+    const mainGameLog = document.getElementById('mainGameLog'); // Target the new main log container
+    if (!mainGameLog) {
+        console.error("mainGameLog element not found");
         return;
     }
-    gameLog.innerHTML = ''; // Clear previous logs
+    // Clear previous logs by removing child nodes
+    while (mainGameLog.firstChild) {
+        mainGameLog.removeChild(mainGameLog.firstChild);
+    }
+    // Iterate through the log and append new entries
     log.forEach(item => {
         const logEntry = document.createElement('div');
         logEntry.classList.add('log-entry');
-        if (typeof item === 'object' && item !== null && item.type) {
-            logEntry.innerText = item.content;
+        let content = '';
+        if (typeof item === 'object' && item !== null && item.content) {
+            content = item.content; // Extract content if it's an object
             if (item.type === "player") {
                 logEntry.classList.add('log-entry-player');
             } else if (item.type === "ai") {
                 logEntry.classList.add('log-entry-ai');
             }
         } else {
-            logEntry.innerText = item;
+            content = item; // Use item directly if it's a string
         }
-        gameLog.appendChild(logEntry);
+        // Sanitize content before setting innerHTML or use innerText
+        // Using innerText is safer against XSS if HTML rendering isn't needed
+        logEntry.innerText = content;
+
+        // Append the new entry to the bottom
+        mainGameLog.appendChild(logEntry);
     });
-    gameLog.scrollTop = gameLog.scrollHeight;
+    // Scroll to the bottom after adding all entries
+    // Wrap in setTimeout to ensure DOM update completes before scrolling
+    setTimeout(() => {
+        mainGameLog.scrollTop = mainGameLog.scrollHeight;
+    }, 0);
 }
 
-// New function to update the total cost display
+
+// Function to update the total cost display (no changes needed, targets correct ID)
 function updateTotalCostDisplay(cost) {
     const costElement = document.getElementById('totalCostDisplay'); // Need to add this ID to the HTML element
     if (costElement) {
@@ -429,26 +425,8 @@ function performAction(action) {
 
 // --- State Rendering ---
 
-// New function to render just the current scene/narrative
-function renderCurrentScene(narrative) {
-    let html = '<div class="current-scene p-3">'; // Add padding
-    if (narrative) {
-        let content = "";
-        if (typeof narrative === 'object' && narrative !== null && narrative.content) {
-            content = narrative.content;
-        } else {
-            content = narrative;
-        }
-        html += `<p>${content}</p>`;
-    } else {
-        html += '<p class="text-muted">Waiting for the story to unfold...</p>';
-    }
-    html += '</div>';
-    return html;
-}
-
-// Optional: Function to render other state details if needed elsewhere
-// function renderOtherStateData(stateData) { ... }
+// renderCurrentScene function removed as it's no longer used.
+// Narrative is now part of the main log handled by updateGameLog.
 
 // --- Initial Setup ---
 const gameId = document.getElementById('gameTitle')?.dataset.gameId; // Get gameId early
@@ -488,7 +466,23 @@ if (gameId) {
 
         socketClient.socket.on('game_state_update', (data) => {
             console.log("Play page: Received game_state_update:", data);
-            updateGameState(data);
+
+            // --- Debugging Log Update ---
+            const logData = data?.log;
+            const logLength = Array.isArray(logData) ? logData.length : 'Not an array';
+            const lastLogEntry = Array.isArray(logData) && logData.length > 0 ? JSON.stringify(logData[logData.length - 1]) : 'N/A';
+            console.log(`DEBUG: game_state_update received log length: ${logLength}`);
+            console.log(`DEBUG: game_state_update last log entry: ${lastLogEntry}`);
+            // You can also add a temporary visual indicator like before if needed:
+            // try {
+            //     const testEntry = document.createElement('p');
+            //     testEntry.innerText = `DEBUG: Update v${data?.version || '?'}. Log Len: ${logLength}. Last: ${lastLogEntry.substring(0, 50)}`;
+            //     testEntry.style.color = 'orange'; testEntry.style.fontSize = '0.8em';
+            //     document.getElementById('mainGameLog')?.appendChild(testEntry);
+            // } catch (e) { console.error("Error adding debug entry:", e); }
+            // --- End Debugging ---
+
+            updateGameState(data); // Call the original update function
         });
 
         socketClient.socket.on('game_state', (state) => {

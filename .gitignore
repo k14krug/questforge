@@ -12,6 +12,7 @@ venv.bak/
 
 # Flask
 instance/
+instance/seed_data/
 .webassets-cache
 
 # Environment files

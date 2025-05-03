@@ -1,5 +1,4 @@
-from questforge.extensions.database import db
-from questforge.extensions.bcrypt import bcrypt
+from questforge.extensions import db, bcrypt # Corrected imports
 from flask_login import UserMixin
 from sqlalchemy.orm import relationship
 

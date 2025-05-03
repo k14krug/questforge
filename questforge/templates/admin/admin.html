@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{# Remove the incorrect import #}
+
+{% block content %}
+<div class="container mt-4">
+    {# Include the messages partial directly #}
+    {% include "partials/_messages.html" %}
+
+    <h2>Admin - Game Seed Data Management</h2>
+    <hr>
+
+    {# Export Section #}
+    <div class="card mb-4">
+        <div class="card-header">
+            Export Game Data as Seed File
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.export_seed') }}">
+                {{ csrf_token() }} {# Add CSRF token if using Flask-WTF/CSRFProtect #}
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="export_game_id" class="form-label">Game ID to Export:</label>
+                        <input type="number" class="form-control" id="export_game_id" name="game_id" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="seed_name" class="form-label">Seed File Name (e.g., 'scenario_start'):</label>
+                        <input type="text" class="form-control" id="seed_name" name="seed_name" required pattern="[a-zA-Z0-9_\-]+">
+                        <div class="form-text">Use only letters, numbers, underscores, hyphens. '.json' will be added automatically.</div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Export</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# Import Section #}
+    <div class="card">
+        <div class="card-header">
+            Create New Game from Seed File
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.import_seed') }}">
+                 {{ csrf_token() }} {# Add CSRF token #}
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label for="import_seed_file" class="form-label">Select Seed File:</label>
+                        <select class="form-select" id="import_seed_file" name="seed_file" required>
+                            <option value="" selected disabled>-- Select a Seed File --</option>
+                            {# Options will be populated by the route #}
+                            {% for filename in seed_files %}
+                                <option value="{{ filename }}">{{ filename }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                     <div class="col-md-4">
+                        <label for="new_game_name" class="form-label">New Game Name:</label>
+                        <input type="text" class="form-control" id="new_game_name" name="new_game_name" required>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-success w-100">Create Game</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
