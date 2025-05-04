@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Seed Data Management{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>Admin Seed Data Management</h1>
+  <hr>
+
+  <div class="row">
+    <div class="col-md-6">
+      <h2>Export Seed Data</h2>
+      <form method="post" action="{{ url_for('admin.admin_index') }}">
+        <input type="hidden" name="action" value="export">
+        <div class="mb-3">
+          <label for="game_id" class="form-label">Game ID to Export:</label>
+          <input type="number" class="form-control" id="game_id" name="game_id" required>
+        </div>
+        <div class="mb-3">
+          <label for="seed_name" class="form-label">Seed File Name:</label>
+          <input type="text" class="form-control" id="seed_name" name="seed_name" pattern="[A-Za-z0-9_-]+" title="Only letters, numbers, underscores, and hyphens allowed" required>
+          <div class="form-text">File will be saved as `seed_name.json` in the instance folder.</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Export</button>
+      </form>
+    </div>
+
+    <div class="col-md-6">
+      <h2>Import Seed Data (Create Game from Seed)</h2>
+      <form method="post" action="{{ url_for('admin.admin_index') }}">
+        <input type="hidden" name="action" value="import">
+        <div class="mb-3">
+          <label for="seed_file" class="form-label">Select Seed File:</label>
+          <select class="form-select" id="seed_file" name="seed_file" required>
+            <option value="" disabled selected>-- Select a Seed File --</option>
+            {% for file in seed_files %}
+              <option value="{{ file }}">{{ file }}</option>
+            {% else %}
+              <option value="" disabled>No seed files found in instance/seed_data/</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="new_game_name" class="form-label">New Game Name:</label>
+          <input type="text" class="form-control" id="new_game_name" name="new_game_name" required>
+        </div>
+        <button type="submit" class="btn btn-success">Create Game</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

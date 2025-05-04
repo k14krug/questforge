@@ -67,12 +67,14 @@ def create_app(config_name='default'):
     from .views.campaign_api import campaign_api_bp
     from .views.game import game_bp
     from .views.template import template_bp
+    from .views.admin import admin_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(campaign_api_bp)
     app.register_blueprint(game_bp)
     app.register_blueprint(template_bp)
+    app.register_blueprint(admin_bp)
 
     # Register socket handlers
     SocketService.register_handlers()

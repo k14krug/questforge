@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Create New Game</h2>
+    
+    <form id="gameCreationForm" onsubmit="submitGameForm(event)">
+        {{ form.hidden_tag() }}
+        
+        <!-- Template Selection -->
+        <div class="form-group mb-4">
+            <h4>1. Choose a Template</h4>
+            {{ form.template(class="form-select", id="templateSelect") }}
+        </div>
+
+        <!-- Dynamic Question Flow -->
+        <div id="questionFlow" class="mb-4">
+            <!-- Questions will be loaded via JavaScript based on template selection -->
+        </div>
+
+        <!-- Game Name -->
+        <div class="form-group mb-4">
+            <h4>3. Name Your Game</h4>
+            <input type="text" class="form-control" id="gameName" name="game_name" 
+                   placeholder="Enter a name for your game" required>
+        </div>
+
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">Create Game</button>
+        </div>
+    </form>
+
+    <script>
+    function submitGameForm(event) {
+        event.preventDefault();
+        const formData = {
+            template_id: document.getElementById('templateSelect').value,
+            name: document.getElementById('gameName').value,
+            // Collect question answers
+            ...Object.fromEntries(
+                Array.from(document.querySelectorAll('#questionFlow input'))
+                    .map(input => [input.name, input.value])
+            )
+        };
+
+        fetch('/api/games/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                window.location.href = data.redirect_url;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to create game');
+        });
+    }
+    </script>
+</div>
+
+<script>
+document.getElementById('templateSelect').addEventListener('change', function() {
+    const templateId = this.value;
+    if (!templateId) return;
+    
+    fetch(`/templates/${templateId}/questions`)
+        .then(response => response.json())
+        .then(questions => {
+            const questionFlow = document.getElementById('questionFlow');
+            questionFlow.innerHTML = '<h4>2. Answer Template Questions</h4>';
+            
+            questions.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'form-group mb-3';
+                
+                const label = document.createElement('label');
+                label.className = 'form-label';
+                label.htmlFor = `question-${index}`;
+                label.textContent = q.text;
+                
+                const input = document.createElement('input');
+                input.type = q.type || 'text';
+                input.className = 'form-control';
+                input.id = `question-${index}`;
+                input.name = `question_${q.key}`;
+                input.required = true;
+                
+                div.appendChild(label);
+                div.appendChild(input);
+                questionFlow.appendChild(div);
+            });
+        });
+});
+</script>
+{% endblock %}
