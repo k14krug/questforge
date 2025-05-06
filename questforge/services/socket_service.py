@@ -315,16 +315,47 @@ class SocketService:
             try:
                 # --- Perform ALL DB operations within a single transaction ---
                 with current_app.app_context():
-                    # 1. Fetch GameState (no need to refresh initially, fetch gets latest)
+                    # 1. Fetch GameState and related Campaign
                     db_game_state = db.session.query(GameState).options(
                         joinedload(GameState.game).joinedload(Game.campaign)
                     ).filter_by(game_id=game_id).first()
 
                     if not db_game_state:
                         raise ValueError(f"GameState record not found for game_id {game_id}")
+                    if not db_game_state.game or not db_game_state.game.campaign:
+                        raise ValueError(f"Campaign data not found for game_id {game_id}")
+
+                    campaign = db_game_state.game.campaign
+                    state_data = db_game_state.state_data or {}
+
+                    # --- Narrative Guidance Logic ---
+                    STUCK_THRESHOLD = 3
+                    
+                    # Ensure 'turns_since_plot_progress' exists and increment
+                    turns_since_plot_progress = state_data.get('turns_since_plot_progress', 0) + 1
+                    state_data['turns_since_plot_progress'] = turns_since_plot_progress
+                    
+                    # Identify next required plot point
+                    next_required_plot_point_desc = None
+                    completed_plot_points_descs = [pp.get('description') for pp in state_data.get('completed_plot_points', []) if isinstance(pp, dict)] # Get descriptions of completed plot points
+                    
+                    # Ensure campaign.major_plot_points is a list of dicts
+                    major_plot_points_list = campaign.major_plot_points
+                    if not isinstance(major_plot_points_list, list):
+                        major_plot_points_list = [] # Default to empty if not a list
+
+                    for plot_point in major_plot_points_list:
+                        if isinstance(plot_point, dict) and plot_point.get('required') and plot_point.get('description') not in completed_plot_points_descs:
+                            next_required_plot_point_desc = plot_point.get('description')
+                            break
+                    
+                    is_stuck = turns_since_plot_progress >= STUCK_THRESHOLD and next_required_plot_point_desc is not None
+                    
+                    current_app.logger.debug(f"Narrative Guidance: Turns since progress: {turns_since_plot_progress}, Next required: '{next_required_plot_point_desc}', Stuck: {is_stuck}")
+                    # --- End Narrative Guidance Logic ---
                     
                     # Log the state *as fetched* before AI call
-                    current_app.logger.debug(f"State data *before* AI call: {json.dumps(db_game_state.state_data)}")
+                    current_app.logger.debug(f"State data *before* AI call: {json.dumps(state_data)}") # Use updated state_data
 
                     # --- Inventory Validation ---
                     action_lower = action.lower()
@@ -393,7 +424,9 @@ class SocketService:
                     if validation_passed:
                         ai_result = ai_service.get_response(
                             game_state=db_game_state, # Pass the fetched object
-                            player_action=action
+                            player_action=action,
+                            is_stuck=is_stuck, # Pass narrative guidance params
+                            next_required_plot_point=next_required_plot_point_desc # Pass narrative guidance params
                         )
                         if not ai_result:
                             # AI service itself failed after validation passed
@@ -415,12 +448,43 @@ class SocketService:
                     if ai_result:
                         # This block is now correctly indented relative to the outer 'with'
                         ai_response_data, model_used, usage_data = ai_result
+                        
+                        # --- Process achieved_plot_point ---
+                        current_state_changes = ai_response_data.get('state_changes', {})
+                        achieved_plot_point_desc = current_state_changes.pop('achieved_plot_point', None) # Get and remove
+                        
+                        if achieved_plot_point_desc:
+                            current_app.logger.info(f"Player achieved plot point: {achieved_plot_point_desc}")
+                            # Find the full plot point object from campaign.major_plot_points
+                            achieved_plot_point_obj = next((pp for pp in major_plot_points_list if isinstance(pp, dict) and pp.get('description') == achieved_plot_point_desc), None)
+                            
+                            if achieved_plot_point_obj:
+                                # Ensure 'completed_plot_points' exists and is a list of objects
+                                if not isinstance(state_data.get('completed_plot_points'), list):
+                                    state_data['completed_plot_points'] = []
+                                
+                                # Add the full plot point object if not already completed (check by description)
+                                if achieved_plot_point_desc not in [cp.get('description') for cp in state_data['completed_plot_points'] if isinstance(cp, dict)]:
+                                    state_data['completed_plot_points'].append(achieved_plot_point_obj)
+                                    current_app.logger.debug(f"Added '{achieved_plot_point_obj}' to completed_plot_points.")
+                                else:
+                                    current_app.logger.debug(f"Plot point '{achieved_plot_point_desc}' already completed.")
+                            else:
+                                current_app.logger.warning(f"Achieved plot point '{achieved_plot_point_desc}' not found in campaign's major_plot_points list of objects.")
+                                
+                            state_data['turns_since_plot_progress'] = 0 # Reset counter
+                            current_app.logger.debug(f"Reset turns_since_plot_progress to 0.")
+                        
+                        # Update db_game_state.state_data with potentially modified state_data (turns_since_plot_progress, completed_plot_points)
+                        # And also pass the (potentially modified by achieved_plot_point removal) current_state_changes
+                        db_game_state.state_data = state_data # Persist changes to turns_since_plot_progress and completed_plot_points
+                        # --- End Process achieved_plot_point ---
 
                         # Update GameState object with AI response data
                         updated_state_info = game_state_service.update_state(
                             game_id=game_id, # Pass game_id for in-memory update
                             user_id=user_id, # Pass the user_id of the player performing the action
-                            state_changes=ai_response_data.get('state_changes'),
+                            state_changes=current_state_changes, # Use the modified state_changes
                             log_entry=ai_response_data.get('narrative'),
                             actions=ai_response_data.get('available_actions'),
                             increment_version=True # Version increments only on successful AI update

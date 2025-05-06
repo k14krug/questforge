@@ -23,6 +23,22 @@
     *   Implemented logic in services (`ai_service`, `campaign_service`, `socket_service`) to record API call details (model, tokens) and calculate cost based on `config.py` pricing.
     *   Updated UI (`list.html`, `play.html`, `home.html`) to display cost information and configured model.
 
+**Feature: Narrative Guidance System (Completed)**
+    *   Updated `prompt_builder.py` (`build_campaign_prompt`) for plot points with `description` and `required` flag.
+    *   Updated `ai_service.py` (`generate_campaign`) to validate new plot point structure.
+    *   Updated `models/game_state.py` to include `turns_since_plot_progress` in default `state_data`.
+    *   Updated `socket_service.py` (`handle_player_action`) to:
+        *   Track `turns_since_plot_progress`.
+        *   Identify `next_required_plot_point`.
+        *   Determine `is_stuck` status.
+        *   Pass guidance parameters to `ai_service.get_response`.
+        *   Process `achieved_plot_point` from AI, update `completed_plot_points` (now stores full objects), and reset `turns_since_plot_progress`.
+    *   Updated `ai_service.py` (`get_response`) signature and logic to handle `is_stuck` and `next_required_plot_point`.
+    *   Updated `context_manager.py` (`build_context`) to include "Current Objective/Focus".
+    *   Updated `prompt_builder.py` (`build_response_prompt`) with new instructions for objective adherence, hints, and reporting `achieved_plot_point`.
+    *   Updated `campaign_service.py` (`check_conclusion`) to pre-check completion of all `required` plot points.
+    *   Created `memory-bank/narrative_guidance_implementation.md` and `memory-bank/narrative_guidance_plan.md`.
+
 ## Remaining Work (Phased Approach from Spec)
 
 **Phase 1: Template Redesign & Character Definition (Completed)**
@@ -69,6 +85,9 @@
 *   Updated `game.py` view (`play`) to fetch full player details.
 *   Updated `play.html` JS to display character name (fallback to username).
 *   Created `memory-bank/character_naming_system.md`.
+
+**Feature: Narrative Guidance System (Completed)**
+    *   (Details listed under "Completed Features & Documentation" above)
 
 **Current Task: Game Screen Redesign (`play.html`)** (Low Priority - In Progress)
 

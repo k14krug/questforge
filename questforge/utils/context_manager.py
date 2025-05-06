@@ -3,14 +3,16 @@ from questforge.models.game_state import GameState
 from questforge.models.game import GamePlayer # Import GamePlayer
 from questforge.models.user import User # Import User
 from sqlalchemy.orm import joinedload # Import joinedload
+from typing import Optional # Import Optional for type hinting
 
-def build_context(game_state: GameState) -> str:
+def build_context(game_state: GameState, next_required_plot_point: Optional[str] = None) -> str:
     """
     Builds a context string for the AI based on the current game state and
     associated campaign information.
 
     Args:
         game_state: The current GameState object.
+        next_required_plot_point: Optional string describing the next required plot point.
 
     Returns:
         A string containing formatted context information for the AI prompt.
@@ -130,6 +132,28 @@ def build_context(game_state: GameState) -> str:
              context_lines.append(f"- {str(entry)}") 
     else:
         context_lines.append("No recent events available.")
+
+    # 4. Current Objective/Focus
+    context_lines.append("\n--- Current Objective/Focus ---")
+    if next_required_plot_point:
+        context_lines.append(f"Next Objective: {next_required_plot_point}")
+    elif campaign.objectives: # Fallback to overall campaign objective if no specific next plot point
+        # Assuming campaign.objectives is a list, take the first one as a general guide
+        # Or if it's a string, use it directly
+        overall_obj_display = ""
+        if isinstance(campaign.objectives, list) and campaign.objectives:
+            overall_obj_display = str(campaign.objectives[0])
+        elif isinstance(campaign.objectives, str):
+            overall_obj_display = campaign.objectives
+        
+        if overall_obj_display:
+            context_lines.append(f"Focus on the overall campaign objective: {overall_obj_display}")
+        else:
+            context_lines.append("Focus on exploring and interacting with the world.")
+            
+    else: # If no next required plot point and no campaign objectives
+        context_lines.append("Focus on exploring and interacting with the world.")
+
 
     context_lines.append("\n--- End Context ---")
 

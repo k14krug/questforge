@@ -293,100 +293,155 @@ def check_conclusion(game_state: GameState):
     """
     logger = current_app.logger
     try:
-        logger.info(f"Checking conclusion for game {game_state.game_id}, campaign {game_state.campaign_id}")
+        logger.info(f"--- Debug: Starting check_conclusion for game {game_state.game_id}, campaign {game_state.campaign_id} ---")
 
         # 1. Get campaign
         campaign = db.session.get(Campaign, game_state.campaign_id)
         if not campaign:
             logger.error(f"Campaign with id {game_state.campaign_id} not found")
             return False
+        
+        state_data = game_state.state_data or {} # Ensure state_data is a dict
+        logger.debug(f"--- Debug: state_data: {state_data} (type: {type(state_data)}) ---")
+
+        # --- New Pre-Check: Ensure all required plot points are completed ---
+        major_plot_points_list = campaign.major_plot_points
+        logger.debug(f"--- Debug: campaign.major_plot_points: {major_plot_points_list} (type: {type(major_plot_points_list)}) ---")
+        if not isinstance(major_plot_points_list, list):
+            logger.warning(f"Campaign {campaign.id} major_plot_points is not a list. Cannot check required plot points.")
+            major_plot_points_list = [] # Treat as empty to avoid error
+
+        completed_plot_points_data = state_data.get('completed_plot_points', [])
+        logger.debug(f"--- Debug: state_data.get('completed_plot_points', []): {completed_plot_points_data} (type: {type(completed_plot_points_data)}) ---")
+        if not isinstance(completed_plot_points_data, list):
+            logger.warning(f"GameState {game_state.id} completed_plot_points is not a list. Cannot check required plot points.")
+            completed_plot_points_data = []
+
+        # Extract descriptions of completed plot points (assuming they are stored as objects with a 'description' key)
+        completed_descriptions = [pp.get('description') for pp in completed_plot_points_data if isinstance(pp, dict) and pp.get('description') is not None]
+        logger.debug(f"--- Debug: Extracted completed_descriptions: {completed_descriptions} ---")
+
+        all_required_completed = True
+        missing_required_plot_point = None
+        for plot_point in major_plot_points_list:
+            if isinstance(plot_point, dict) and plot_point.get('required'):
+                pp_description = plot_point.get('description')
+                if pp_description not in completed_descriptions:
+                    all_required_completed = False
+                    missing_required_plot_point = pp_description
+                    logger.info(f"--- Debug: Conclusion pre-check failed: Required plot point '{pp_description}' not found in completed_descriptions. ---")
+                    break # No need to check further required plot points
+        
+        logger.debug(f"--- Debug: all_required_completed: {all_required_completed} ---")
+        if not all_required_completed:
+            logger.info(f"--- Debug: Returning False because not all required plot points completed. Missing: '{missing_required_plot_point}' ---")
+            return False 
+        
+        logger.info(f"--- Debug: All required plot points completed for game {game_state.game_id}. Proceeding to check conclusion_conditions. ---")
+        # --- End New Pre-Check ---
 
         # 2. Get conclusion conditions from campaign
         conclusion_conditions = campaign.conclusion_conditions
-        if not conclusion_conditions:
-            logger.info("No conclusion conditions defined for this campaign")
-            return False # No conditions defined, game cannot conclude based on this check.
+        logger.debug(f"--- Debug: campaign.conclusion_conditions: {conclusion_conditions} (type: {type(conclusion_conditions)}) ---")
+
+        if not conclusion_conditions: # This includes empty list or None
+            logger.info("--- Debug: No conclusion conditions defined for this campaign, and all required plot points are done. Considering concluded. ---")
+            logger.info(f"--- Debug: Returning True (no specific conditions, all required met) ---")
+            return True 
 
         # 3. Check if conclusion conditions are met
         if not isinstance(conclusion_conditions, list):
             logger.warning(f"Conclusion conditions for campaign {campaign.id} are not a list: {conclusion_conditions}. Cannot evaluate.")
+            logger.info(f"--- Debug: Returning False (conclusion_conditions not a list) ---")
             return False
 
         all_conditions_met = True # Assume true until a condition fails
-        state_data = game_state.state_data or {} # Ensure state_data is a dict
-
-        for condition in conclusion_conditions:
+        
+        for i, condition in enumerate(conclusion_conditions):
+            logger.debug(f"--- Debug: Evaluating condition #{i+1}: {condition} ---")
             if not isinstance(condition, dict):
                 logger.warning(f"Skipping invalid condition (not a dict): {condition}")
                 all_conditions_met = False
-                break # If one condition is invalid, we can't be sure, so fail the check
+                logger.debug(f"--- Debug: Condition #{i+1} is not a dict. all_conditions_met set to False. ---")
+                break 
 
             condition_type = condition.get('type')
-            condition_met = False # Assume false for this specific condition
+            condition_met = False 
 
             try:
                 if condition_type == 'state_key_equals':
                     key = condition.get('key')
                     expected_value = condition.get('value')
+                    actual_value = state_data.get(key)
                     if key is not None:
-                        condition_met = state_data.get(key) == expected_value
-                        logger.debug(f"Checking state_key_equals: key='{key}', expected='{expected_value}', actual='{state_data.get(key)}', met={condition_met}")
+                        condition_met = actual_value == expected_value
+                        logger.debug(f"--- Debug: Condition type 'state_key_equals': key='{key}', expected='{expected_value}', actual='{actual_value}', met={condition_met} ---")
                     else:
                         logger.warning(f"Invalid state_key_equals condition (missing key): {condition}")
+                        logger.debug(f"--- Debug: Condition type 'state_key_equals' invalid (missing key). ---")
 
                 elif condition_type == 'state_key_exists':
                     key = condition.get('key')
                     if key is not None:
                         condition_met = key in state_data
-                        logger.debug(f"Checking state_key_exists: key='{key}', met={condition_met}")
+                        logger.debug(f"--- Debug: Condition type 'state_key_exists': key='{key}', present={condition_met}, met={condition_met} ---")
                     else:
                         logger.warning(f"Invalid state_key_exists condition (missing key): {condition}")
+                        logger.debug(f"--- Debug: Condition type 'state_key_exists' invalid (missing key). ---")
 
                 elif condition_type == 'state_key_contains':
                     key = condition.get('key')
                     value_to_contain = condition.get('value')
+                    actual_value = state_data.get(key)
                     if key is not None and value_to_contain is not None:
-                        actual_value = state_data.get(key)
                         if isinstance(actual_value, (list, str)):
                             condition_met = value_to_contain in actual_value
-                            logger.debug(f"Checking state_key_contains: key='{key}', expected_to_contain='{value_to_contain}', actual='{actual_value}', met={condition_met}")
+                            logger.debug(f"--- Debug: Condition type 'state_key_contains': key='{key}', expected_to_contain='{value_to_contain}', actual='{actual_value}', met={condition_met} ---")
                         else:
-                            logger.debug(f"Checking state_key_contains: key='{key}' value is not list or string: {actual_value}")
+                            logger.debug(f"--- Debug: Condition type 'state_key_contains': key='{key}' value is not list or string: {actual_value}. Condition not met. ---")
                     else:
                         logger.warning(f"Invalid state_key_contains condition (missing key or value): {condition}")
+                        logger.debug(f"--- Debug: Condition type 'state_key_contains' invalid (missing key or value). ---")
 
                 elif condition_type == 'location_visited':
                     location_name = condition.get('location')
-                    visited_locations = state_data.get('visited_locations', []) # Assume visited_locations is stored in state_data
+                    visited_locations = state_data.get('visited_locations', []) 
                     if location_name is not None and isinstance(visited_locations, list):
                         condition_met = location_name in visited_locations
-                        logger.debug(f"Checking location_visited: location='{location_name}', visited={visited_locations}, met={condition_met}")
+                        logger.debug(f"--- Debug: Condition type 'location_visited': location='{location_name}', visited={visited_locations}, met={condition_met} ---")
                     elif not isinstance(visited_locations, list):
                          logger.warning(f"Invalid location_visited check: 'visited_locations' in state_data is not a list.")
+                         logger.debug(f"--- Debug: Condition type 'location_visited' invalid ('visited_locations' not a list). ---")
                     else:
                         logger.warning(f"Invalid location_visited condition (missing location): {condition}")
-
+                        logger.debug(f"--- Debug: Condition type 'location_visited' invalid (missing location name). ---")
                 else:
                     logger.warning(f"Unsupported conclusion condition type: {condition_type}")
+                    logger.debug(f"--- Debug: Unsupported condition type '{condition_type}'. Condition not met. ---")
 
             except Exception as eval_e:
                  logger.error(f"Error evaluating condition {condition}: {eval_e}", exc_info=True)
-                 condition_met = False # Treat evaluation errors as condition not met
-
+                 condition_met = False 
+                 logger.debug(f"--- Debug: Exception during evaluation of condition #{i+1}. Condition met set to False. ---")
+            
+            logger.debug(f"--- Debug: Result of condition #{i+1} ('{condition.get('type')}', details: {condition}): {condition_met} ---")
             if not condition_met:
                 all_conditions_met = False
-                logger.info(f"Conclusion check failed: Condition not met: {condition}")
-                break # No need to check further if one condition fails
+                logger.info(f"--- Debug: Conclusion check failed: Condition #{i+1} not met: {condition} ---")
+                break 
 
         if all_conditions_met:
-            logger.info(f"All conclusion conditions met for game {game_state.game_id}.")
+            logger.info(f"--- Debug: All conclusion conditions met for game {game_state.game_id}. ---")
+            logger.info(f"--- Debug: Returning True (all conditions met) ---")
             return True
         else:
-            # logger.info(f"Not all conclusion conditions met for game {game_state.game_id}.") # Already logged which one failed
+            logger.info(f"--- Debug: Not all conclusion conditions met for game {game_state.game_id}. ---")
+            logger.info(f"--- Debug: Returning False (not all conditions met) ---")
             return False
 
     except Exception as e:
         logger.error(f"Error checking conclusion for game {game_state.game_id}: {str(e)}", exc_info=True)
+        logger.info(f"--- Debug: Returning False (exception in check_conclusion) ---")
         return False
 
 # TODO: Implement other campaign service functions as needed

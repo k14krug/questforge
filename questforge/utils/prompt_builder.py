@@ -113,8 +113,8 @@ def build_campaign_prompt(template: Template, template_overrides: Optional[Dict[
         "    - Example: `[{\"name\": \"Whispering Caves\", \"description\": \"A dark, damp cave system rumored to hold the artifact.\"}, ...]`",
         "3.  **generated_characters:** A JSON list of 2-3 key NPC objects relevant to plot and `campaign_objective`. Align with `Theme` and `Desired Tone`, incorporating NPCs from `Creator Customizations`. Each object: 'name', 'role', 'description'.",
         "    - Example: `[{\"name\": \"Elara\", \"role\": \"Mysterious Guide\", \"description\": \"An old hermit who knows the mountain paths.\"}, ...]`",
-        "4.  **generated_plot_points:** A JSON list outlining 3-5 major stages/events progressing towards `campaign_objective`, reflecting `Core Conflict/Goal`. Consider `Player Character Guidance` and the provided `PLAYER CHARACTERS` details (names and descriptions). Incorporate plot hooks from `Creator Customizations`. Each item: descriptive string.", # Updated reference to PLAYER CHARACTERS
-        "    - Example: `[\"Players investigate the initial theft.\", \"Players track the thieves to the Whispering Caves.\", \"Players confront the guardian within the caves.\", ...]`",
+        "4.  **generated_plot_points:** A JSON list outlining 3-5 major stages/events progressing towards `campaign_objective`, reflecting `Core Conflict/Goal`. Consider `Player Character Guidance` and the provided `PLAYER CHARACTERS` details (names and descriptions). Incorporate plot hooks from `Creator Customizations`. Each item MUST be a JSON object with 'description' (string) and 'required' (boolean, true if essential for campaign completion, false if optional). At least one plot point should be 'required: true'.",
+        "    - Example: `[{\"description\": \"Players investigate the initial theft.\", \"required\": true}, {\"description\": \"Players find optional clues about the thief's accomplice.\", \"required\": false}, {\"description\": \"Players track the thieves to the Whispering Caves.\", \"required\": true}, ...]`",
         "5.  **initial_scene:** A JSON object describing the start. 'description' sets the scene vividly (using `Theme`, `Desired Tone`, and incorporating the provided `PLAYER CHARACTERS` details, **referring to players by their provided names**). 'state' MUST include 'location'. 'goals' are 1-3 immediate actions. Align with relevant `Creator Customizations` (e.g., starting location).", # Updated instruction to use names
         "    - Example: `{\"description\": \"Torbin, the gruff warrior, and Lyra, the nimble rogue, awaken in a damp cellar...\", \"state\": {\"location\": \"Tavern Cellar\"}, \"goals\": [\"Look for a way out\", \"Search the barrels\", \"Listen at the door\"]}`", # Updated example to use names
         "6.  **campaign_summary (Optional):** Brief overall summary.",
@@ -142,31 +142,41 @@ def build_campaign_prompt(template: Template, template_overrides: Optional[Dict[
     return final_prompt
 
 
-def build_response_prompt(context: str, player_action: str) -> str:
+def build_response_prompt(context: str, player_action: str, is_stuck: bool = False, next_required_plot_point: Optional[str] = None) -> str:
     """
     Generates a prompt for the AI to respond to a player's action, given the game context.
 
     Args:
-        context: A string containing the relevant game context (campaign info, current state).
+        context: A string containing the relevant game context (campaign info, current state, current objective).
         player_action: The action taken by the player as a string.
+        is_stuck: Boolean indicating if the player might be stuck.
+        next_required_plot_point: Optional string describing the next required plot point (used for hints).
 
     Returns:
         A string containing the formatted prompt for the AI.
     """
     prompt_lines = [
         "You are a Game Master for a text-based adventure game.",
-        "Based on the provided context and the player's action, describe what happens next.",
-        "**IMPORTANT: Refer to players by their names as listed in the 'Players Present' section of the context.**", # Added instruction
+        "Based on the provided context (including the 'Current Objective/Focus') and the player's action, describe what happens next.",
+        "**IMPORTANT: Refer to players by their names as listed in the 'Players Present' section of the context.**",
         "Consider the following aspects while generating the response:",
-        "1. **Narrative Consistency & Logic:** Evaluate the player's action against the current game state (location, inventory, character status, plot points, players present) and narrative consistency. Provide narrative consequences or deny actions that are illogical (e.g., using an item not possessed, finding something not present, interacting with something impossible). Prioritize realistic outcomes and narrative progression over simply executing the player's command verbatim.",
-        "2. **Narrative Description:** Provide a vivid and engaging description of the outcome, reflecting the consequences of the action based on the evaluation in point 1. **Use the players' names when describing their actions or interactions.**", # Added instruction
-        "3. **State Changes:** Clearly outline any changes to the game state resulting from the action. If an action is denied or has no effect, state changes might be minimal or empty.",
-        "4. **Available Actions:** List the relevant actions the player can take *after* this event, reflecting the new situation.",
+        "1. **Objective Adherence & Logic:** Evaluate the player's action against the 'Current Objective/Focus' provided in the Game Context. If the action attempts to bypass or ignore this objective without strong narrative justification, your response should explain *why* it's difficult or impossible at this time (e.g., 'The ancient gate is sealed by a powerful magic; perhaps the runes in the library hold a clue?'). Prioritize realistic outcomes and narrative progression towards the Current Objective/Focus.",
+        "2. **Narrative Consistency:** Ensure the response is consistent with the overall game state (location, inventory, character status, completed plot points, players present). Deny actions that are illogical (e.g., using an item not possessed).",
+        "3. **Narrative Description:** Provide a vivid and engaging description of the outcome. **Use the players' names when describing their actions or interactions.**",
+    ]
+
+    if is_stuck and next_required_plot_point:
+        prompt_lines.append(f"4. **Player Guidance:** The player might be stuck. Subtly weave a hint related to the 'Current Objective/Focus' ('{next_required_plot_point}') into your narrative description or suggest a relevant action. Make it feel natural.")
+    
+    prompt_lines.extend([
+        "5. **State Changes:** Clearly outline any changes to the game state resulting from the action. If an action is denied or has no effect, state changes might be minimal or empty.",
+        "   - **Plot Point Achievement:** If the player's action *directly and successfully achieves* the 'Current Objective/Focus', YOU MUST include `\"achieved_plot_point\": \"Description of the achieved plot point (matching the Current Objective/Focus)\"` in your `state_changes` object.",
+        "6. **Available Actions:** List relevant actions the player can take *after* this event, reflecting the new situation.",
         "---",
         "Your response MUST be a JSON object containing three keys:",
         "1. 'content': A string describing the narrative outcome of the action.",
-        "2. 'state_changes': A JSON object detailing ALL relevant game state variables after the action. **Crucially, this object MUST ALWAYS include the 'location' key, reflecting the player's current location after this action, even if it hasn't changed from the context.** Other examples: `{'player_health': -10, 'location': 'Cave Entrance', 'items_added': ['torch']}`.",
-        "3. 'available_actions': A JSON list of strings representing the actions the player can take next from the current state (e.g., `['Look around', 'Check inventory', 'Go north']`).",
+        "2. 'state_changes': A JSON object detailing ALL relevant game state variables after the action. **Crucially, this object MUST ALWAYS include the 'location' key.** If a plot point was achieved, include `achieved_plot_point` here. Example: `{'location': 'Cave Entrance', 'items_added': ['torch'], 'achieved_plot_point': 'Find the hidden lever'}`.",
+        "3. 'available_actions': A JSON list of strings representing the actions the player can take next (e.g., `['Look around', 'Check inventory', 'Go north']`).",
         "---",
         "Game Context:",
         context, # Insert the pre-built context string
@@ -174,7 +184,7 @@ def build_response_prompt(context: str, player_action: str) -> str:
         f"Player Action: {player_action}",
         "---",
         "Generate the JSON response now:"
-    ]
+    ])
 
     return "\n".join(prompt_lines)
 

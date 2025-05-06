@@ -116,8 +116,22 @@ class AIService:
                  app.logger.warning("AI campaign response 'generated_locations' is not a list.") # Warning for now
             if not isinstance(parsed_data.get('generated_characters'), list):
                  app.logger.warning("AI campaign response 'generated_characters' is not a list.") # Warning for now
-            if not isinstance(parsed_data.get('generated_plot_points'), list):
-                 app.logger.warning("AI campaign response 'generated_plot_points' is not a list.") # Warning for now
+            
+            # Validate generated_plot_points structure
+            plot_points = parsed_data.get('generated_plot_points')
+            if not isinstance(plot_points, list):
+                app.logger.error("AI campaign response 'generated_plot_points' is not a list.")
+                return {"error": "Invalid 'generated_plot_points' structure: not a list."}
+            for i, pp in enumerate(plot_points):
+                if not isinstance(pp, dict) or not all(k in pp for k in ['description', 'required']):
+                    app.logger.error(f"AI campaign response 'generated_plot_points' item {i} is not a dict or missing 'description'/'required' keys.")
+                    return {"error": f"Invalid 'generated_plot_points' item structure at index {i}."}
+                if not isinstance(pp.get('description'), str):
+                    app.logger.error(f"AI campaign response 'generated_plot_points' item {i} 'description' is not a string.")
+                    return {"error": f"Invalid 'generated_plot_points' item {i} 'description' type."}
+                if not isinstance(pp.get('required'), bool):
+                    app.logger.error(f"AI campaign response 'generated_plot_points' item {i} 'required' is not a boolean.")
+                    return {"error": f"Invalid 'generated_plot_points' item {i} 'required' type."}
 
 
             # Validation passed for the new structure
@@ -252,13 +266,15 @@ class AIService:
             app.logger.error(f"Error generating initial scene: {e}", exc_info=True)
             return None
 
-    def get_response(self, game_state: GameState, player_action: str) -> dict | None:
+    def get_response(self, game_state: GameState, player_action: str, is_stuck: bool = False, next_required_plot_point: Optional[str] = None) -> dict | None:
         """
         Gets the AI's response to a player's action within the current game context.
 
         Args:
             game_state: The current GameState object.
             player_action: The action taken by the player (string).
+            is_stuck: Boolean indicating if the player might be stuck.
+            next_required_plot_point: Optional string describing the next required plot point.
 
         Returns:
             A dictionary containing the AI's narrative response ('content') and
@@ -271,7 +287,8 @@ class AIService:
             return None
 
         # 1. Build Context
-        context = build_context(game_state)
+        # Pass next_required_plot_point to build_context
+        context = build_context(game_state, next_required_plot_point)
         if context.startswith("Error:"):
             app.logger.error(f"Error building context: {context}")
             return None
@@ -280,7 +297,8 @@ class AIService:
         app.logger.debug(f"--- AI Service: Context built for get_response ---\n{context}\n-------------------------------------------------")
 
         # 2. Build Prompt
-        prompt = build_response_prompt(context, player_action)
+        # Pass is_stuck and next_required_plot_point to build_response_prompt
+        prompt = build_response_prompt(context, player_action, is_stuck, next_required_plot_point)
         app.logger.debug(f"--- AI Service: Getting response with prompt ---\n{prompt}\n---------------------------------------------")
 
         generated_content = "" # Initialize
