@@ -11,6 +11,7 @@ This file captures key patterns, decisions, and project-specific knowledge for t
 - **Service Layer Pattern**: Business logic is encapsulated in service modules (`ai_service.py`, `campaign_service.py`, `game_state_service.py`, `socket_service.py`).
 - **State Management**: `GameState` model tracks turn-by-turn state changes during gameplay.
 - **Delayed Campaign Generation**: Campaign creation is triggered via SocketIO from the lobby (Phase 2 focus).
+- **AI Character Name Generation**: Players can optionally provide a `character_name` in the lobby. If blank, the AI generates one based on `character_description` during campaign generation (`campaign_service.py`). The definitive name is used consistently in AI prompts and UI display.
 - **Model-View Separation**: Templates (Jinja2) handle presentation, while Python handles business logic.
 
 ## Development Workflow & Conventions

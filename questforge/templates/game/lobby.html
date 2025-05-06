@@ -25,6 +25,14 @@
                                 {% endif %}
                             </div>
                             <div class="mb-2">
+                                <label for="character-name-{{ assoc.user_id }}" class="form-label small">Character Name (Optional):</label>
+                                <input type="text" class="form-control form-control-sm character-name-input" 
+                                       id="character-name-{{ assoc.user_id }}" 
+                                       name="character_name_{{ assoc.user_id }}" 
+                                       value="{{ assoc.character_name or '' }}" 
+                                       {% if assoc.user_id != current_user_id %}readonly{% endif %}>
+                            </div>
+                            <div class="mb-2">
                                 <label for="character-description-{{ assoc.user_id }}" class="form-label small">Character Description:</label>
                                 <textarea class="form-control form-control-sm character-description-area" 
                                           id="character-description-{{ assoc.user_id }}" 
@@ -39,7 +47,7 @@
                                         Human Female
                                     {%- endif -%}</textarea>
                                 {% if assoc.user_id == current_user_id %}
-                                <button class="btn btn-sm btn-secondary mt-1 save-description-button" data-user-id="{{ assoc.user_id }}">Save Description</button>
+                                <button class="btn btn-sm btn-secondary mt-1 save-details-button" data-user-id="{{ assoc.user_id }}">Save Details</button>
                                 <span class="save-status ms-2 small" id="save-status-{{ assoc.user_id }}"></span>
                                 {% endif %}
                             </div>
@@ -131,26 +139,27 @@
         }
     });
 
-    // --- New Function to Emit Character Description Update ---
-    function emitCharacterDescriptionUpdate(userId, description) {
-        console.log(`emitCharacterDescriptionUpdate called for userId=${userId}. State: connected=${socket?.connected}, gameId=${gameId}`);
+    // --- Modified Function to Emit Character Details Update ---
+    function emitCharacterDetailsUpdate(userId, name, description) {
+        console.log(`emitCharacterDetailsUpdate called for userId=${userId}. State: connected=${socket?.connected}, gameId=${gameId}`);
         if (gameId && socket?.connected) {
-            console.log(`Emitting update_character_description for game ${gameId}, user ${userId}`);
-            socket.emit('update_character_description', {
+            console.log(`Emitting update_character_details for game ${gameId}, user ${userId}`);
+            socket.emit('update_character_details', { // Changed event name
                 game_id: gameId,
                 user_id: userId,
+                name: name, // Added name
                 description: description
             });
             // Provide visual feedback
             const saveStatus = document.getElementById(`save-status-${userId}`);
             if (saveStatus) saveStatus.textContent = 'Saving...';
         } else {
-            console.warn(`Conditions not met to emit update_character_description: connected=${socket?.connected}`);
+            console.warn(`Conditions not met to emit update_character_details: connected=${socket?.connected}`);
             const saveStatus = document.getElementById(`save-status-${userId}`);
             if (saveStatus) saveStatus.textContent = 'Error: Not connected';
         }
     }
-    // --- End New Function ---
+    // --- End Modified Function ---
 
     function emitPlayerReady() {
         console.log(`emitPlayerReady called. State: connected=${socket?.connected}, gameId=${gameId}`);
@@ -172,15 +181,16 @@
             emitPlayerReady();
             event.target.disabled = true; // Disable button temporarily
             event.target.textContent = 'Waiting...';
-        } else if (event.target.classList.contains('save-description-button')) {
-            console.log('Save Description button clicked');
+        } else if (event.target.classList.contains('save-details-button')) { // Changed class name
+            console.log('Save Details button clicked'); // Changed log message
             const userId = event.target.dataset.userId;
-            const textarea = document.getElementById(`character-description-${userId}`);
-            if (textarea) {
-                emitCharacterDescriptionUpdate(userId, textarea.value);
+            const nameInput = document.getElementById(`character-name-${userId}`); // Get name input
+            const descriptionTextarea = document.getElementById(`character-description-${userId}`); // Get description textarea
+            if (nameInput && descriptionTextarea) {
+                emitCharacterDetailsUpdate(userId, nameInput.value, descriptionTextarea.value); // Send both values
                 event.target.disabled = true; // Disable button temporarily
             } else {
-                console.error(`Could not find textarea for user ${userId}`);
+                console.error(`Could not find name input or description textarea for user ${userId}`);
             }
         }
     });
@@ -253,6 +263,14 @@
                             ${player.user_id == currentUserId && !player.is_ready ? '<button class="btn btn-sm btn-success ready-button">Ready Up</button>' : ''}
                         </div>
                         <div class="mb-2">
+                            <label for="character-name-${player.user_id}" class="form-label small">Character Name (Optional):</label>
+                            <input type="text" class="form-control form-control-sm character-name-input" 
+                                   id="character-name-${player.user_id}" 
+                                   name="character_name_${player.user_id}" 
+                                   value="${player.character_name || ''}" 
+                                   ${player.user_id != currentUserId ? 'readonly' : ''}>
+                        </div>
+                        <div class="mb-2">
                             <label for="character-description-${player.user_id}" class="form-label small">Character Description:</label>
                             <textarea class="form-control form-control-sm character-description-area" 
                                       id="character-description-${player.user_id}" 
@@ -260,7 +278,7 @@
                                       rows="3" 
                                       ${player.user_id != currentUserId ? 'readonly' : ''}>${currentDescription}</textarea>
                             ${player.user_id == currentUserId ? `
-                            <button class="btn btn-sm btn-secondary mt-1 save-description-button" data-user-id="${player.user_id}">Save Description</button>
+                            <button class="btn btn-sm btn-secondary mt-1 save-details-button" data-user-id="${player.user_id}">Save Details</button>
                             <span class="save-status ms-2 small" id="save-status-${player.user_id}"></span>
                             ` : ''}
                         </div>
@@ -275,11 +293,11 @@
             handlePlayerStatusUpdate(data);
         });
 
-        // --- New Listener for Description Save Confirmation ---
-        socket.on('character_description_updated', (data) => {
-            console.log('Received character_description_updated event:', data);
+        // --- Modified Listener for Details Save Confirmation ---
+        socket.on('character_details_updated', (data) => { // Changed event name
+            console.log('Received character_details_updated event:', data); // Changed log message
             if (data && data.user_id) {
-                const saveButton = playerList.querySelector(`.save-description-button[data-user-id="${data.user_id}"]`);
+                const saveButton = playerList.querySelector(`.save-details-button[data-user-id="${data.user_id}"]`); // Changed class name
                 const saveStatus = document.getElementById(`save-status-${data.user_id}`);
                 if (saveButton) saveButton.disabled = false; // Re-enable button
                 if (saveStatus) {

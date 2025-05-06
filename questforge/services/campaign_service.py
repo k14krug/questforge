@@ -1,6 +1,6 @@
 import logging
 from flask import current_app
-from questforge.models.game import Game
+from questforge.models.game import Game, GamePlayer # Added GamePlayer
 from questforge.models.campaign import Campaign
 from questforge.models.template import Template
 from questforge.models.game_state import GameState
@@ -25,7 +25,7 @@ from decimal import Decimal # For accurate cost calculation
 #         return None
 
 
-def generate_campaign_structure(game: Game, template: Template, player_descriptions: Dict[str, str], creator_customizations: Optional[Dict] = None) -> bool:
+def generate_campaign_structure(game: Game, template: Template, player_details: Dict[str, Dict[str, str]], creator_customizations: Optional[Dict] = None, template_overrides: Optional[Dict] = None) -> bool:
     """
     Generates the full campaign structure and initial game state using the AI service,
     triggered after players are ready in the lobby.
@@ -33,8 +33,9 @@ def generate_campaign_structure(game: Game, template: Template, player_descripti
     Args:
         game: The Game object.
         template: The Template object being used.
-        player_descriptions: A dictionary mapping user_id (str) to character description (str).
+        player_details: A dictionary mapping user_id (str) to a dict containing 'name' and 'description'.
         creator_customizations: An optional dictionary containing creator-provided customizations.
+        template_overrides: An optional dictionary containing template field overrides.
 
     Returns:
         True if campaign and initial state were successfully generated and saved, False otherwise.
@@ -46,13 +47,52 @@ def generate_campaign_structure(game: Game, template: Template, player_descripti
     try:
         logger.info(f"Starting campaign structure generation for game {game_id}")
 
+        # --- AI Character Name Generation (Before main campaign gen) ---
+        logger.info(f"Checking for players needing AI-generated names in game {game_id}...")
+        players_to_update = []
+        # Ensure player associations are loaded if not already eager-loaded
+        # Assuming they might be loaded from the caller (socket_service)
+        for player_assoc in game.player_associations:
+            if not player_assoc.character_name and player_assoc.character_description:
+                logger.info(f"Player {player_assoc.user_id} needs a character name generated based on description: '{player_assoc.character_description}'")
+                try:
+                    generated_name = ai_service.generate_character_name(player_assoc.character_description)
+                    if generated_name:
+                        player_assoc.character_name = generated_name
+                        players_to_update.append(player_assoc)
+                        logger.info(f"AI generated name '{generated_name}' for player {player_assoc.user_id}")
+                    else:
+                        logger.warning(f"AI failed to generate a name for player {player_assoc.user_id}. They will proceed without an AI-generated name.")
+                except Exception as name_gen_e:
+                    logger.error(f"Error during AI name generation for player {player_assoc.user_id}: {name_gen_e}", exc_info=True)
+                    # Continue without generated name for this player
+
+        # Commit any generated names before proceeding
+        if players_to_update:
+            try:
+                db.session.commit()
+                logger.info(f"Successfully committed generated character names for {len(players_to_update)} players in game {game_id}.")
+            except Exception as commit_e:
+                db.session.rollback()
+                logger.error(f"Error committing generated character names for game {game_id}: {commit_e}", exc_info=True)
+                # Decide if this is fatal? For now, log and continue, campaign gen might still work.
+
+        # --- End AI Character Name Generation ---
+
+
         # 1. Generate campaign data using AI service
-        # Note: ai_service.generate_campaign will need updating in Phase 3
+        # Note: ai_service.generate_campaign will need updating in Phase 3 # TODO: This comment is outdated.
         # to accept player_descriptions and use the revised prompt builder.
-        # For now, we pass player_descriptions, assuming the service/prompt handles it.
+        # For now, we pass player_descriptions, assuming the service/prompt handles it. # TODO: This comment is now outdated.
         logger.info(f"Requesting campaign generation for game {game_id} using template {template.id}")
         # Update call to handle new return signature: (parsed_data, model_used, usage_data)
-        ai_result = ai_service.generate_campaign(template, player_descriptions, creator_customizations) # Pass descriptions and customizations
+        # Pass player_details along with other parameters
+        ai_result = ai_service.generate_campaign(
+            template=template,
+            template_overrides=template_overrides,
+            creator_customizations=creator_customizations,
+            player_details=player_details # Pass the details dict here
+        )
 
         if not ai_result:
             logger.error(f"AI service failed to generate campaign data for game {game_id}")

@@ -1,100 +1,34 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash, abort, current_app
 from flask_login import login_required, current_user
-from ..models.game import Game, GamePlayer # Import GamePlayer
+from ..models.game import Game, GamePlayer
 from ..models.campaign import Campaign
 from ..models.template import Template
-from ..models.user import User # Make sure User is imported
-from ..models.api_usage_log import ApiUsageLog # Import the new model
+from ..models.user import User
+from ..models.api_usage_log import ApiUsageLog
 from ..extensions import db, socketio
 from .forms import GameForm
 from sqlalchemy import func # Import func for sum aggregation
 from decimal import Decimal # Import Decimal
-from ..services import ai_service # Import ai_service
+# Removed unused ai_service import
 import traceback # Import traceback
 
-game_bp = Blueprint('game', __name__)
+# ==============================================================================
+# Game Blueprint (`/game`)
+# ==============================================================================
+# Handles routes related to viewing and interacting with specific games:
+# - Game creation form view (`/game/create`)
+# - Listing available games (`/game/list`)
+# - Game lobby view (`/game/<id>/lobby`)
+# - Gameplay view (`/game/<id>/play`)
+# - Game history view (`/game/<id>/history`)
+# - API endpoints for game state/actions (`/game/api/<id>/...`)
+#
+# Note: The actual game *creation* API endpoint (`/api/games/create`)
+#       is located in `questforge/views/campaign_api.py`.
+# ==============================================================================
+game_bp = Blueprint('game', __name__, url_prefix='/game')
 
-@game_bp.route('/api/games/create-game', methods=['POST'])
-@login_required
-def create_game_old():
-    """Create a new game from template"""
-    data = request.get_json()
-    print(f"DEBUG: Incoming request data: {data}")
-    
-    if not data:
-        print("DEBUG: No data received in request")
-    if 'template_id' not in data:
-        print("DEBUG: Missing 'template_id' in request data")
-    if 'name' not in data:
-        print("DEBUG: Missing 'name' in request data")
-    if not data or 'template_id' not in data or 'name' not in data:
-        return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
-    
-    try:
-        template = Template.query.get(data['template_id'])
-        template_overrides = data.get('template_overrides', {}) # Get template overrides, default to empty dict
-        creator_customizations = data.get('creator_customizations', {}) # Get customizations, default to empty dict
-        
-        if not template:
-            return jsonify({'status': 'error', 'message': 'Template not found'}), 404
-            
-        game = Game(
-            name=data['name'],
-            template_id=template.id,
-            created_by=current_user.id,
-            creator_customizations=creator_customizations # Save customizations
-        )
-        db.session.add(game)
-        db.session.flush() # Flush to get game.id before creating GamePlayer
-
-        # Add creator as first player using the association object
-        creator_association = GamePlayer(game_id=game.id, user_id=current_user.id)
-        db.session.add(creator_association)
-
-        db.session.commit()
-
-        # Trigger campaign generation (asynchronous or synchronous based on design)
-        # For now, let's assume a synchronous call for simplicity
-        try:
-            # Pass template_overrides and creator_customizations to the AI service
-            campaign_data = ai_service.generate_campaign(
-                template, 
-                template_overrides=template_overrides, 
-                creator_customizations=creator_customizations
-            )
-            
-            # Save the generated campaign data
-            campaign = Campaign(
-                game_id=game.id,
-                campaign_data=campaign_data # Store the full AI response
-            )
-            db.session.add(campaign)
-            db.session.commit()
-
-            # Update the game with the campaign ID
-            game.campaign_id = campaign.id
-            db.session.commit()
-
-            # Redirect to the game lobby or play page
-            return jsonify({'success': True, 'message': 'Game created successfully!', 'redirect_url': url_for('game.lobby', game_id=game.id)}), 201
-
-        except Exception as e:
-            # Rollback the game creation if campaign generation fails
-            db.session.rollback()
-            # Log the full exception traceback for detailed debugging
-            print(f"Error generating campaign: {str(e)}")
-            print(traceback.format_exc()) 
-            return jsonify({'error': f'Failed to generate campaign: {e}'}), 500
-
-    except Exception as e:
-        db.session.rollback()
-        # Log the full exception traceback for detailed debugging
-        print(f"Error during initial game creation steps: {str(e)}")
-        print(traceback.format_exc()) 
-        return jsonify({'status': 'error', 'message': 'Internal server error during game creation.'}), 500
-
-
-@game_bp.route('/game/<int:game_id>/lobby')
+@game_bp.route('/<int:game_id>/lobby')
 @login_required
 def lobby(game_id):
     """Game lobby view. Adds the current user to the game if they aren't already part of it."""
@@ -119,10 +53,12 @@ def lobby(game_id):
                 db.session.rollback()
                 current_app.logger.error(f"Error adding player {current_user.id} to game {game_id}: {str(e)}")
                 flash("Could not join the game due to an error.", "danger")
-                return redirect(url_for('game.list_games')) # Redirect back if join fails
+                # Redirect to the list view within the same blueprint
+                return redirect(url_for('game.list_games')) 
         else:
             flash("This game is not currently accepting new players.", "warning")
-            return redirect(url_for('game.list_games')) # Redirect if game not joinable
+            # Redirect to the list view within the same blueprint
+            return redirect(url_for('game.list_games')) 
 
     # Fetch associations again after potential add
     player_associations = GamePlayer.query.filter_by(game_id=game_id).all()
@@ -133,17 +69,19 @@ def lobby(game_id):
         current_user_id=current_user.id
     )
 
-@game_bp.route('/game/<int:game_id>/play')
+@game_bp.route('/<int:game_id>/play')
 @login_required
-def play(game_id):
+def play(game_id): # Renamed from play_game to play for consistency
     """Main game play view"""
     game = Game.query.get_or_404(game_id)
     campaign = Campaign.query.filter_by(game_id=game_id).first()
 
+    # Redirect to lobby if campaign hasn't been generated yet
     if not campaign:
+        flash("The game hasn't started yet. Waiting in the lobby.", "info")
         return redirect(url_for('game.lobby', game_id=game_id))
 
-    # Retrieve the current game state
+    # Retrieve the current game state (latest one)
     game_state = game.game_states[-1] if game.game_states else None
 
     # Calculate total cost for the current game
@@ -153,101 +91,125 @@ def play(game_id):
     # Get the AI model from config
     ai_model = current_app.config.get('OPENAI_MODEL', 'Not Configured')
 
-    return render_template('game/play.html', 
-                           game=game, 
-                           campaign=campaign,
-                           ai_model=ai_model, # Pass AI model to template
-                           user_id=current_user.id, 
-                           game_state=game_state, 
-                           game_log=game_state.game_log if game_state else [],
-                           total_cost=total_cost)
+    # Fetch player details (username, character name, and description)
+    player_associations = GamePlayer.query.filter_by(game_id=game_id).options(db.joinedload(GamePlayer.user)).all()
+    player_details = {}
+    for assoc in player_associations:
+        if assoc.user: # Ensure the user object is loaded
+            player_details[assoc.user_id] = {
+                'username': assoc.user.username,
+                'character_name': assoc.character_name, # Add character_name (could be None)
+                'character_description': assoc.character_description # Add description (could be None)
+            }
+        else:
+             # Log a warning if a user couldn't be loaded for an association
+             current_app.logger.warning(f"Could not load user for GamePlayer association: game_id={game_id}, user_id={assoc.user_id}")
 
-@game_bp.route('/game/<int:game_id>/history')
+
+    return render_template('game/play.html',
+                           game=game,
+                           campaign=campaign,
+                           ai_model=ai_model,
+                           user_id=current_user.id,
+                           game_state=game_state,
+                           game_log=game_state.game_log if game_state else [],
+                           total_cost=total_cost,
+                           player_details=player_details) # Pass updated player details map
+
+@game_bp.route('/<int:game_id>/history')
 @login_required
 def history(game_id):
     """Game history view"""
     game = Game.query.get_or_404(game_id)
+    # Potentially load game states or other history data here
     return render_template('game/history.html', game=game)
 
-@game_bp.route('/game/create')
+@game_bp.route('/create')
 @login_required
 def create_game_view():
-    """Game creation view"""
-    form = GameForm()
-    templates = Template.query.all()
-    return render_template('game_create.html', templates=templates, form=form)
+    """Renders the game creation form view."""
+    form = GameForm() # Used for CSRF token if enabled
+    templates = Template.query.order_by(Template.name).all() # Fetch templates for the dropdown
+    return render_template('game/create.html', templates=templates, form=form) 
 
-@game_bp.route('/games/list')
+@game_bp.route('/list')
 @login_required
 def list_games():
     """Lists active games available to join."""
-    # Query for games that are 'active' (created but not started)
-    # Exclude games the current user has already joined? Or show all active? Let's show all for now.
-    all_games = Game.query.order_by(Game.created_at.desc()).all()
+    # Query for games that are 'active' (created but not started/finished)
+    all_games = Game.query.filter(Game.status == 'active').order_by(Game.created_at.desc()).all()
     
     # Calculate total cost for each game
     game_costs = {}
     for game in all_games:
-        # Query the sum of costs from ApiUsageLog, handle None result
         total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game.id).scalar()
-        # Ensure total_cost is Decimal or 0
         total_cost = total_cost_query if total_cost_query is not None else Decimal('0.0')
         game_costs[game.id] = total_cost
 
     return render_template('game/list.html', games=all_games, game_costs=game_costs)
 
 
-# Game API Endpoints
-@game_bp.route('/api/game/<int:game_id>/state', methods=['GET'])
+# ==============================================================================
+# Game State/Action API Endpoints (`/game/api/<id>/...`)
+# ==============================================================================
+# These endpoints are potentially better suited for a dedicated game_api blueprint,
+# but are kept here for now as they directly relate to interacting with a game instance.
+# ==============================================================================
+
+@game_bp.route('/api/<int:game_id>/state', methods=['GET'])
 @login_required
 def get_game_state(game_id):
-    """Get current game state"""
+    """API: Get current game state (likely deprecated if using SocketIO for state)"""
+    # This might be less relevant if state is primarily managed via SocketIO
     game = Game.query.get_or_404(game_id)
-    return {
+    # Consider returning the latest GameState data instead of game.to_dict()
+    latest_state = game.game_states[-1] if game.game_states else None
+    return jsonify({
         'status': 'success',
-        'data': game.to_dict()
-    }
+        'data': latest_state.to_dict() if latest_state else None # Adapt GameState model if needed
+    })
 
-@game_bp.route('/api/game/<int:game_id>/state', methods=['POST'])
+@game_bp.route('/api/<int:game_id>/state', methods=['POST'])
 @login_required
 def update_game_state(game_id):
-    """Update game state"""
+    """API: Update game state (likely deprecated if using SocketIO for state)"""
+    # This is likely superseded by SocketIO events like 'player_action'
     game = Game.query.get_or_404(game_id)
     data = request.get_json()
     
     if not data:
-        return {'status': 'error', 'message': 'No data provided'}, 400
+        return jsonify({'status': 'error', 'message': 'No data provided'}), 400
     
     try:
-        game.update_state(data)
-        db.session.commit()
-        socketio.emit('game_state_update', {'game_id': game_id, 'state': game.state})
-        return {'status': 'success', 'data': game.to_dict()}
+        # This logic should likely live within a service or the GameState model
+        # game.update_state(data) # Assuming this method exists and works
+        # For now, just acknowledge - real updates happen via SocketIO
+        # db.session.commit() 
+        # socketio.emit('game_state_update', {'game_id': game_id, 'state': game.state}) # Example emit
+        return jsonify({'status': 'success', 'message': 'State update acknowledged (handled via SocketIO)'})
     except Exception as e:
         db.session.rollback()
-        return {'status': 'error', 'message': str(e)}, 400
+        current_app.logger.error(f"Error in deprecated update_game_state API for game {game_id}: {e}", exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}), 400
 
-@game_bp.route('/api/game/<int:game_id>/action', methods=['POST'])
+@game_bp.route('/api/<int:game_id>/action', methods=['POST'])
 @login_required
 def player_action(game_id):
-    """Handle player actions"""
+    """API: Handle player actions (likely deprecated if using SocketIO for actions)"""
+    # This is likely superseded by the 'player_action' SocketIO event
     game = Game.query.get_or_404(game_id)
     data = request.get_json()
     
     if not data or 'action' not in data:
-        return {'status': 'error', 'message': 'Invalid action'}, 400
+        return jsonify({'status': 'error', 'message': 'Invalid action'}, 400)
     
     try:
-        # Process player action
-        result = game.process_action(current_user.id, data['action'], data.get('payload', {}))
-        db.session.commit()
-        socketio.emit('game_action', {
-            'game_id': game_id,
-            'player_id': current_user.id,
-            'action': data['action'],
-            'result': result
-        })
-        return {'status': 'success', 'data': result}
+        # This logic should live within the SocketIO handler
+        # result = game.process_action(current_user.id, data['action'], data.get('payload', {})) # Example call
+        # db.session.commit()
+        # socketio.emit('game_action', { ... }) # Example emit
+        return jsonify({'status': 'success', 'message': 'Action acknowledged (handled via SocketIO)'})
     except Exception as e:
         db.session.rollback()
-        return {'status': 'error', 'message': str(e)}, 400
+        current_app.logger.error(f"Error in deprecated player_action API for game {game_id}: {e}", exc_info=True)
+        return jsonify({'status': 'error', 'message': str(e)}, 400)

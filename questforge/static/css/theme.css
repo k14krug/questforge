@@ -14,6 +14,10 @@
   --input-bg: #ffffff;
   --input-color: #212529;
   --input-border: #ced4da;
+  /* --- QuestForge Theme Additions --- */
+  --parchment-bg: #f5f5dc; /* Beige for parchment effect */
+  --adventure-font: Georgia, serif; /* Optional thematic font */
+  --body-bg-light: #fdfdfa; /* Slightly off-white for light theme body */
 }
 
 [data-bs-theme="dark"] {
@@ -32,12 +36,22 @@
   --input-bg: #2c3034;
   --input-color: #f8f9fa;
   --input-border: #495057;
+  /* --- QuestForge Theme Additions (Dark) --- */
+  --parchment-bg: #3a362f; /* Darker parchment for dark theme */
+  --adventure-font: Georgia, serif; /* Keep consistent */
+  --body-bg-dark: #2a2a2a; /* Slightly different dark bg */
 }
 
 body {
-  background-color: var(--body-bg);
+  /* background-color: var(--body-bg); */ /* Use specific theme vars */
+  background-color: var(--body-bg-light); /* Default to light theme */
   color: var(--body-color);
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* font-family: var(--adventure-font); */ /* Optional: Uncomment to apply thematic font globally */
+}
+
+[data-bs-theme="dark"] body {
+    background-color: var(--body-bg-dark);
 }
 
 .card {
@@ -57,3 +71,28 @@ body {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
+
+/* --- QuestForge Specific Styles --- */
+
+/* Apply parchment background to game visualization */
+.game-state-visualization {
+    background-color: var(--parchment-bg) !important; /* Use important to override potential Bootstrap styles */
+    /* Consider adding a subtle border if needed */
+    /* border: 1px solid darken(var(--parchment-bg), 10%); */
+}
+
+/* Adjust player log entry background for better theme fit */
+.log-entry-player {
+    background-color: rgba(0, 0, 0, 0.08) !important; /* Slightly darker subtle background */
+}
+
+[data-bs-theme="dark"] .log-entry-player {
+    background-color: rgba(255, 255, 255, 0.08) !important; /* Lighter subtle background for dark theme */
+}
+
+/* Optional: Apply thematic font to specific game elements if not global */
+/*
+.game-container, .game-state-visualization, .card {
+    font-family: var(--adventure-font);
+}
+*/

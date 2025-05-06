@@ -1,32 +1,37 @@
-# Phase 5: Enhanced Game Creation
+# Phase 5: Enhanced Game Creation (Completed)
 
-This phase focuses on giving the game creator more control over the campaign generation process by allowing them to add specific customizations on top of the selected template.
+This phase focused on giving the game creator more control over the campaign generation process by allowing them to add specific customizations and override template details before the AI generates the campaign.
 
-**Note:** This phase requires more detailed planning before implementation begins.
+**Status:** Implemented and integrated into the workflow as of 2025-04-05.
 
-## Goals & Initial Thoughts
+## Implemented Features
 
 1.  **Creator Customizations:**
-    *   **Goal:** Allow the game creator to input additional details, instructions, or overrides *after* selecting a template but *before* campaign generation. This aims to further tailor the AI's output beyond the template's general guidance.
-    *   **Potential Customization Areas (Needs Refinement):**
-        *   Specific NPCs to include (name, role, basic description).
-        *   Key locations to feature.
-        *   Specific plot hooks or starting situations.
-        *   Minor rule modifications or emphasis points.
-        *   Exclusions (e.g., "avoid themes of X").
-    *   **Tasks (High-Level):**
-        *   **UI Design:** Design and implement a new step or form in the game creation flow (likely after template selection in `questforge/templates/game/create.html` or a subsequent step).
-        *   **Data Storage:** Determine the best way to store these customizations. Options:
-            *   Add a new JSON field (e.g., `creator_customizations`) to the `Game` model (`questforge/models/game.py`). Requires DB migration.
-            *   Store temporarily and pass directly to the generation service (less persistent). (Model field seems better).
-        *   **Backend Logic:**
-            *   Create a new view function/API endpoint (e.g., in `questforge/views/game.py`) to handle saving the customization form data to the chosen storage location.
-            *   Modify the game creation/lobby logic to ensure these customizations are loaded when `handle_start_game` is triggered.
-        *   **Prompt Integration:** Modify `build_campaign_prompt` in `questforge/utils/prompt_builder.py` to incorporate these `creator_customizations` into the prompt sent to the AI, instructing it to prioritize or integrate them alongside the template and player data.
+    *   **UI:** The game creation form (`questforge/templates/game/create.html`) includes a dedicated section ("4. Add Customizations") with textareas for:
+        *   Key NPCs
+        *   Important Locations
+        *   Specific Plot Hooks
+        *   Special Rules or Mechanics
+        *   Things to Exclude
+    *   **Data Storage:**
+        *   A `creator_customizations` JSON field was added to the `Game` model (`questforge/models/game.py`).
+        *   The game creation API (`/api/games/create` in `questforge/views/game.py`) saves the non-empty customization inputs into this field when the `Game` record is created.
+    *   **Backend Logic:**
+        *   The SocketIO `handle_start_game` event (`questforge/services/socket_service.py`) retrieves the saved `creator_customizations` from the `Game` object when triggering campaign generation.
+        *   The `generate_campaign_structure` function (`questforge/services/campaign_service.py`) receives these customizations.
+        *   The `generate_campaign` function (`questforge/services/ai_service.py`) receives these customizations.
+    *   **Prompt Integration:** The `build_campaign_prompt` function (`questforge/utils/prompt_builder.py`) incorporates the `creator_customizations` into a dedicated section of the prompt and instructs the AI to use them when generating locations, characters, plot points, rules, and exclusions.
 
-## Planning Considerations
+2.  **Template Detail Overrides:**
+    *   **UI:** The game creation form (`questforge/templates/game/create.html`) includes a section ("3. Customize Template Details") that dynamically loads fields corresponding to the selected template's attributes (e.g., Genre, Core Conflict, World Description, Default Rules). These fields are pre-filled with the template's data, allowing the creator to override them.
+    *   **Data Handling:**
+        *   The frontend JavaScript collects non-empty overrides into a `template_overrides` object.
+        *   This object is sent to the game creation API (`/api/games/create`).
+        *   *Note: These overrides are NOT persisted in the `Game` model.*
+    *   **Backend Logic:**
+        *   The `generate_campaign` function (`questforge/services/ai_service.py`) receives the `template_overrides` dictionary.
+    *   **Prompt Integration:** The `build_campaign_prompt` function (`questforge/utils/prompt_builder.py`) checks for overrides for each template field and uses the overridden value if present; otherwise, it uses the original template value.
 
-*   How structured should the customization input be? Free text vs. specific fields?
-*   How should conflicts between template guidance and creator customizations be handled in the prompt?
-*   What is the impact on the complexity of `build_campaign_prompt`?
-*   How much detail can realistically be passed to the AI within token limits?
+## Summary
+
+The enhanced game creation features allow creators to significantly tailor the AI-generated campaign beyond the base template by providing specific instructions, inclusions, and exclusions, as well as overriding core template details. This functionality is integrated into the standard game creation flow.

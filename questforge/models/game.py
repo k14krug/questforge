@@ -9,6 +9,7 @@ class GamePlayer(db.Model):
     game_id = db.Column(db.Integer, db.ForeignKey('games.id'), primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     character_description = db.Column(db.Text, nullable=True) # Added field for player character description
+    character_name = db.Column(db.String(100), nullable=True) # Optional player-provided or AI-generated name
     is_ready = db.Column(db.Boolean, default=False, nullable=False)
     join_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -25,7 +26,8 @@ class Game(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, ForeignKey('users.id'))
     status = db.Column(db.String(20), default='active')
-    creator_customizations = db.Column(db.JSON, nullable=True) # Added field for creator customizations
+    creator_customizations = db.Column(db.JSON, nullable=True) # Creator-provided additions/changes
+    template_overrides = db.Column(db.JSON, nullable=True) # Creator-provided overrides for base template fields
 
     template = relationship('Template', backref='games')
     creator = relationship('User', foreign_keys=[created_by]) # Specify foreign key for creator

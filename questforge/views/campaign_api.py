@@ -1,10 +1,21 @@
-from flask import Blueprint, request, jsonify, url_for, redirect
+from flask import Blueprint, request, jsonify, url_for, redirect, current_app
 from flask_login import login_required, current_user
 from ..models.template import Template
 from ..models.game import Game, GamePlayer # Import GamePlayer
-from ..extensions import db 
+from ..extensions import db
 
-campaign_api_bp = Blueprint('campaign_api', __name__)
+# ==============================================================================
+# Campaign API Blueprint (`/api`)
+# ==============================================================================
+# Handles API endpoints primarily related to:
+# - Initial Game Creation (`/api/games/create`): Creates the core Game record
+#   and player association, saving overrides/customizations. Actual campaign
+#   content generation is triggered later from the lobby via SocketIO.
+# - Campaign Management (Optional/Future): Could include endpoints for listing,
+#   viewing, or potentially managing generated campaign structures if needed.
+#   (Currently includes placeholder /api/campaigns/... routes).
+# ==============================================================================
+campaign_api_bp = Blueprint('campaign_api', __name__, url_prefix='/api')
 
 # Removed obsolete get_template_questions_for_frontend route as question_flow is removed
 
@@ -76,60 +87,80 @@ def update_campaign(campaign_id):
     db.session.commit()
     return jsonify({'message': 'Campaign updated successfully'})
 
-@campaign_api_bp.route('/api/games/create', methods=['POST'])
+@campaign_api_bp.route('/games/create', methods=['POST']) # Corrected route relative to blueprint prefix
 @login_required
 def create_game_api():
     """
-    Creates a new game record and the creator's player association.
-    Campaign generation is now handled later via SocketIO in the lobby.
+    API Endpoint: /api/games/create (POST)
+
+    Handles the initial step of game creation triggered by the frontend form.
+
+    1. Receives game name, template ID, template overrides, and creator customizations.
+    2. Validates the input (template existence).
+    3. Creates a new `Game` record in the database.
+    4. Saves the received `template_overrides` and `creator_customizations`
+       to the corresponding JSON fields in the new `Game` record.
+    5. Creates the `GamePlayer` association record linking the creator (current user)
+       to the newly created game.
+    6. Commits the `Game` and `GamePlayer` records to the database.
+    7. Returns a JSON response containing the URL for the game lobby (`/game/<id>/lobby`),
+       redirecting the user there.
+
+    Note: This endpoint *only* creates the initial records. The actual AI-driven
+          campaign content generation happens later when the 'start_game' SocketIO
+          event is triggered from the lobby (see `socket_service.py`).
     """
-    print("--- DEBUG: campaign_api_bp create_game_api route registered ---")
+    # Basic logging added for debugging purposes
+    current_app.logger.debug(f"--- Received request for /api/games/create ---")
     data = request.get_json()
 
-    print(f"--- DEBUG: Incoming request data: {data} ---")
-    # Simplified validation: Only need template_id and optional name
+    current_app.logger.debug(f"Incoming data: {data}")
+
+    # --- Validation ---
     if not data or 'template_id' not in data:
+        current_app.logger.warning("Missing template_id in request data.")
         return jsonify({'error': 'Missing template_id'}), 400
 
     template_id = data['template_id']
-    game_name = data.get('name', 'New Game') # Optional game name
+    game_name = data.get('name', f'New Game (Template {template_id})') # Default name
+    template_overrides = data.get('template_overrides', {})
+    creator_customizations = data.get('creator_customizations', {})
 
     template = db.session.get(Template, template_id)
     if not template:
+        current_app.logger.error(f"Template with ID {template_id} not found.")
         return jsonify({'error': 'Template not found'}), 404
-
-    # Removed validation for user_inputs and question_flow
+    current_app.logger.debug(f"Using Template ID: {template.id}")
 
     try:
-        # 1. Create the Game record
-        print(f"--- API: Creating Game object for template {template_id} ---")
+        # --- Create Game Record ---
+        current_app.logger.debug(f"Creating Game object: Name='{game_name}', TemplateID={template.id}")
         game = Game(
             name=game_name,
             template_id=template.id,
             created_by=current_user.id
-            # state field is deprecated/unused now, managed by GameState model
         )
+        # Set overrides and customizations AFTER initialization
+        game.template_overrides = template_overrides
+        game.creator_customizations = creator_customizations
+        current_app.logger.debug(f"Set game.template_overrides: {game.template_overrides}")
+        current_app.logger.debug(f"Set game.creator_customizations: {game.creator_customizations}")
+
         db.session.add(game)
-        # Flush to get game.id before creating association
         db.session.flush() # Flush to get game.id before creating association
+        current_app.logger.debug(f"Game record added and flushed (ID: {game.id})")
 
-        print(f"--- DEBUG: Preparing to create GamePlayer association for game_id={game.id}, user_id={current_user.id} ---")
-        # 2. Create the association object to link the creator (current_user) to the game
-        # Mark creator as ready by default? Or handle readiness purely in lobby? Let's default to False.
-        game_player_assoc = GamePlayer(game_id=game.id, user_id=current_user.id, is_ready=False) 
+        # --- Create GamePlayer Association ---
+        current_app.logger.debug(f"Creating GamePlayer association: GameID={game.id}, UserID={current_user.id}")
+        game_player_assoc = GamePlayer(game_id=game.id, user_id=current_user.id, is_ready=False)
         db.session.add(game_player_assoc)
-        print(f"--- DEBUG: Successfully staged GamePlayer association for game_id={game.id}, user_id={current_user.id} ---")
+        current_app.logger.debug("GamePlayer association added.")
 
-        # Removed call to create_campaign_service
-
-        # 3. Commit the transaction (only Game and GamePlayer)
+        # --- Commit ---
         db.session.commit()
-        print(f"--- API: Successfully committed Game and GamePlayer for game {game.id} ---")
-        print(f"--- API: Finished create_game route for game {game.id} ---")
+        current_app.logger.info(f"Successfully committed Game (ID: {game.id}) and GamePlayer association.")
 
-        # Removed socketio.emit('game_created', ...)
-
-        # 4. Return success response with redirect URL to lobby
+        # --- Return Success Response ---
         return jsonify({
             'data': { # Keep basic game info in response
                 'created_at': game.created_at.isoformat() if game.created_at else None,

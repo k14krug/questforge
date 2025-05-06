@@ -5,7 +5,7 @@ from flask import current_app
 from questforge.models.game import Game
 from questforge.models.game_state import GameState
 from questforge.models.template import Template
-from questforge.utils.prompt_builder import build_campaign_prompt, build_response_prompt
+from questforge.utils.prompt_builder import build_campaign_prompt, build_response_prompt, build_character_name_prompt # Added build_character_name_prompt
 # We will need a new prompt builder function, import placeholder
 # from questforge.utils.prompt_builder import build_initial_scene_prompt
 from questforge.utils.context_manager import build_context
@@ -38,25 +38,26 @@ class AIService:
             self.temperature = float(os.getenv("OPENAI_TEMPERATURE") or 0.7)
             self.max_tokens = int(os.getenv("OPENAI_MAX_TOKENS") or 1024)
 
-    def generate_campaign(self, template: Template, template_overrides: Optional[Dict[str, Any]] = None, creator_customizations: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def generate_campaign(self, template: Template, template_overrides: Optional[Dict[str, Any]] = None, creator_customizations: Optional[Dict[str, Any]] = None, player_details: Optional[Dict[str, Dict[str, str]]] = None) -> Dict[str, Any]:
         """
-        Generates campaign data using the AI based on a template, template overrides, and creator customizations.
-        
+        Generates campaign data using the AI based on a template, template overrides, creator customizations, and player details.
+
         Args:
             template: The Template object to base the campaign on.
             template_overrides: Optional dictionary of fields to override from the template.
             creator_customizations: Optional dictionary of creator-provided customizations.
-            
+            player_details: Optional dictionary mapping user_id (str) to a dict containing 'name' and 'description'.
+
         Returns:
-            A dictionary containing the generated campaign data.
+            A dictionary containing the generated campaign data, model used, and usage data, or an error dict.
         """
         app = current_app._get_current_object()
         if not self.client:
             app.logger.error("OpenAI client not initialized. Cannot generate campaign.")
             return {"error": "AI service not available."}
 
-        # Build the prompt using the prompt_builder, passing overrides and customizations
-        prompt = build_campaign_prompt(template, template_overrides, creator_customizations) # Pass overrides and customizations
+        # Build the prompt using the prompt_builder, passing overrides, customizations, and player details
+        prompt = build_campaign_prompt(template, template_overrides, creator_customizations, player_details) # Pass details here
         app.logger.debug(f"--- AI Service: Generating campaign with prompt ---\n{prompt}\n-------------------------------------------------")
 
         generated_content = "" # Initialize to handle potential errors before assignment
@@ -351,6 +352,69 @@ class AIService:
         except Exception as e:
             app.logger.error(f"Error generating response: {e}", exc_info=True)
             return None
+
+    def generate_character_name(self, description: str) -> str | None:
+        """
+        Generates a character name using the AI based on a description.
+
+        Args:
+            description: The character description provided by the player.
+
+        Returns:
+            The generated character name as a string, or None on failure.
+        """
+        app = current_app._get_current_object()
+        if not self.client:
+            app.logger.error("OpenAI client not initialized. Cannot generate character name.")
+            return None
+
+        # Build the prompt using the specific prompt builder
+        prompt = build_character_name_prompt(description)
+        app.logger.debug(f"--- AI Service: Generating character name with prompt ---\n{prompt}\n-------------------------------------------------")
+
+        generated_name = None # Initialize
+        try:
+            # Fetch model from app config - use a potentially cheaper/faster model for this simple task?
+            # Or stick with the main one? Let's use the main one for now for consistency.
+            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-4o')
+            app.logger.debug(f"Using model from config for generate_character_name: {model_to_use}")
+
+            response = self.client.chat.completions.create(
+                model=model_to_use,
+                messages=[
+                    # System message is implicit in the prompt builder's structure
+                    {"role": "user", "content": prompt}
+                ],
+                # No specific response format needed, just expect plain text
+                temperature=self.temperature, # Use existing temp
+                max_tokens=50 # Limit tokens for just a name
+            )
+            generated_name = response.choices[0].message.content.strip()
+            app.logger.debug(f"--- AI Service: Received raw name response ---\n{generated_name}\n------------------------------------------")
+
+            # Basic validation/cleanup (remove quotes if AI added them)
+            generated_name = generated_name.strip('"\'')
+
+            if not generated_name:
+                app.logger.warning("AI generated an empty character name.")
+                return None # Treat empty name as failure
+
+            app.logger.info(f"--- AI Service: Generated character name successfully: {generated_name} ---")
+
+            # Log API Usage - Requires game_id and user_id, which aren't directly available here.
+            # This logging should ideally happen where this function is called (e.g., campaign_service).
+            # We'll return the name and let the caller handle logging.
+            # usage_data = response.usage if response.usage else None
+            # model_used = response.model
+            # log_api_usage(...)
+
+            return generated_name
+
+        except Exception as e:
+            # Log potential errors
+            app.logger.error(f"Error calling OpenAI API or processing name response: {e}", exc_info=True)
+            return None
+
 
 # Helper functions for API calls and cost calculation (moved from game.py)
 def call_openai_api(prompt: str, model: str = 'gpt-4o') -> Tuple[Dict[str, Any], Decimal]:

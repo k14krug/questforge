@@ -1,5 +1,8 @@
 import json
 from questforge.models.game_state import GameState
+from questforge.models.game import GamePlayer # Import GamePlayer
+from questforge.models.user import User # Import User
+from sqlalchemy.orm import joinedload # Import joinedload
 
 def build_context(game_state: GameState) -> str:
     """
@@ -77,13 +80,32 @@ def build_context(game_state: GameState) -> str:
     context_lines.append("\n--- Current Game State ---")
     current_state_dict = game_state.state_data or {}
     context_lines.append(f"Current Location: {current_state_dict.get('location', 'Unknown')}") # Get location from state_data
-    if current_state_dict:
-        context_lines.append("Other State Details:")
-        for key, value in current_state_dict.items():
-            if key != 'location': # Avoid duplicating location if it exists
-                context_lines.append(f"- {key.replace('_', ' ').title()}: {json.dumps(value)}") # Use json.dumps for complex values
+
+    # --- Add Players Present Section ---
+    context_lines.append("\n--- Players Present ---")
+    # Eager load user relationship for username fallback
+    player_associations = GamePlayer.query.options(joinedload(GamePlayer.user)).filter_by(game_id=game_state.game_id).all()
+    if player_associations:
+        for assoc in player_associations:
+            player_name = assoc.character_name if assoc.character_name else assoc.user.username # Use name, fallback to username
+            description = assoc.character_description or "(No description provided)"
+            context_lines.append(f"- {player_name}: {description}")
     else:
-         context_lines.append("Other State Details: None available.")
+        context_lines.append("No player information available.")
+    # --- End Players Present Section ---
+
+    context_lines.append("\n--- Other State Details ---") # Renamed section header slightly
+    if current_state_dict:
+        # context_lines.append("Other State Details:") # Removed redundant header
+        has_other_details = False
+        for key, value in current_state_dict.items():
+            if key != 'location': # Avoid duplicating location
+                context_lines.append(f"- {key.replace('_', ' ').title()}: {json.dumps(value)}") # Use json.dumps for complex values
+                has_other_details = True
+        if not has_other_details:
+             context_lines.append("(No other specific state details)") # Message if only location was present
+    else:
+         context_lines.append("(No state details available)") # Changed message
 
     # Include Progress Markers
     if game_state.completed_objectives:

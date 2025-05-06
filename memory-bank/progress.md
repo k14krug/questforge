@@ -37,7 +37,8 @@
 
 **Phase 3: AI Prompt Refinement (Completed)**
 
-*   **Revise AI Campaign Prompt:** **(Completed)** Updated `build_campaign_prompt` in `questforge/utils/prompt_builder.py` to better utilize `Template` fields (including `default_rules`) and `player_descriptions`, providing clearer instructions to the AI for generating more tailored campaign structures.
+*   **Revise AI Campaign Prompt:** **(Completed)** Updated `build_campaign_prompt` in `questforge/utils/prompt_builder.py` to better utilize `Template` fields (including `default_rules`), providing clearer instructions to the AI for generating more tailored campaign structures.
+*   **Integrate Player Character Descriptions:** **(Completed)** Ensured `character_description` from `GamePlayer` is passed through the service layer (`socket_service` -> `campaign_service` -> `ai_service`) and incorporated into the `build_campaign_prompt` to influence AI generation (especially initial scene and plot points).
 
 **Phase 4: Gameplay Enhancements (Completed)** (See [./phase-4-gameplay-enhancements.md](./phase-4-gameplay-enhancements.md) for details)
 
@@ -47,11 +48,37 @@
 *   Implement Multiplayer Location Display. **(Completed)**
 *   Enable Single-Player Mode. **(Completed)**
 
-**Phase 5: Enhanced Game Creation (Current)** (Needs Planning - See [./phase-5-enhanced-game-creation.md](./phase-5-enhanced-game-creation.md) for initial thoughts)
+**Phase 5: Enhanced Game Creation (Completed)** (See [./phase-5-enhanced-game-creation.md](./phase-5-enhanced-game-creation.md) for details)
 
-*   Allow game creators to add customizations on top of templates before campaign generation.
+*   Allow game creators to add customizations (NPCs, locations, plot hooks, rules, exclusions) via UI (`game/create.html`). **(Completed)**
+*   Allow game creators to override template details (genre, conflict, world, etc.) via UI (`game/create.html`). **(Completed)**
+*   Store creator customizations in `Game.creator_customizations` (JSON field). **(Completed)**
+*   Pass customizations and overrides through services (`socket_service`, `campaign_service`, `ai_service`) to prompt builder. **(Completed)**
+*   Integrate customizations and overrides into `build_campaign_prompt` (`utils/prompt_builder.py`). **(Completed)**
 
-**Phase 6: Testing & Deployment Prep** (Medium Priority - Ongoing)
+**Feature: Character Naming System (Completed)**
+
+*   Added `character_name` field to `GamePlayer` model and migrated DB.
+*   Updated `lobby.html` UI and JS to handle name input.
+*   Updated `socket_service.py` (`handle_update_character_details`) to save name and description.
+*   Added `build_character_name_prompt` to `prompt_builder.py`.
+*   Added `generate_character_name` method to `ai_service.py`.
+*   Integrated AI name generation into `campaign_service.generate_campaign_structure`.
+*   Updated `build_campaign_prompt` and `build_response_prompt` to use character names.
+*   Updated `context_manager.build_context` to include player names/descriptions.
+*   Updated `game.py` view (`play`) to fetch full player details.
+*   Updated `play.html` JS to display character name (fallback to username).
+*   Created `memory-bank/character_naming_system.md`.
+
+**Current Task: Game Screen Redesign (`play.html`)** (Low Priority - In Progress)
+
+*   Consolidate Game Log & Narrative display.
+*   Restructure right column with always-visible actions and tabs for secondary info (Status, Details).
+*   Display player names instead of IDs.
+*   Relocate API cost display.
+*   Apply subtle thematic styling.
+
+**Phase 6: Testing & Deployment Prep** (Medium Priority - Next)
 
 *   Write unit & integration tests for new components (Phases 1-5).
 *   Write tests for SocketIO handlers & gameplay.

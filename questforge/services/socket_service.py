@@ -181,14 +181,28 @@ class SocketService:
                     joinedload(Game.template), 
                     joinedload(Game.player_associations).joinedload(GamePlayer.user) # Load users via association
                 ).get(game_id)
-                if not game:
+                
+                # --- Add Detailed Logging Here ---
+                if game:
+                    current_app.logger.debug(f"Retrieved Game object (ID: {game.id}) in handle_start_game.")
+                    current_app.logger.debug(f"Value of game.template_overrides from DB: {game.template_overrides}")
+                    current_app.logger.debug(f"Value of game.creator_customizations from DB: {game.creator_customizations}")
+                else:
+                     current_app.logger.error(f"Start game request failed: Game {game_id} not found.")
+                     emit('error', {'message': 'Game not found'}, room=request.sid)
+                     return
+                # --- End Detailed Logging ---
+
+                if not game: # This check is now redundant due to the else block above, but keep for safety
                     current_app.logger.error(f"Start game request failed: Game {game_id} not found.")
                     emit('error', {'message': 'Game not found'}, room=request.sid)
                     return
                 
-                # Retrieve creator customizations
-                creator_customizations = game.creator_customizations
+                # Retrieve creator customizations and template overrides
+                creator_customizations = game.creator_customizations or {} # Default to empty dict if None
+                template_overrides = game.template_overrides or {} # Default to empty dict if None
                 current_app.logger.info(f"Retrieved creator customizations for game {game_id}: {creator_customizations}")
+                current_app.logger.info(f"Retrieved template overrides for game {game_id}: {template_overrides}")
 
                 if not game.template:
                     current_app.logger.error(f"Start game request failed: Game {game_id} has no associated template.")
@@ -235,21 +249,25 @@ class SocketService:
 
                 # --- Trigger Campaign Generation ---
                 current_app.logger.info(f"All players ready for game {game_id}. Triggering campaign generation.")
-                
-                # Gather player descriptions
-                player_descriptions = {
-                    str(p.user_id): p.character_description or f"Player {i+1}" # Use default if None
-                    for i, p in enumerate(players)
-                }
-                current_app.logger.info(f"Gathered player descriptions for game {game_id}: {player_descriptions}")
+
+                # Gather player details (name and description)
+                player_details = {}
+                for p in players:
+                    player_details[str(p.user_id)] = {
+                        'name': p.character_name, # Could be None
+                        'description': p.character_description or f"Player {p.user_id}" # Use default if None
+                    }
+                current_app.logger.info(f"Gathered player details for game {game_id}: {player_details}")
 
                 try:
                     # Call the campaign service to generate the campaign structure and initial state
+                    # Pass player_details instead of player_descriptions
                     campaign_generated = generate_campaign_structure(
-                        game=game, 
-                        template=game.template, 
-                        player_descriptions=player_descriptions,
-                        creator_customizations=creator_customizations # Pass customizations
+                        game=game,
+                        template=game.template,
+                        player_details=player_details, # Pass the details dict
+                        creator_customizations=creator_customizations, # Pass customizations
+                        template_overrides=template_overrides # Pass overrides
                     )
 
                     if campaign_generated:
@@ -558,12 +576,13 @@ class SocketService:
                     'details': str(e)
                 }, room=request.sid)
 
-        @socketio.on('update_character_description')
-        def handle_update_character_description(data):
-            """Handle player updating their character description."""
+        @socketio.on('update_character_details') # Renamed event
+        def handle_update_character_details(data): # Renamed function
+            """Handle player updating their character name and description.""" # Updated docstring
             game_id = data.get('game_id')
             user_id = data.get('user_id')
-            description = data.get('description', '').strip() # Get description, default to empty, strip whitespace
+            name = data.get('name', '').strip() # Get name
+            description = data.get('description', '').strip() # Get description
 
             # Basic validation
             if not game_id or not user_id:
@@ -572,33 +591,33 @@ class SocketService:
             
             # Security check: Ensure the user updating is the one logged in
             if str(current_user.id) != str(user_id):
-                 current_app.logger.warning(f"Security Alert: User {current_user.id} attempted to update description for user {user_id} in game {game_id}.")
+                 current_app.logger.warning(f"Security Alert: User {current_user.id} attempted to update details for user {user_id} in game {game_id}.") # Updated log
                  emit('error', {'message': 'Authorization error'}, room=request.sid)
                  return
 
-            current_app.logger.info(f"Handling update_character_description for user {user_id} in game {game_id}.")
+            current_app.logger.info(f"Handling update_character_details for user {user_id} in game {game_id}.") # Updated log
 
             with current_app.app_context():
                 # Find the GamePlayer association
                 association = GamePlayer.query.filter_by(game_id=game_id, user_id=user_id).first()
 
                 if not association:
-                    current_app.logger.error(f"Update description failed: GamePlayer association not found for user {user_id} in game {game_id}.")
+                    current_app.logger.error(f"Update details failed: GamePlayer association not found for user {user_id} in game {game_id}.") # Updated log
                     emit('error', {'message': 'Player not found in this game'}, room=request.sid)
                     return
 
-                # Update the description
-                association.character_description = description
+                # Update the name and description
+                association.character_name = name # Update name
+                association.character_description = description # Update description
                 
                 try:
                     db.session.commit()
-                    current_app.logger.info(f"Successfully updated character description for user {user_id} in game {game_id}.")
-                    # Emit confirmation back to the specific user and potentially broadcast?
-                    # For now, just confirm back to the sender.
-                    emit('character_description_updated', {'user_id': user_id, 'status': 'success'}, room=request.sid) 
+                    current_app.logger.info(f"Successfully updated character details for user {user_id} in game {game_id}.") # Updated log
+                    # Emit confirmation back to the specific user
+                    emit('character_details_updated', {'user_id': user_id, 'status': 'success'}, room=request.sid) # Renamed event
                     # Optionally, broadcast the change to the room if needed in the future:
-                    # emit('player_description_changed', {'user_id': user_id, 'description': description}, room=game_id)
+                    # emit('player_details_changed', {'user_id': user_id, 'name': name, 'description': description}, room=game_id)
                 except Exception as e:
                     db.session.rollback()
-                    current_app.logger.error(f"Database error updating character description for user {user_id} in game {game_id}: {str(e)}", exc_info=True)
-                    emit('error', {'message': 'Failed to save description'}, room=request.sid)
+                    current_app.logger.error(f"Database error updating character details for user {user_id} in game {game_id}: {str(e)}", exc_info=True) # Updated log
+                    emit('error', {'message': 'Failed to save details'}, room=request.sid) # Updated message
