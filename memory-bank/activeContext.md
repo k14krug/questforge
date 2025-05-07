@@ -3,10 +3,32 @@
 ## Date: 2025-07-05
 
 ## 1. Current Work Focus:
-Completed the **ID-Based Plot Point System Upgrade** and associated UI/gameplay enhancements for conclusion handling.
+Displaying NPC details on the game play screen.
 
-## 2. Recent Changes (Completed Task):
-The following tasks related to the ID-Based Plot Point System Upgrade and its conclusion handling have been completed:
+## 2. Recent Changes (In Progress/Completed Task):
+*   **NPC Details Display on Game Screen (Completed):**
+    *   Modified `questforge/templates/game/play.html` to add a "Key Characters (NPCs)" section to the "Details" tab.
+    *   This section iterates through `campaign.key_characters` (which can be a dictionary or a list of objects) and displays NPC names, descriptions, and attributes.
+    *   The view function `questforge/views/game.py::play()` already passes the `campaign` object, so no changes were needed there.
+*   **Completed Game Badge Styling (Completed):**
+    *   Modified `questforge/templates/game/list.html` to display a green badge (`bg-success`) for games with status 'completed'. Other statuses retain the default gray badge (`bg-secondary`).
+*   **Game Deletion Feature (Completed):**
+    *   Added a new route `game/<int:game_id>/delete` (POST only) to `questforge/views/game.py`.
+    *   The `delete_game` function in `questforge/views/game.py`:
+        *   Verifies that the current user is the creator of the game (using `game.creator.id` for comparison).
+        *   Deletes the `Game` record.
+        *   Deletes associated `Campaign`, `GameState`, `GamePlayer`, and `ApiUsageLog` records.
+        *   Redirects to the game list with a success/error flash message.
+    *   Imported `GameState` into `questforge/views/game.py`.
+    *   Updated `questforge/templates/game/list.html`:
+        *   Added a "Delete" button within a form for each game, visible only if `current_user.is_authenticated and current_user.id == game.creator.id`.
+        *   The form POSTs to the `game.delete_game` endpoint.
+        *   Added a JavaScript `confirm()` dialog before form submission.
+        *   Resolved `csrf_token` undefined error by passing a `FlaskForm` instance from the `list_games` view and using `{{ form.csrf_token }}` in the template.
+*   **Re-enter Completed Games (Completed):**
+    *   Modified `questforge/templates/game/list.html` to make games with status 'completed' link to the play view (`url_for('game.play', game_id=game.id)`), allowing users to review the game log and final state.
+
+The following tasks related to the **ID-Based Plot Point System Upgrade** and its conclusion handling have been completed:
 
 *   **ID-Based Plot Point System Implementation:**
     *   Modified AI prompts (`prompt_builder.py`) for campaign generation and action responses to use/expect plot point IDs.
@@ -43,11 +65,14 @@ The following tasks related to the ID-Based Plot Point System Upgrade and its co
     *   The plan file `old-memory-bank-files-dont-use/id_based_plot_point_upgrade_plan.md` was handled (moved by user).
 
 ## 3. Next Steps:
-*   Update `memory-bank/progress.md` to reflect the completion of the "ID-Based Plot Point System Upgrade" and the "Join Game Screen Shows All Games" task.
+*   Update `memory-bank/progress.md` to reflect the completion of the "Game Deletion Feature", "Re-enter Completed Games" enhancement, "Completed Game Badge Styling", and "NPC Details Display on Game Screen".
 *   Await new tasks or further instructions.
 
 ## 4. Active Decisions & Considerations:
-*   The "Join Game" screen (`game/list.html`) now displays all games. The ability for a player to *continue* a completed game was noted as a more complex, separate feature and was not implemented in this task.
+*   NPC details are displayed using data from `campaign.key_characters`. The template logic handles both dictionary and list-of-objects structures for this data, and also for NPC attributes.
+*   Game deletion is a hard delete, removing the game and its associated records from the database. Creator comparison uses `game.creator.id`.
+*   The "Join Game" screen (`game/list.html`) now displays all games and allows re-entry into 'completed' games by linking them to the play view.
+*   Completed game status badges are now green (`bg-success`) on `game/list.html`.
 *   The `STUCK_THRESHOLD` (related to the prior Narrative Guidance System) is set to 3 in `socket_service.py`. This was part of a previous feature but worth noting if further gameplay tuning is needed.
 *   The ID-based plot point system stores full plot point objects in `GameState.state_data['completed_plot_points']`.
 *   `campaign_service.check_conclusion` now robustly checks required plot points by ID and evaluates `conclusion_conditions` from the campaign against `state_data`.

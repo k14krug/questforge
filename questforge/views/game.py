@@ -1,12 +1,14 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash, abort, current_app
 from flask_login import login_required, current_user
 from ..models.game import Game, GamePlayer
+from ..models.game_state import GameState # Added GameState import
 from ..models.campaign import Campaign
 from ..models.template import Template
 from ..models.user import User
 from ..models.api_usage_log import ApiUsageLog
 from ..extensions import db, socketio
 from .forms import GameForm
+from flask_wtf import FlaskForm # Import FlaskForm
 from sqlalchemy import func # Import func for sum aggregation
 from decimal import Decimal # Import Decimal
 # Removed unused ai_service import
@@ -145,9 +147,46 @@ def list_games():
         total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game.id).scalar()
         total_cost = total_cost_query if total_cost_query is not None else Decimal('0.0')
         game_costs[game.id] = total_cost
+    
+    form = FlaskForm() # Create a generic form instance for CSRF token
 
-    return render_template('game/list.html', games=all_games, game_costs=game_costs)
+    return render_template('game/list.html', games=all_games, game_costs=game_costs, form=form)
 
+@game_bp.route('/<int:game_id>/delete', methods=['POST'])
+@login_required
+def delete_game(game_id):
+    """Deletes a game and its associated data."""
+    game = db.session.get(Game, game_id)
+
+    if not game:
+        flash("Game not found.", "danger")
+        return redirect(url_for('game.list_games'))
+
+    # Use game.creator.id for comparison, similar to the template fix
+    if not game.creator or game.creator.id != current_user.id:
+        flash("You are not authorized to delete this game.", "danger")
+        return redirect(url_for('game.list_games'))
+
+    try:
+        # Delete associated GameStates
+        GameState.query.filter_by(game_id=game.id).delete()
+        # Delete associated Campaign
+        Campaign.query.filter_by(game_id=game.id).delete()
+        # Delete associated GamePlayers
+        GamePlayer.query.filter_by(game_id=game.id).delete()
+        # Delete associated ApiUsageLogs
+        ApiUsageLog.query.filter_by(game_id=game.id).delete()
+        
+        # Delete the game itself
+        db.session.delete(game)
+        db.session.commit()
+        flash(f"Game '{game.name}' and all its data have been deleted.", "success")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting game {game_id}: {str(e)}\n{traceback.format_exc()}")
+        flash("An error occurred while trying to delete the game.", "danger")
+
+    return redirect(url_for('game.list_games'))
 
 # ==============================================================================
 # Game State/Action API Endpoints (`/game/api/<id>/...`)

@@ -39,6 +39,29 @@
     *   Updated `campaign_service.py` (`check_conclusion`) to pre-check completion of all `required` plot points.
     *   Created `memory-bank/narrative_guidance_implementation.md` and `memory-bank/narrative_guidance_plan.md`.
 
+**Feature: Join Game Screen Shows All Games (Completed)**
+    *   Modified `questforge/views/game.py` in `list_games` function to query all games instead of just 'active' ones.
+    *   Updated `questforge/templates/game/list.html` to adjust the "no games available" message.
+
+**Feature: Game Deletion from Join Game Screen (Completed)**
+    *   Added `delete_game` route and function to `questforge/views/game.py` to handle game deletion (POST request).
+        *   Ensures only the game creator can delete the game.
+        *   Deletes the `Game` record and associated `Campaign`, `GameState`, `GamePlayer`, and `ApiUsageLog` records.
+    *   Imported `GameState` model into `questforge/views/game.py`.
+    *   Updated `questforge/templates/game/list.html` to include a "Delete" button for game creators.
+        *   Button is part of a form that POSTs to the delete route.
+        *   Includes a JavaScript confirmation dialog.
+        *   Includes `csrf_token()` (resolved `UndefinedError` by passing `FlaskForm` instance from view).
+        *   Creator comparison uses `game.creator.id`.
+
+**Feature: Re-enter Completed Games from Join Game Screen (Completed)**
+    *   Modified `questforge/templates/game/list.html` to change the linking logic for game names.
+    *   Games with status 'completed' now link to the play view (`url_for('game.play', game_id=game.id)`), allowing users to review the game log and final state.
+    *   This also applies to 'in_progress' games, while 'active' games link to the lobby. Other statuses remain non-clickable.
+
+**Feature: Completed Game Badge Styling (Completed)**
+    *   Modified `questforge/templates/game/list.html` to display a green badge (`bg-success`) for games with status 'completed'. Other statuses retain the default gray badge (`bg-secondary`).
+
 ## Remaining Work (Phased Approach from Spec)
 
 **Phase 1: Template Redesign & Character Definition (Completed)**
@@ -113,14 +136,11 @@
         *   Updates game status in DB to 'completed'.
     *   **Memory Bank:** Plan file cleanup handled.
 
-**Feature: Join Game Screen Shows All Games (Completed)**
-    *   Modified `questforge/views/game.py` in `list_games` function to query all games instead of just 'active' ones.
-    *   Updated `questforge/templates/game/list.html` to adjust the "no games available" message.
-
 **Current Task: Game Screen Redesign (`play.html`)** (Low Priority - In Progress)
 
 *   Consolidate Game Log & Narrative display.
 *   Restructure right column with always-visible actions and tabs for secondary info (Status, Details).
+    *   **NPC Details Display (Completed):** Added display of `campaign.key_characters` (NPCs and their attributes) to the "Details" tab in `questforge/templates/game/play.html`.
 *   Display player names instead of IDs.
 *   Relocate API cost display.
 *   Apply subtle thematic styling.

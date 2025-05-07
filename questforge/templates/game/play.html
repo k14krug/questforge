@@ -119,6 +119,75 @@
                                     {% endif %}
                                 </div>
                             </div>
+                            {# NPC Details #}
+                            <div class="mb-3">
+                                <h6>Key Characters (NPCs)</h6>
+                                <div id="npcDetailsDisplay">
+                                    {% if campaign and campaign.key_characters %}
+                                        {% if campaign.key_characters is mapping and campaign.key_characters %} {# Check if it's a non-empty dictionary #}
+                                            <dl class="mb-0">
+                                                {% for npc_name, npc_details in campaign.key_characters.items() %}
+                                                    <dt>{{ npc_name | e }}</dt>
+                                                    <dd>
+                                                        {% if npc_details is mapping and 'description' in npc_details %}
+                                                            <p class="mb-1"><em>{{ npc_details.description | e }}</em></p>
+                                                        {% elif npc_details is string %}
+                                                            <p class="mb-1"><em>{{ npc_details | e }}</em></p>
+                                                        {% endif %}
+                                                        {% if npc_details is mapping and 'attributes' in npc_details and npc_details.attributes %}
+                                                            Attributes:
+                                                            <ul class="list-unstyled ms-3 mb-0">
+                                                            {% if npc_details.attributes is mapping %}
+                                                                {% for attr_name, attr_value in npc_details.attributes.items() %}
+                                                                <li><strong>{{ attr_name | e }}:</strong> {{ attr_value | e }}</li>
+                                                                {% endfor %}
+                                                            {% elif npc_details.attributes is iterable and npc_details.attributes is not string %}
+                                                                {% for attribute in npc_details.attributes %}
+                                                                <li>{{ attribute | e }}</li>
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                            </ul>
+                                                        {% elif npc_details is mapping and 'role' in npc_details %}
+                                                             <p class="mb-1">Role: {{ npc_details.role | e }}</p>
+                                                        {% endif %}
+                                                    </dd>
+                                                {% endfor %}
+                                            </dl>
+                                        {% elif campaign.key_characters is iterable and campaign.key_characters is not string and campaign.key_characters %} {# Check if it's a non-empty list #}
+                                            <dl class="mb-0">
+                                                {% for npc in campaign.key_characters %}
+                                                    <dt>{{ npc.name | e if npc.name else "Unnamed Character" }}</dt>
+                                                    <dd>
+                                                        {% if npc.description %}
+                                                            <p class="mb-1"><em>{{ npc.description | e }}</em></p>
+                                                        {% endif %}
+                                                        {% if npc.attributes %}
+                                                            Attributes:
+                                                            <ul class="list-unstyled ms-3 mb-0">
+                                                            {% if npc.attributes is mapping %}
+                                                                {% for attr_name, attr_value in npc.attributes.items() %}
+                                                                <li><strong>{{ attr_name | e }}:</strong> {{ attr_value | e }}</li>
+                                                                {% endfor %}
+                                                            {% elif npc.attributes is iterable and npc.attributes is not string %}
+                                                                {% for attribute in npc.attributes %}
+                                                                <li>{{ attribute | e }}</li>
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                            </ul>
+                                                        {% elif npc.role %}
+                                                             <p class="mb-1">Role: {{ npc.role | e }}</p>
+                                                        {% endif %}
+                                                    </dd>
+                                                {% endfor %}
+                                            </dl>
+                                        {% else %}
+                                            <p class="text-muted mb-0">No NPC details available.</p>
+                                        {% endif %}
+                                    {% else %}
+                                        <p class="text-muted mb-0">NPC data not available.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
                             {# AI Model Info #}
                             <div class="mb-3">
                                 <h6>AI Model</h6>
