@@ -1,71 +1,53 @@
 # Active Context - QuestForge - Narrative Guidance System
 
-## Date: 2025-05-06
+## Date: 2025-07-05
 
 ## 1. Current Work Focus:
-Implementation of the **Narrative Guidance System**. This system aims to enhance player engagement by:
-    - Distinguishing between required and optional plot points.
-    - Tracking player progress towards required plot points.
-    - Detecting if a player is "stuck" (multiple turns without progressing towards a required plot point).
-    - Providing AI-driven hints when a player is stuck.
-    - Ensuring all required plot points are completed before a campaign can be concluded.
-    - Modifying AI prompts to enforce objective adherence and report plot point achievements.
+Completed the **ID-Based Plot Point System Upgrade** and associated UI/gameplay enhancements for conclusion handling.
 
-## 2. Recent Changes (Current Task):
-The following changes were made to implement the Narrative Guidance System:
+## 2. Recent Changes (Completed Task):
+The following tasks related to the ID-Based Plot Point System Upgrade and its conclusion handling have been completed:
 
-*   **`questforge/utils/prompt_builder.py`:**
-    *   `build_campaign_prompt`: Updated to instruct AI to generate `generated_plot_points` as a list of objects, each with `description` (string) and `required` (boolean).
-    *   `build_response_prompt`:
-        *   Signature updated to accept `is_stuck` and `next_required_plot_point`.
-        *   Added instructions for AI to:
-            *   Adhere to the "Current Objective/Focus".
-            *   Provide hints if `is_stuck` is true.
-            *   Include `achieved_plot_point: "description"` in `state_changes` upon objective completion.
+*   **ID-Based Plot Point System Implementation:**
+    *   Modified AI prompts (`prompt_builder.py`) for campaign generation and action responses to use/expect plot point IDs.
+    *   Enhanced AI response validation (`ai_service.py`) to check for plot point IDs and uniqueness.
+    *   Updated campaign generation (`campaign_service.py`) to auto-complete the first required plot point by ID.
+    *   Updated conclusion checking logic (`campaign_service.py`) to verify required plot points by ID and evaluate `conclusion_conditions`.
+    *   Updated AI context generation (`context_manager.py`) to include plot point IDs and `conclusion_conditions`.
+    *   Updated action handling (`socket_service.py`) to identify the next required plot point by ID, process AI-reported completions by ID, merge AI state changes correctly into `state_data`, track `visited_locations`, and call `check_conclusion` after state updates.
+    *   Improved error handling in `campaign_service.py` for AI service errors during campaign generation.
+    *   Refined AI prompts (`prompt_builder.py`) to explicitly guide the AI on setting critical event flags based on `conclusion_conditions`.
 
-*   **`questforge/services/ai_service.py`:**
-    *   `generate_campaign`: Added validation for the new `generated_plot_points` structure.
-    *   `get_response`:
-        *   Signature updated to accept `is_stuck` and `next_required_plot_point`.
-        *   Passes these new parameters to `build_context` and `build_response_prompt`.
+*   **Verification:**
+    *   Thoroughly tested the implementation across different scenarios, confirming reliable game conclusion.
+    *   Verified that the AI consistently sets necessary flags (e.g., `escape_successful`) when appropriate.
 
-*   **`questforge/models/game_state.py`:**
-    *   `GameState.__init__`: Added `'turns_since_plot_progress': 0` to the default `state_data`. `completed_plot_points` will now store full plot point objects.
+*   **UI Conclusion Handling:**
+    *   Implemented client-side JavaScript logic in `questforge/static/js/socketClient.mjs` to:
+        *   Listen for the `game_concluded` SocketIO event.
+        *   Update the UI on `play.html` (element with ID `gameStatusDisplay`) to display "Status: Completed".
+        *   Disable the action input field (`customActionInput`) and submit button (`submitCustomAction`).
+        *   Display the conclusion message from the event payload.
+    *   Added `id="gameStatusDisplay"` to the relevant `span` in `questforge/templates/game/play.html`.
 
-*   **`questforge/services/socket_service.py` (`handle_player_action`):**
-    *   Implemented logic to:
-        *   Increment `turns_since_plot_progress` in `state_data`.
-        *   Identify the `next_required_plot_point_desc` by comparing campaign plot points with completed ones in `state_data`.
-        *   Determine `is_stuck` based on `turns_since_plot_progress` and `STUCK_THRESHOLD`.
-        *   Pass `is_stuck` and `next_required_plot_point_desc` to `ai_service.get_response`.
-        *   Process `achieved_plot_point` from AI response:
-            *   Add the full achieved plot point object to `state_data['completed_plot_points']`.
-            *   Reset `state_data['turns_since_plot_progress']` to 0.
-            *   Remove `achieved_plot_point` from `state_changes` before further processing.
-        *   Persist updated `state_data` (including `turns_since_plot_progress` and `completed_plot_points`) to `db_game_state.state_data`.
+*   **Final Turn Presentation:**
+    *   Implemented logic in `questforge/services/socket_service.py`'s `handle_player_action` method.
+    *   When `check_conclusion` returns `True`:
+        *   Appended a system message (`{"type": "system", "content": "** CAMPAIGN COMPLETE! **"}`) to `broadcast_data['log']`.
+        *   Set `broadcast_data['actions']` to `["Campaign Complete"]`.
+        *   The modified `broadcast_data` is emitted via `game_state_update` for the final turn.
+        *   The `game_concluded` event is emitted.
+        *   The game's status in the database is updated to 'completed'.
 
-*   **`questforge/utils/context_manager.py` (`build_context`):**
-    *   Signature updated to accept `next_required_plot_point`.
-    *   Added a "--- Current Objective/Focus ---" section to the generated context string, using `next_required_plot_point` or falling back to general campaign objectives.
-
-*   **`questforge/services/campaign_service.py` (`check_conclusion`):**
-    *   Added a pre-check to ensure all plot points in `campaign.major_plot_points` marked as `required: true` have their descriptions present in the `state_data.get('completed_plot_points', [])` (which stores objects) before evaluating other `conclusion_conditions`.
-    *   If all required plot points are done and no other conclusion conditions exist, the game is considered concluded.
-
-*   **`memory-bank/narrative_guidance_implementation.md`:** Created to document these specific implementation details.
+*   **Memory Bank Cleanup:**
+    *   The plan file `old-memory-bank-files-dont-use/id_based_plot_point_upgrade_plan.md` was handled (moved by user).
 
 ## 3. Next Steps:
-*   Update `memory-bank/progress.md` to reflect the completion of the Narrative Guidance System implementation.
-*   Thoroughly test the new system:
-    *   Campaign generation with required/optional plot points.
-    *   Player getting stuck and receiving hints.
-    *   Achieving plot points (required and optional).
-    *   Conclusion logic with required plot points.
-    *   AI behavior regarding objective adherence and plot achievement reporting.
-*   Refine `STUCK_THRESHOLD` and AI prompt instructions based on testing if necessary.
-*   Address any bugs or issues identified during testing.
+*   Update `memory-bank/progress.md` to reflect the completion of the "ID-Based Plot Point System Upgrade" and the "Join Game Screen Shows All Games" task.
+*   Await new tasks or further instructions.
 
 ## 4. Active Decisions & Considerations:
-*   The `STUCK_THRESHOLD` is currently set to 3 within `socket_service.py`. This might need adjustment after testing.
-*   The system now stores full plot point objects (dictionaries with `description` and `required` keys) in `GameState.state_data['completed_plot_points']` instead of just descriptions. This was necessary to accurately track completion and differentiate between plot points if multiple had the same description (though unlikely, it's more robust).
-*   The `campaign_service.check_conclusion` logic now considers a game concluded if all required plot points are met and no other specific `conclusion_conditions` are defined. This seems like a reasonable default.
+*   The "Join Game" screen (`game/list.html`) now displays all games. The ability for a player to *continue* a completed game was noted as a more complex, separate feature and was not implemented in this task.
+*   The `STUCK_THRESHOLD` (related to the prior Narrative Guidance System) is set to 3 in `socket_service.py`. This was part of a previous feature but worth noting if further gameplay tuning is needed.
+*   The ID-based plot point system stores full plot point objects in `GameState.state_data['completed_plot_points']`.
+*   `campaign_service.check_conclusion` now robustly checks required plot points by ID and evaluates `conclusion_conditions` from the campaign against `state_data`.

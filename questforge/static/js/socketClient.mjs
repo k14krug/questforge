@@ -508,6 +508,39 @@ if (gameId) {
             updateGameState(state);
         });
 
+        socketClient.socket.on('game_concluded', (data) => {
+            console.log("Play page: Received game_concluded event:", data);
+            if (data.game_id === gameId) {
+                // Update UI to show game is completed
+                const gameStatusDisplay = document.getElementById('gameStatusDisplay'); // Assumes this element exists or will be added
+                if (gameStatusDisplay) {
+                    gameStatusDisplay.textContent = 'Status: Completed';
+                } else {
+                    console.warn("gameStatusDisplay element not found. Cannot update status.");
+                }
+
+                // Disable action input
+                const customActionInput = document.getElementById('customActionInput');
+                const submitCustomActionButton = document.getElementById('submitCustomAction');
+                if (customActionInput) {
+                    customActionInput.disabled = true;
+                    customActionInput.placeholder = 'Campaign Complete';
+                }
+                if (submitCustomActionButton) {
+                    submitCustomActionButton.disabled = true;
+                }
+                
+                // Display conclusion message
+                if (data.message) {
+                    // Optionally, display this message in a more integrated way in the UI later
+                    alert(data.message); 
+                }
+
+                // Potentially update action controls to show "Campaign Complete"
+                updateActionControls(["Campaign Complete"]);
+            }
+        });
+
         // --- Request Initial State ---
         requestInitialState(); // Call the request function now that listeners are set up
     };

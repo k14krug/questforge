@@ -12,7 +12,7 @@
                     <div class="d-flex justify-content-between align-items-center"> {# Flex container for title and badges #}
                         <h3 id="gameTitle" data-game-id="{{ game.id }}" data-user-id="{{ user_id }}">{{ game.name | e }}</h3>
                         <div class="game-status ms-3"> {# Margin start for spacing #}
-                            <span class="badge bg-primary me-1">{{ game.status | e }}</span>
+                            <span class="badge bg-primary me-1" id="gameStatusDisplay">{{ game.status | e }}</span>
                             {# Cost display removed from here #}
                         </div>
                     </div>

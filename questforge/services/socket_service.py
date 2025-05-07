@@ -592,66 +592,60 @@ class SocketService:
 
 
                 # --- Post-Commit Operations (Outside transaction, only if AI call was successful) ---
-                if ai_result and updated_state_info: # Only broadcast if the state was actually updated by AI and committed
-                    # Recalculate total cost after commit
-                    # Note: This query needs its own context now
-                    with current_app.app_context():
+                if ai_result and updated_state_info: # Only proceed if the state was actually updated by AI and committed
+                    with current_app.app_context(): # Context for cost query and game status update
                         new_total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game_id).scalar()
                         new_total_cost = new_total_cost_query if new_total_cost_query is not None else Decimal('0.0')
 
-                    # Prepare broadcast data
-                    # The updated_state_info from game_state_service contains version, log, actions,
-                    # and its view of the state (which might only reflect AI's direct state_changes like location).
-                    # We need to ensure the 'state' part of the broadcast reflects the fully updated
-                    # db_game_state.state_data which includes completed_plot_points and turns_since_plot_progress.
-                    
-                    broadcast_data = updated_state_info.copy() 
-                    broadcast_data['state'] = db_game_state.state_data # Override with the definitive state from DB
-                    broadcast_data['total_cost'] = float(new_total_cost)
-                    
-                    # Log the state being broadcasted for verification
-                    current_app.logger.debug(f"Broadcasting state for game {game_id}: {json.dumps(broadcast_data['state'])}")
-
-                    # Broadcast updated state and cost to all players
-                    current_app.logger.info(f"Broadcasting game_state_update for game {game_id} (v{broadcast_data['version']}) including total_cost: {broadcast_data['total_cost']:.4f}")
-                    emit('game_state_update', broadcast_data, room=game_id)
-
-                    # --- Check for game conclusion AFTER state update and broadcast ---
-                    # Ensure local import is available if not already at top level of function
-                    from .campaign_service import check_conclusion 
-                    
-                    # Re-fetch db_game_state within the same app_context if needed, or ensure it's fresh
-                    # For simplicity, assuming db_game_state is still valid and reflects committed changes.
-                    # If check_conclusion needs to run in its own transaction or re-fetch, adjust accordingly.
-                    
-                    # It's crucial that check_conclusion operates on the *committed* state.
-                    # db_game_state here should reflect the state just committed.
-                    if check_conclusion(db_game_state): 
-                        current_app.logger.info(f"Game {game_id} has concluded. Emitting 'game_concluded'.")
-                        emit('game_concluded', {'game_id': game_id, 'message': 'The adventure has reached its conclusion!'}, room=game_id)
+                        # Prepare initial broadcast data
+                        broadcast_data = updated_state_info.copy() 
+                        broadcast_data['state'] = db_game_state.state_data # Override with the definitive state from DB
+                        broadcast_data['total_cost'] = float(new_total_cost)
                         
-                        # Update game status to 'completed'
-                        # This needs to be part of a new transaction or handled carefully
-                        # For now, let's assume we can commit this change.
-                        game_to_update = db.session.get(Game, game_id) # Get the Game object
-                        if game_to_update:
-                            game_to_update.status = 'completed'
-                            try:
-                                db.session.add(game_to_update) # Add to session if re-fetched
-                                db.session.commit() # Commit status change
-                                current_app.logger.info(f"Game {game_id} status updated to 'completed'.")
-                            except Exception as e_status:
-                                db.session.rollback()
-                                current_app.logger.error(f"Error updating game status to 'completed' for game {game_id}: {e_status}", exc_info=True)
-                        else:
-                            current_app.logger.error(f"Could not find game {game_id} to update status to 'completed'.")
-                    else:
-                        current_app.logger.info(f"Game {game_id} has not concluded yet after action by user {user_id}.")
-                    # --- End game conclusion check ---
+                        current_app.logger.debug(f"Initial broadcast_data prepared for game {game_id}: {json.dumps(broadcast_data['state'])}")
 
+                        from .campaign_service import check_conclusion
+                        game_has_concluded = check_conclusion(db_game_state)
+
+                        if game_has_concluded:
+                            current_app.logger.info(f"Game {game_id} has concluded. Modifying final broadcast.")
+                            
+                            # 1. Append system message to log
+                            if not isinstance(broadcast_data.get('log'), list): # Ensure log is a list
+                                broadcast_data['log'] = []
+                            broadcast_data['log'].append({"type": "system", "content": "** CAMPAIGN COMPLETE! **"})
+                            
+                            # 2. Set actions to indicate completion
+                            broadcast_data['actions'] = ["Campaign Complete"]
+
+                            # Emit the modified game_state_update for the final turn
+                            current_app.logger.info(f"Broadcasting FINAL game_state_update for concluded game {game_id} (v{broadcast_data['version']})")
+                            emit('game_state_update', broadcast_data, room=game_id)
+
+                            # Emit game_concluded event
+                            current_app.logger.info(f"Emitting 'game_concluded' for game {game_id}.")
+                            emit('game_concluded', {'game_id': game_id, 'message': 'The adventure has reached its conclusion!'}, room=game_id)
+                            
+                            # Update game status to 'completed'
+                            game_to_update = db.session.get(Game, game_id)
+                            if game_to_update:
+                                game_to_update.status = 'completed'
+                                try:
+                                    db.session.add(game_to_update) # Add to session if re-fetched or to ensure it's managed
+                                    db.session.commit()
+                                    current_app.logger.info(f"Game {game_id} status updated to 'completed'.")
+                                except Exception as e_status:
+                                    db.session.rollback()
+                                    current_app.logger.error(f"Error updating game status to 'completed' for game {game_id}: {e_status}", exc_info=True)
+                            else:
+                                current_app.logger.error(f"Could not find game {game_id} to update status to 'completed'.")
+                        else:
+                            # Game has not concluded, broadcast normal update
+                            current_app.logger.info(f"Game {game_id} has not concluded. Broadcasting normal game_state_update (v{broadcast_data['version']})")
+                            emit('game_state_update', broadcast_data, room=game_id)
+                            current_app.logger.info(f"Game {game_id} has not concluded yet after action by user {user_id}.")
                 # else: # No broadcast if commit was skipped or AI call failed
                 #    current_app.logger.info(f"Skipping broadcast and conclusion check for game {game_id} as full AI update and commit did not occur.")
-
 
             except Exception as e:
                 # Rollback needed if any error occurred within the try block OR if inventory check failed and we need to ensure no partial changes

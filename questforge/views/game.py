@@ -135,9 +135,9 @@ def create_game_view():
 @game_bp.route('/list')
 @login_required
 def list_games():
-    """Lists active games available to join."""
-    # Query for games that are 'active' (created but not started/finished)
-    all_games = Game.query.filter(Game.status == 'active').order_by(Game.created_at.desc()).all()
+    """Lists all games."""
+    # Query for all games, ordered by creation date
+    all_games = Game.query.order_by(Game.created_at.desc()).all()
     
     # Calculate total cost for each game
     game_costs = {}

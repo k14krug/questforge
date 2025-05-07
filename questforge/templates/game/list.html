@@ -35,7 +35,7 @@
         </div>
     {% else %}
         <div class="alert alert-info" role="alert">
-            There are no active games waiting for players right now. Why not <a href="{{ url_for('game.create_game_view') }}">create one</a>?
+            There are no games available right now. Why not <a href="{{ url_for('game.create_game_view') }}">create one</a>?
         </div>
     {% endif %}
 </div>

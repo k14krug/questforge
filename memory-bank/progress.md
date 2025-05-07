@@ -89,6 +89,34 @@
 **Feature: Narrative Guidance System (Completed)**
     *   (Details listed under "Completed Features & Documentation" above)
 
+**Feature: ID-Based Plot Point System & Conclusion Handling (Completed)**
+    *   **Core Logic:**
+        *   Modified AI prompts (`prompt_builder.py`) for campaign generation and action responses to use/expect plot point IDs.
+        *   Enhanced AI response validation (`ai_service.py`) to check for plot point IDs and uniqueness.
+        *   Updated campaign generation (`campaign_service.py`) to auto-complete the first required plot point by ID.
+        *   Updated conclusion checking logic (`campaign_service.py`) to verify required plot points by ID and evaluate `conclusion_conditions`.
+        *   Updated AI context generation (`context_manager.py`) to include plot point IDs and `conclusion_conditions`.
+        *   Updated action handling (`socket_service.py`) to identify the next required plot point by ID, process AI-reported completions by ID, merge AI state changes correctly into `state_data`, track `visited_locations`, and call `check_conclusion` after state updates.
+        *   Improved error handling in `campaign_service.py` for AI service errors during campaign generation.
+        *   Refined AI prompts (`prompt_builder.py`) to explicitly guide the AI on setting critical event flags based on `conclusion_conditions`.
+    *   **Verification:**
+        *   Thoroughly tested the implementation, confirming reliable game conclusion and AI flag setting.
+    *   **UI Conclusion Handling (`questforge/static/js/socketClient.mjs`, `questforge/templates/game/play.html`):**
+        *   Client-side JS listens for `game_concluded` event.
+        *   Updates UI to "Status: Completed" (using `gameStatusDisplay` ID).
+        *   Disables action input and button.
+        *   Displays conclusion message.
+    *   **Final Turn Presentation (`questforge/services/socket_service.py`):**
+        *   On game conclusion, appends "** CAMPAIGN COMPLETE! **" to log.
+        *   Sets available actions to `["Campaign Complete"]`.
+        *   Emits modified `game_state_update` and `game_concluded` event.
+        *   Updates game status in DB to 'completed'.
+    *   **Memory Bank:** Plan file cleanup handled.
+
+**Feature: Join Game Screen Shows All Games (Completed)**
+    *   Modified `questforge/views/game.py` in `list_games` function to query all games instead of just 'active' ones.
+    *   Updated `questforge/templates/game/list.html` to adjust the "no games available" message.
+
 **Current Task: Game Screen Redesign (`play.html`)** (Low Priority - In Progress)
 
 *   Consolidate Game Log & Narrative display.
