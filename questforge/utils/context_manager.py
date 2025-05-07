@@ -74,9 +74,32 @@ def build_context(game_state: GameState, next_required_plot_point: Optional[str]
         for char in campaign.key_characters:
              context_lines.append(f"- {char.get('name', 'Unknown Character')} ({char.get('role', 'Unknown Role')}): {char.get('description', 'No description')}")
     if campaign.major_plot_points:
-        context_lines.append("Major Plot Points:")
-        for i, plot in enumerate(campaign.major_plot_points):
-             context_lines.append(f"- Stage {i+1}: {str(plot)}") # Assuming plot points are strings
+        context_lines.append("Major Plot Points (Format: {\"id\": \"...\", \"description\": \"...\", \"required\": ...}):")
+        # Ensure major_plot_points is a list of dicts
+        if isinstance(campaign.major_plot_points, list):
+            for plot_point in campaign.major_plot_points:
+                if isinstance(plot_point, dict):
+                    # Construct a string representation of the plot point dictionary
+                    # This ensures the AI sees the structure including the ID.
+                    plot_point_str = json.dumps(plot_point) 
+                    context_lines.append(f"- {plot_point_str}")
+                else:
+                    context_lines.append(f"- Invalid plot point format: {str(plot_point)}")
+        else:
+            context_lines.append("- No plot points available or in unexpected format.")
+
+    if campaign.conclusion_conditions:
+        context_lines.append("Conclusion Conditions (all must be met):")
+        if isinstance(campaign.conclusion_conditions, list):
+            for cond in campaign.conclusion_conditions:
+                context_lines.append(f"- {json.dumps(cond)}")
+        elif isinstance(campaign.conclusion_conditions, dict): # Should be a list, but handle if it's a single dict
+            context_lines.append(f"- {json.dumps(campaign.conclusion_conditions)}")
+        else:
+            context_lines.append(f"- {str(campaign.conclusion_conditions)}") # Fallback for other types
+    else:
+        context_lines.append("Conclusion Conditions: None specifically defined beyond completing required plot points.")
+
 
     # 2. Current Game State & Progress
     context_lines.append("\n--- Current Game State ---")

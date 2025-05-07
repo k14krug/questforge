@@ -328,32 +328,40 @@ class SocketService:
                     campaign = db_game_state.game.campaign
                     state_data = db_game_state.state_data or {}
 
-                    # --- Narrative Guidance Logic ---
+                    # --- Narrative Guidance Logic (ID-Based) ---
                     STUCK_THRESHOLD = 3
                     
                     # Ensure 'turns_since_plot_progress' exists and increment
                     turns_since_plot_progress = state_data.get('turns_since_plot_progress', 0) + 1
-                    state_data['turns_since_plot_progress'] = turns_since_plot_progress
-                    
-                    # Identify next required plot point
+                    # state_data['turns_since_plot_progress'] will be updated later, before AI call if no achievement, or after if achievement.
+
+                    # Identify next required plot point (ID and Description)
+                    next_required_plot_point_id = None
                     next_required_plot_point_desc = None
-                    completed_plot_points_descs = [pp.get('description') for pp in state_data.get('completed_plot_points', []) if isinstance(pp, dict)] # Get descriptions of completed plot points
                     
-                    # Ensure campaign.major_plot_points is a list of dicts
+                    completed_plot_points_data = state_data.get('completed_plot_points', [])
+                    if not isinstance(completed_plot_points_data, list): # Ensure it's a list
+                        completed_plot_points_data = []
+                    completed_plot_point_ids = [pp.get('id') for pp in completed_plot_points_data if isinstance(pp, dict) and pp.get('id')]
+                    
                     major_plot_points_list = campaign.major_plot_points
                     if not isinstance(major_plot_points_list, list):
-                        major_plot_points_list = [] # Default to empty if not a list
+                        major_plot_points_list = []
 
                     for plot_point in major_plot_points_list:
-                        if isinstance(plot_point, dict) and plot_point.get('required') and plot_point.get('description') not in completed_plot_points_descs:
+                        if isinstance(plot_point, dict) and plot_point.get('required') and plot_point.get('id') not in completed_plot_point_ids:
+                            next_required_plot_point_id = plot_point.get('id')
                             next_required_plot_point_desc = plot_point.get('description')
                             break
                     
-                    is_stuck = turns_since_plot_progress >= STUCK_THRESHOLD and next_required_plot_point_desc is not None
+                    is_stuck = turns_since_plot_progress >= STUCK_THRESHOLD and next_required_plot_point_id is not None
                     
-                    current_app.logger.debug(f"Narrative Guidance: Turns since progress: {turns_since_plot_progress}, Next required: '{next_required_plot_point_desc}', Stuck: {is_stuck}")
-                    # --- End Narrative Guidance Logic ---
+                    current_app.logger.debug(f"Narrative Guidance: Turns since progress: {turns_since_plot_progress}, Next required ID: '{next_required_plot_point_id}', Desc: '{next_required_plot_point_desc}', Stuck: {is_stuck}")
+                    # --- End Narrative Guidance Logic (ID-Based) ---
                     
+                    # Update turns_since_plot_progress in state_data *before* AI call, will be reset if plot point achieved
+                    state_data['turns_since_plot_progress'] = turns_since_plot_progress
+
                     # Log the state *as fetched* before AI call
                     current_app.logger.debug(f"State data *before* AI call: {json.dumps(state_data)}") # Use updated state_data
 
@@ -449,42 +457,61 @@ class SocketService:
                         # This block is now correctly indented relative to the outer 'with'
                         ai_response_data, model_used, usage_data = ai_result
                         
-                        # --- Process achieved_plot_point ---
+                        # --- Process achieved_plot_point_id (ID-Based) ---
                         current_state_changes = ai_response_data.get('state_changes', {})
-                        achieved_plot_point_desc = current_state_changes.pop('achieved_plot_point', None) # Get and remove
+                        achieved_plot_id = current_state_changes.pop('achieved_plot_point_id', None) # Get and remove by ID
                         
-                        if achieved_plot_point_desc:
-                            current_app.logger.info(f"Player achieved plot point: {achieved_plot_point_desc}")
-                            # Find the full plot point object from campaign.major_plot_points
-                            achieved_plot_point_obj = next((pp for pp in major_plot_points_list if isinstance(pp, dict) and pp.get('description') == achieved_plot_point_desc), None)
+                        if achieved_plot_id:
+                            current_app.logger.info(f"AI reported plot point achievement with ID: {achieved_plot_id}")
+                            # Find the full plot point object from campaign.major_plot_points using the ID
+                            achieved_plot_point_obj = next((pp for pp in major_plot_points_list if isinstance(pp, dict) and pp.get('id') == achieved_plot_id), None)
                             
                             if achieved_plot_point_obj:
                                 # Ensure 'completed_plot_points' exists and is a list of objects
                                 if not isinstance(state_data.get('completed_plot_points'), list):
                                     state_data['completed_plot_points'] = []
                                 
-                                # Add the full plot point object if not already completed (check by description)
-                                if achieved_plot_point_desc not in [cp.get('description') for cp in state_data['completed_plot_points'] if isinstance(cp, dict)]:
+                                # Add the full plot point object if not already completed (check by ID)
+                                current_completed_ids = [cp.get('id') for cp in state_data['completed_plot_points'] if isinstance(cp, dict) and cp.get('id')]
+                                if achieved_plot_id not in current_completed_ids:
                                     state_data['completed_plot_points'].append(achieved_plot_point_obj)
-                                    current_app.logger.debug(f"Added '{achieved_plot_point_obj}' to completed_plot_points.")
+                                    current_app.logger.info(f"Added plot point (ID: {achieved_plot_id}, Desc: {achieved_plot_point_obj.get('description')}) to completed_plot_points.")
+                                    state_data['turns_since_plot_progress'] = 0 # Reset counter only on successful new completion
+                                    current_app.logger.debug(f"Reset turns_since_plot_progress to 0 due to achievement of plot ID: {achieved_plot_id}.")
                                 else:
-                                    current_app.logger.debug(f"Plot point '{achieved_plot_point_desc}' already completed.")
+                                    current_app.logger.debug(f"Plot point with ID '{achieved_plot_id}' was already in completed_plot_points.")
+                                    # Do not reset turns_since_plot_progress if it was already completed.
                             else:
-                                current_app.logger.warning(f"Achieved plot point '{achieved_plot_point_desc}' not found in campaign's major_plot_points list of objects.")
-                                
-                            state_data['turns_since_plot_progress'] = 0 # Reset counter
-                            current_app.logger.debug(f"Reset turns_since_plot_progress to 0.")
+                                current_app.logger.warning(f"AI reported achieved_plot_point_id '{achieved_plot_id}', but this ID was not found in campaign's major_plot_points list.")
+                        # If no achieved_plot_id, turns_since_plot_progress remains incremented from before AI call.
                         
-                        # Update db_game_state.state_data with potentially modified state_data (turns_since_plot_progress, completed_plot_points)
-                        # And also pass the (potentially modified by achieved_plot_point removal) current_state_changes
-                        db_game_state.state_data = state_data # Persist changes to turns_since_plot_progress and completed_plot_points
-                        # --- End Process achieved_plot_point ---
+                        # --- Update visited_locations based on AI's reported new location ---
+                        # current_state_changes is ai_response_data.get('state_changes', {}) after achieved_plot_point_id was popped.
+                        new_location_from_ai = current_state_changes.get('location') 
+                        if new_location_from_ai:
+                            if 'visited_locations' not in state_data or not isinstance(state_data['visited_locations'], list):
+                                state_data['visited_locations'] = []
+                            if new_location_from_ai not in state_data['visited_locations']:
+                                state_data['visited_locations'].append(new_location_from_ai)
+                                current_app.logger.debug(f"Added '{new_location_from_ai}' to state_data['visited_locations']. Current: {state_data['visited_locations']}")
+                        # --- End Update visited_locations ---
 
-                        # Update GameState object with AI response data
+                        # Merge other AI state changes (like new location itself, items, flags) into state_data
+                        if current_state_changes:
+                            state_data.update(current_state_changes)
+                            current_app.logger.debug(f"Merged AI's direct state_changes into state_data. Current state_data for DB: {state_data}")
+
+                        # Persist the fully updated state_data (including completed_plot_points, turns_since_plot_progress, visited_locations, and AI's direct changes) to the DB-bound ORM object.
+                        db_game_state.state_data = state_data 
+                        # --- End Process achieved_plot_point_id & Merging AI state_changes ---
+
+                        # Update GameState object with AI response data for the in-memory game_state_service
+                        # Note: game_state_service.update_state also applies current_state_changes to its internal cache.
+                        # This is somewhat redundant if its cache was perfectly aligned, but ensures its cache gets these specific changes.
                         updated_state_info = game_state_service.update_state(
-                            game_id=game_id, # Pass game_id for in-memory update
-                            user_id=user_id, # Pass the user_id of the player performing the action
-                            state_changes=current_state_changes, # Use the modified state_changes
+                            game_id=game_id, 
+                            user_id=user_id, 
+                            state_changes=current_state_changes, # Pass AI's direct changes for the service's cache update
                             log_entry=ai_response_data.get('narrative'),
                             actions=ai_response_data.get('available_actions'),
                             increment_version=True # Version increments only on successful AI update
@@ -572,15 +599,58 @@ class SocketService:
                         new_total_cost_query = db.session.query(func.sum(ApiUsageLog.cost)).filter(ApiUsageLog.game_id == game_id).scalar()
                         new_total_cost = new_total_cost_query if new_total_cost_query is not None else Decimal('0.0')
 
-                    # Prepare broadcast data using the info returned by update_state
-                    broadcast_data = updated_state_info.copy() # updated_state_info should be available here
+                    # Prepare broadcast data
+                    # The updated_state_info from game_state_service contains version, log, actions,
+                    # and its view of the state (which might only reflect AI's direct state_changes like location).
+                    # We need to ensure the 'state' part of the broadcast reflects the fully updated
+                    # db_game_state.state_data which includes completed_plot_points and turns_since_plot_progress.
+                    
+                    broadcast_data = updated_state_info.copy() 
+                    broadcast_data['state'] = db_game_state.state_data # Override with the definitive state from DB
                     broadcast_data['total_cost'] = float(new_total_cost)
+                    
+                    # Log the state being broadcasted for verification
+                    current_app.logger.debug(f"Broadcasting state for game {game_id}: {json.dumps(broadcast_data['state'])}")
 
                     # Broadcast updated state and cost to all players
                     current_app.logger.info(f"Broadcasting game_state_update for game {game_id} (v{broadcast_data['version']}) including total_cost: {broadcast_data['total_cost']:.4f}")
                     emit('game_state_update', broadcast_data, room=game_id)
-                # else: # No broadcast if commit was skipped
-                #    current_app.logger.info(f"Skipping broadcast for game {game_id} as commit was skipped.")
+
+                    # --- Check for game conclusion AFTER state update and broadcast ---
+                    # Ensure local import is available if not already at top level of function
+                    from .campaign_service import check_conclusion 
+                    
+                    # Re-fetch db_game_state within the same app_context if needed, or ensure it's fresh
+                    # For simplicity, assuming db_game_state is still valid and reflects committed changes.
+                    # If check_conclusion needs to run in its own transaction or re-fetch, adjust accordingly.
+                    
+                    # It's crucial that check_conclusion operates on the *committed* state.
+                    # db_game_state here should reflect the state just committed.
+                    if check_conclusion(db_game_state): 
+                        current_app.logger.info(f"Game {game_id} has concluded. Emitting 'game_concluded'.")
+                        emit('game_concluded', {'game_id': game_id, 'message': 'The adventure has reached its conclusion!'}, room=game_id)
+                        
+                        # Update game status to 'completed'
+                        # This needs to be part of a new transaction or handled carefully
+                        # For now, let's assume we can commit this change.
+                        game_to_update = db.session.get(Game, game_id) # Get the Game object
+                        if game_to_update:
+                            game_to_update.status = 'completed'
+                            try:
+                                db.session.add(game_to_update) # Add to session if re-fetched
+                                db.session.commit() # Commit status change
+                                current_app.logger.info(f"Game {game_id} status updated to 'completed'.")
+                            except Exception as e_status:
+                                db.session.rollback()
+                                current_app.logger.error(f"Error updating game status to 'completed' for game {game_id}: {e_status}", exc_info=True)
+                        else:
+                            current_app.logger.error(f"Could not find game {game_id} to update status to 'completed'.")
+                    else:
+                        current_app.logger.info(f"Game {game_id} has not concluded yet after action by user {user_id}.")
+                    # --- End game conclusion check ---
+
+                # else: # No broadcast if commit was skipped or AI call failed
+                #    current_app.logger.info(f"Skipping broadcast and conclusion check for game {game_id} as full AI update and commit did not occur.")
 
 
             except Exception as e:

@@ -122,17 +122,29 @@ class AIService:
             if not isinstance(plot_points, list):
                 app.logger.error("AI campaign response 'generated_plot_points' is not a list.")
                 return {"error": "Invalid 'generated_plot_points' structure: not a list."}
+            
+            seen_ids = set()
             for i, pp in enumerate(plot_points):
-                if not isinstance(pp, dict) or not all(k in pp for k in ['description', 'required']):
-                    app.logger.error(f"AI campaign response 'generated_plot_points' item {i} is not a dict or missing 'description'/'required' keys.")
-                    return {"error": f"Invalid 'generated_plot_points' item structure at index {i}."}
+                if not isinstance(pp, dict) or not all(k in pp for k in ['id', 'description', 'required']):
+                    app.logger.error(f"AI campaign response 'generated_plot_points' item {i} is not a dict or missing 'id'/'description'/'required' keys.")
+                    return {"error": f"Invalid 'generated_plot_points' item structure at index {i} (missing id, description, or required)."}
+                
+                plot_id = pp.get('id')
+                if not isinstance(plot_id, str) or not plot_id.strip():
+                    app.logger.error(f"AI campaign response 'generated_plot_points' item {i} 'id' is not a non-empty string.")
+                    return {"error": f"Invalid 'generated_plot_points' item {i} 'id' type or empty."}
+                
+                if plot_id in seen_ids:
+                    app.logger.error(f"AI campaign response 'generated_plot_points' item {i} has duplicate 'id': {plot_id}.")
+                    return {"error": f"Duplicate 'id' ({plot_id}) found in 'generated_plot_points'."}
+                seen_ids.add(plot_id)
+
                 if not isinstance(pp.get('description'), str):
                     app.logger.error(f"AI campaign response 'generated_plot_points' item {i} 'description' is not a string.")
                     return {"error": f"Invalid 'generated_plot_points' item {i} 'description' type."}
                 if not isinstance(pp.get('required'), bool):
                     app.logger.error(f"AI campaign response 'generated_plot_points' item {i} 'required' is not a boolean.")
                     return {"error": f"Invalid 'generated_plot_points' item {i} 'required' type."}
-
 
             # Validation passed for the new structure
             app.logger.info("--- AI Service: Parsed campaign data successfully (new structure) ---")

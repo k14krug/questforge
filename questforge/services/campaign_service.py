@@ -91,15 +91,23 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
             template=template,
             template_overrides=template_overrides,
             creator_customizations=creator_customizations,
-            player_details=player_details # Pass the details dict here
+            player_details=player_details
         )
 
-        if not ai_result:
-            logger.error(f"AI service failed to generate campaign data for game {game_id}")
+        # Improved error checking for ai_result
+        if isinstance(ai_result, dict) and 'error' in ai_result:
+            logger.error(f"AI service returned an error during campaign generation for game {game_id}: {ai_result.get('error')}")
+            if 'raw_content' in ai_result: # Log raw content if available from JSON error
+                logger.error(f"Raw content from AI that caused error: {ai_result.get('raw_content')}")
+            return False # Campaign generation failed
+        
+        # If no error, then it should be the 3-tuple, so unpack it
+        try:
+            ai_response_data, model_used, usage_data = ai_result
+        except ValueError as e: # Catch if it's still not a 3-tuple for some reason (e.g. ai_service changes its error return)
+            logger.error(f"Failed to unpack ai_result for game {game_id}. Expected 3 values, got: {type(ai_result)}. Error: {e}", exc_info=True)
+            logger.debug(f"Content of ai_result that failed unpacking: {ai_result}")
             return False
-            
-        # Unpack the result
-        ai_response_data, model_used, usage_data = ai_result
 
         logger.info(f"Received campaign data from AI ({model_used}) for game {game_id}")
         # logger.debug(f"AI Response Data: {ai_response_data}") # Optional detailed logging
@@ -212,6 +220,39 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
         db.session.add(initial_game_state)
         logger.info(f"Created initial GameState object for game {game_id}")
 
+        # --- Auto-complete first required plot point (ID-based) ---
+        if new_campaign.major_plot_points and isinstance(new_campaign.major_plot_points, list) and len(new_campaign.major_plot_points) > 0:
+            first_plot_point = new_campaign.major_plot_points[0]
+            if isinstance(first_plot_point, dict) and first_plot_point.get('required') is True:
+                if 'completed_plot_points' not in initial_game_state.state_data or not isinstance(initial_game_state.state_data['completed_plot_points'], list):
+                    initial_game_state.state_data['completed_plot_points'] = []
+                
+                # Ensure it's not already added (should not happen here, but good practice)
+                already_completed = False
+                for cpp in initial_game_state.state_data['completed_plot_points']:
+                    if isinstance(cpp, dict) and cpp.get('id') == first_plot_point.get('id'):
+                        already_completed = True
+                        break
+                
+                if not already_completed:
+                    initial_game_state.state_data['completed_plot_points'].append(first_plot_point)
+                    # Mark the GameState as modified if state_data was changed
+                    if db.session.is_modified(initial_game_state):
+                        logger.info(f"GameState.state_data marked as modified due to auto-completing first plot point.")
+                    else: # Explicitly mark if direct dict mutation doesn't trigger it
+                        from sqlalchemy.orm.attributes import flag_modified
+                        flag_modified(initial_game_state, "state_data")
+                        logger.info(f"Explicitly marked GameState.state_data as modified for auto-completing first plot point.")
+
+                    logger.info(f"Auto-completed first required plot point (ID: {first_plot_point.get('id')}, Desc: {first_plot_point.get('description')}) for game {game_id}.")
+                else:
+                    logger.info(f"First required plot point (ID: {first_plot_point.get('id')}) was already in completed_plot_points for game {game_id}.")
+            else:
+                logger.info(f"First plot point for game {game_id} is not marked as required or is not a valid dict. Not auto-completing.")
+        else:
+            logger.info(f"No major plot points found or not a list for game {game_id}. Cannot auto-complete first plot point.")
+        # --- End auto-complete ---
+
         # 5. Commit transaction
         db.session.commit()
         logger.info(f"Successfully created campaign and initial state for game {game_id} in DB.")
@@ -293,52 +334,67 @@ def check_conclusion(game_state: GameState):
     """
     logger = current_app.logger
     try:
-        logger.info(f"--- Debug: Starting check_conclusion for game {game_state.game_id}, campaign {game_state.campaign_id} ---")
-
-        # 1. Get campaign
-        campaign = db.session.get(Campaign, game_state.campaign_id)
-        if not campaign:
-            logger.error(f"Campaign with id {game_state.campaign_id} not found")
+        # Ensure game and campaign relationships are loaded or accessible
+        if not game_state.game:
+            logger.error(f"GameState {game_state.id} has no associated game. Cannot check conclusion.")
             return False
+        if not game_state.game.campaign: # This implies campaign_id would also be missing or campaign not loaded
+            logger.error(f"Game {game_state.game.id} has no associated campaign. Cannot check conclusion.")
+            return False
+            
+        # Correctly access campaign's ID via game_state.game.campaign.id for logging
+        # And campaign object via game_state.game.campaign
+        logger.info(f"--- Debug: Starting check_conclusion for game {game_state.game_id}, campaign ID {game_state.game.campaign.id} ---")
+
+        # 1. Get campaign directly from the loaded relationship
+        campaign = game_state.game.campaign
+        # The check 'if not campaign:' is implicitly handled by 'if not game_state.game.campaign:' above.
         
         state_data = game_state.state_data or {} # Ensure state_data is a dict
         logger.debug(f"--- Debug: state_data: {state_data} (type: {type(state_data)}) ---")
 
-        # --- New Pre-Check: Ensure all required plot points are completed ---
+        # --- ID-Based Pre-Check: Ensure all required plot points are completed ---
         major_plot_points_list = campaign.major_plot_points
-        logger.debug(f"--- Debug: campaign.major_plot_points: {major_plot_points_list} (type: {type(major_plot_points_list)}) ---")
+        logger.debug(f"--- Debug: Campaign Major Plot Points (for ID check): {major_plot_points_list} (type: {type(major_plot_points_list)}) ---")
         if not isinstance(major_plot_points_list, list):
-            logger.warning(f"Campaign {campaign.id} major_plot_points is not a list. Cannot check required plot points.")
-            major_plot_points_list = [] # Treat as empty to avoid error
+            logger.warning(f"Campaign {campaign.id} major_plot_points is not a list. Cannot check required plot points by ID.")
+            major_plot_points_list = [] 
 
         completed_plot_points_data = state_data.get('completed_plot_points', [])
-        logger.debug(f"--- Debug: state_data.get('completed_plot_points', []): {completed_plot_points_data} (type: {type(completed_plot_points_data)}) ---")
+        logger.debug(f"--- Debug: GameState completed_plot_points (for ID check): {completed_plot_points_data} (type: {type(completed_plot_points_data)}) ---")
         if not isinstance(completed_plot_points_data, list):
-            logger.warning(f"GameState {game_state.id} completed_plot_points is not a list. Cannot check required plot points.")
+            logger.warning(f"GameState {game_state.id} completed_plot_points is not a list. Cannot check required plot points by ID.")
             completed_plot_points_data = []
 
-        # Extract descriptions of completed plot points (assuming they are stored as objects with a 'description' key)
-        completed_descriptions = [pp.get('description') for pp in completed_plot_points_data if isinstance(pp, dict) and pp.get('description') is not None]
-        logger.debug(f"--- Debug: Extracted completed_descriptions: {completed_descriptions} ---")
+        # Extract IDs of completed plot points (assuming they are stored as objects with an 'id' key)
+        completed_ids = [pp.get('id') for pp in completed_plot_points_data if isinstance(pp, dict) and pp.get('id') is not None]
+        logger.debug(f"--- Debug: Extracted completed_ids: {completed_ids} ---")
 
         all_required_completed = True
-        missing_required_plot_point = None
+        missing_required_plot_point_id = None
+        missing_required_plot_point_desc = None
+
         for plot_point in major_plot_points_list:
-            if isinstance(plot_point, dict) and plot_point.get('required'):
-                pp_description = plot_point.get('description')
-                if pp_description not in completed_descriptions:
+            if isinstance(plot_point, dict) and plot_point.get('required') is True: # Explicitly check for True
+                pp_id = plot_point.get('id')
+                pp_description = plot_point.get('description', 'N/A') # Get description for logging
+                if pp_id is None: # Should not happen if campaign generation is correct
+                    logger.warning(f"--- Debug: Required plot point found without an ID: {plot_point}. Skipping ID check for this one. ---")
+                    continue 
+                if pp_id not in completed_ids:
                     all_required_completed = False
-                    missing_required_plot_point = pp_description
-                    logger.info(f"--- Debug: Conclusion pre-check failed: Required plot point '{pp_description}' not found in completed_descriptions. ---")
-                    break # No need to check further required plot points
+                    missing_required_plot_point_id = pp_id
+                    missing_required_plot_point_desc = pp_description
+                    logger.info(f"--- Debug: Conclusion pre-check (ID-based) failed: Required plot point ID '{pp_id}' (Desc: '{pp_description}') not found in completed_ids: {completed_ids}. ---")
+                    break 
         
-        logger.debug(f"--- Debug: all_required_completed: {all_required_completed} ---")
+        logger.debug(f"--- Debug: all_required_completed (ID-based): {all_required_completed} ---")
         if not all_required_completed:
-            logger.info(f"--- Debug: Returning False because not all required plot points completed. Missing: '{missing_required_plot_point}' ---")
+            logger.info(f"--- Debug: Returning False because not all required plot points completed (ID-based). Missing ID: '{missing_required_plot_point_id}', Desc: '{missing_required_plot_point_desc}' ---")
             return False 
         
-        logger.info(f"--- Debug: All required plot points completed for game {game_state.game_id}. Proceeding to check conclusion_conditions. ---")
-        # --- End New Pre-Check ---
+        logger.info(f"--- Debug: All required plot points completed (ID-based) for game {game_state.game_id}. Proceeding to check conclusion_conditions. ---")
+        # --- End ID-Based Pre-Check ---
 
         # 2. Get conclusion conditions from campaign
         conclusion_conditions = campaign.conclusion_conditions
