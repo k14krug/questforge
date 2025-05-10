@@ -12,11 +12,11 @@
                     {{ form.hidden_tag() }}
                     
                     <div class="mb-3">
-                        {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control") }}
-                        {% if form.email.errors %}
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control") }}
+                        {% if form.username.errors %}
                             <div class="invalid-feedback d-block">
-                                {{ form.email.errors[0] }}
+                                {{ form.username.errors[0] }}
                             </div>
                         {% endif %}
                     </div>

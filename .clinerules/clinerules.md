@@ -23,6 +23,7 @@ This file captures key patterns, decisions, and project-specific knowledge for t
 - **AI Response Validation**: `Template.validate_ai_response` ensures AI responses meet expected format/structure.
 - **Database Migrations**: All schema changes are managed through Flask-Migrate.
 - **Logging**: Structured logging with rotation is used throughout the application.
+- **Explicit Difficulty Prompting**: The "difficulty" setting selected during game creation is translated into explicit instructions within the AI campaign generation prompt (`prompt_builder.build_campaign_prompt`). This aims to make the difficulty level more impactful by guiding the AI on aspects like resource availability, challenge complexity, NPC behavior, and plot point clarity. (Effectiveness to be validated through testing).
 
 ## Tooling & Configuration
 

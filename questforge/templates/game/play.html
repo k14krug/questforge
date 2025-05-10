@@ -283,7 +283,7 @@ const playerDetails = JSON.parse('{{ player_details | tojson | default("{}") | s
 // Listeners will be added inside the onReady callback
 
 function updateGameState(state) {
-    console.log("Updating game state display with:", state); 
+    // console.log("Updating game state display with:", state); // DEBUG REMOVED
     
     // Update Action Controls
     if (state && state.actions) {
@@ -337,7 +337,7 @@ function updateGameState(state) {
 function updateGameLog(log, currentLocation) {
     const visualizationArea = document.getElementById('gameStateVisualization');
     if (!visualizationArea) {
-        console.error("gameStateVisualization element not found");
+        // console.error("gameStateVisualization element not found"); // DEBUG REMOVED
         return;
     }
     visualizationArea.innerHTML = ''; // Clear previous content
@@ -393,7 +393,7 @@ function updateTotalCostDisplay(cost) {
         // Format cost to 4 decimal places
         costElement.textContent = `Cost: $${cost.toFixed(4)}`;
     } else {
-        console.warn("totalCostDisplay element not found.");
+        // console.warn("totalCostDisplay element not found."); // DEBUG REMOVED
     }
 }
 
@@ -401,7 +401,7 @@ function updateTotalCostDisplay(cost) {
 function updatePlayerLocationsDisplay(playerLocations) {
     const displayElement = document.getElementById('playerLocationsDisplay');
     if (!displayElement) {
-        console.error("playerLocationsDisplay element not found");
+        // console.error("playerLocationsDisplay element not found"); // DEBUG REMOVED
         return;
     }
     let html = '<ul class="list-unstyled mb-0">';
@@ -424,7 +424,7 @@ function updatePlayerLocationsDisplay(playerLocations) {
 function updateVisitedLocationsDisplay(visitedLocations) {
     const displayElement = document.getElementById('locationHistoryDisplay');
     if (!displayElement) {
-        console.error("locationHistoryDisplay element not found");
+        // console.error("locationHistoryDisplay element not found"); // DEBUG REMOVED
         return;
     }
     let html = '<ul class="list-unstyled mb-0">';
@@ -443,7 +443,7 @@ function updateVisitedLocationsDisplay(visitedLocations) {
 function updateInventoryDisplay(inventory) {
     const displayElement = document.getElementById('inventoryDisplay');
     if (!displayElement) {
-        console.error("inventoryDisplay element not found");
+        // console.error("inventoryDisplay element not found"); // DEBUG REMOVED
         return;
     }
     let html = '<ul class="list-unstyled mb-0">';
@@ -464,7 +464,7 @@ function updateInventoryDisplay(inventory) {
 function updateActionControls(actions) {
     const actionControls = document.getElementById('actionControls');
      if (!actionControls) {
-        console.error("actionControls element not found");
+        // console.error("actionControls element not found"); // DEBUG REMOVED
         return;
     }
     actionControls.innerHTML = ''; // Clear previous actions
@@ -474,40 +474,92 @@ function updateActionControls(actions) {
             button.className = 'btn btn-primary mb-2 w-100'; // Make buttons full width
             // TODO: Use a more descriptive property than 'name' if available
             button.innerText = typeof action === 'object' ? action.name || JSON.stringify(action) : action; 
-            button.onclick = () => performAction(action);
+            button.onclick = () => socketClient.performAction(action); // Ensure calling the method from socketClient
             actionControls.appendChild(button);
         });
     } else {
-        console.warn("No valid actions received to update controls.");
+        // console.warn("No valid actions received to update controls."); // DEBUG REMOVED
         actionControls.innerHTML = '<p class="text-muted">No actions available.</p>';
     }
 }
 
 // --- Action Emission ---
+// The local performAction in play.html is no longer needed, 
+// as the global one in socketClient.mjs will handle the logic.
+// We will keep the UI update functions here.
 
-function performAction(action) {
-    console.log("Performing action:", action); // Add log
-    // Emit action to server
-    const gameTitleElement = document.getElementById('gameTitle');
-    if (!gameTitleElement) {
-         console.error("gameTitle element not found, cannot perform action.");
-         return;
+/*
+// This local performAction is being removed.
+function performAction(actionInputText) {
+    const rawInput = actionInputText; // Preserve raw for logging
+    const trimmedActionText = actionInputText ? actionInputText.trim() : ""; // Ensure trim only if not null/undefined
+
+    console.log(`[DEBUG] performAction START. Raw: "${rawInput}", Trimmed: "${trimmedActionText}"`);
+
+    if (!trimmedActionText) {
+        console.log("[DEBUG] performAction: Trimmed text is empty. Clearing input and exiting.");
+        customActionInput.value = '';
+        return;
     }
-    const game_id = gameTitleElement.dataset.gameId;
-    const user_id = gameTitleElement.dataset.userId;
-    
-    // TODO: Structure the action payload correctly based on server expectations
-    // Assuming the server expects the 'action' object directly for now
-    if (socketClient && socketClient.socket) {
-        socketClient.socket.emit('player_action', {
-            game_id: game_id,
-            user_id: user_id,
-            action: action // Send the action object/string received
-        });
+
+    // Explicitly log before and the result of startsWith
+    console.log(`[DEBUG] performAction: About to check startsWith on: "${trimmedActionText}"`);
+    if (trimmedActionText.length > 0) {
+        console.log(`[DEBUG] performAction: First char code: ${trimmedActionText.charCodeAt(0)}, First char: "${trimmedActionText[0]}"`);
+        console.log(`[DEBUG] performAction: Does first char === '/': ${trimmedActionText[0] === '/'}`);
+    }
+    const isSlashCommand = trimmedActionText.startsWith('/');
+    console.log(`[DEBUG] performAction: Value of isSlashCommand (from startsWith) = ${isSlashCommand}`);
+
+    if (isSlashCommand) {
+        console.log("Slash command DETECTED by performAction:", trimmedActionText);
+        const parts = trimmedActionText.substring(1).split(' ');
+        const command = parts[0].toLowerCase();
+        const args = parts.slice(1);
+
+        if (socketClient && socketClient.socket) {
+            if (typeof gameId === 'undefined') {
+                console.error("CRITICAL: gameId is undefined in performAction for slash command.");
+                customActionInput.value = '';
+                return;
+            }
+            socketClient.socket.emit('slash_command', {
+                game_id: gameId, 
+                user_id: window.currentUserId,
+                command: command,
+                args: args
+            });
+            console.log(`Emitted slash_command: ${command} with args: ${JSON.stringify(args)}`);
+        } else {
+            console.error("socketClient not available for slash_command emission.");
+        }
     } else {
-         console.error("socketClient or socketClient.socket not available! Cannot emit player_action.");
+        console.log("Regular action DETECTED by performAction:", trimmedActionText);
+        const gameTitleElement = document.getElementById('gameTitle');
+        if (!gameTitleElement) {
+             console.error("gameTitle element not found for regular action.");
+             customActionInput.value = '';
+             return;
+        }
+        const local_game_id = gameTitleElement.dataset.gameId; 
+        const local_user_id = gameTitleElement.dataset.userId;
+        
+        if (socketClient && socketClient.socket) {
+            socketClient.socket.emit('player_action', {
+                game_id: local_game_id,
+                user_id: local_user_id,
+                action: trimmedActionText
+            });
+            console.log("Emitted player_action:", trimmedActionText);
+        } else {
+             console.error("socketClient not available for player_action emission.");
+        }
     }
+    
+    customActionInput.value = ''; 
+    console.log("[DEBUG] performAction END. Input cleared.");
 }
+*/
 
 // --- State Rendering ---
 
@@ -527,20 +579,20 @@ if (gameId) {
         // Check socketClient.socket directly
         const userId = document.getElementById('gameTitle')?.dataset.userId; // Get user_id
         if (!initialStateRequested && socketClient.socket && socketClient.connected && userId) {
-            console.log(`Requesting initial state for game ${gameId} by user ${userId}`);
+            // console.log(`Requesting initial state for game ${gameId} by user ${userId}`); // DEBUG REMOVED
             socketClient.socket.emit('request_state', { game_id: gameId, user_id: userId }); // Add user_id
             initialStateRequested = true;
         } else if (!initialStateRequested) {
-             console.log("Socket not ready/available when requestInitialState was called.");
+             // console.log("Socket not ready/available when requestInitialState was called."); // DEBUG REMOVED
         }
     };
 
     // Setup listeners after connection
     const setupListenersAndRequestState = () => {
-        console.log("Play page: Socket connected. Setting up listeners and requesting initial state.");
+        // console.log("Play page: Socket connected. Setting up listeners and requesting initial state."); // DEBUG REMOVED
 
         if (!socketClient.socket) {
-             console.error("Play page: setupListenersAndRequestState called but socketClient.socket is not available! Aborting setup.");
+             // console.error("Play page: setupListenersAndRequestState called but socketClient.socket is not available! Aborting setup."); // DEBUG REMOVED
              return;
         }
         
@@ -548,18 +600,56 @@ if (gameId) {
         socketClient.joinRoom(gameId); 
 
         // --- Setup Listeners ---
-        console.log("Play page: Setting up socket listeners.");
+        // console.log("Play page: Setting up socket listeners."); // DEBUG REMOVED
         socketClient.socket.off('game_state_update'); // Clear potential old listeners
         socketClient.socket.off('game_state');
 
         socketClient.socket.on('game_state_update', (data) => {
-            console.log("Play page: Received game_state_update:", data);
+            // console.log("Play page: Received game_state_update:", data); // DEBUG REMOVED
             updateGameState(data);
         });
 
         socketClient.socket.on('game_state', (state) => {
-            console.log("Play page: Received full game state:", state);
+            // console.log("Play page: Received full game state:", state); // DEBUG REMOVED
             updateGameState(state);
+        });
+
+        socketClient.socket.on('slash_command_response', (data) => {
+            // console.log("Play page: Received slash_command_response:", data); // DEBUG REMOVED
+            const visualizationArea = document.getElementById('gameStateVisualization');
+            if (!visualizationArea) {
+                // console.error("gameStateVisualization element not found, cannot display slash command response."); // DEBUG REMOVED
+                return;
+            }
+
+            const responseEntry = document.createElement('div');
+            responseEntry.classList.add('log-entry', 'log-entry-system'); // Use a distinct style
+
+            if (data.type === 'info' || data.type === 'debug') {
+                if (data.header) {
+                    const headerElement = document.createElement('strong');
+                    headerElement.textContent = data.header;
+                    responseEntry.appendChild(headerElement);
+                    responseEntry.appendChild(document.createElement('br'));
+                }
+                if (data.lines && Array.isArray(data.lines)) {
+                    data.lines.forEach(line => {
+                        const lineElement = document.createElement('div');
+                        lineElement.textContent = line;
+                        responseEntry.appendChild(lineElement);
+                    });
+                } else if (data.message) {
+                    responseEntry.appendChild(document.createTextNode(data.message));
+                }
+            } else if (data.type === 'error') {
+                responseEntry.classList.add('text-danger'); // Bootstrap class for error styling
+                responseEntry.textContent = `Error: ${data.message || 'Unknown error with slash command.'}`;
+            } else {
+                responseEntry.textContent = `Response: ${JSON.stringify(data)}`;
+            }
+            
+            visualizationArea.appendChild(responseEntry);
+            visualizationArea.scrollTop = visualizationArea.scrollHeight; // Scroll to bottom
         });
 
         // --- Request Initial State ---
@@ -571,11 +661,11 @@ if (gameId) {
     socketClient.onConnectCallbacks.push(setupListenersAndRequestState);
 
     // Initiate the connection process for this game ID.
-    console.log("Calling socketClient.connect(gameId) for play page.");
+    // console.log("Calling socketClient.connect(gameId) for play page."); // DEBUG REMOVED
     socketClient.connect(gameId); // This will eventually trigger the callbacks in onConnectCallbacks
 
 } else {
-    console.error("Game ID not found in DOM, cannot initialize socket connection.");
+    // console.error("Game ID not found in DOM, cannot initialize socket connection."); // DEBUG REMOVED
 }
 
 // --- Custom Action Input Handler ---
@@ -583,24 +673,34 @@ const customActionInput = document.getElementById('customActionInput');
 const submitCustomActionButton = document.getElementById('submitCustomAction');
 
 if (customActionInput && submitCustomActionButton) {
+    // Event handlers will now call the performAction method on the imported socketClient object
+    // and then clear the input field.
+    function handleSubmitAction() {
+        const currentActionText = customActionInput.value; // Get raw value
+        
+        if (socketClient && typeof socketClient.performAction === 'function') {
+            socketClient.performAction(currentActionText); 
+        } else {
+            // console.error("[play.html ERROR] socketClient.performAction function is not defined or accessible."); // DEBUG REMOVED
+        }
+        
+        customActionInput.value = ''; // Clear input field AFTER calling performAction
+    }
+
     // Handle button click
     submitCustomActionButton.addEventListener('click', () => {
-        const actionText = customActionInput.value.trim();
-        if (actionText) {
-            performAction(actionText); // Use the existing function to send the action
-            customActionInput.value = ''; // Clear the input field
-        }
+        handleSubmitAction();
     });
 
     // Handle Enter key press in the input field
     customActionInput.addEventListener('keypress', (event) => {
         if (event.key === 'Enter') {
-            event.preventDefault(); // Prevent default form submission if it were in a form
-            submitCustomActionButton.click(); // Trigger the button click handler
+            event.preventDefault();
+            handleSubmitAction();
         }
     });
 } else {
-    console.error("Custom action input elements not found.");
+    // console.error("Custom action input elements not found."); // DEBUG REMOVED
 }
 
 </script>

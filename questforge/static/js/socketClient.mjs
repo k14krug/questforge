@@ -3,7 +3,7 @@
  * Handles real-time communication with game server
  */
 
-console.log("Initializing socketClient (no class)...");
+// console.log("Initializing socketClient (no class)..."); // DEBUG REMOVED
 
 const socketClient = {
   socket: null,
@@ -15,19 +15,19 @@ const socketClient = {
   onDisconnectCallbacks: [],
 
   connect: function(gameId) {
-    console.log(`socketClient.connect(${gameId}) called.`);
+    // console.log(`socketClient.connect(${gameId}) called.`); // DEBUG REMOVED
     if (this.socket && this.connected && this.gameId === gameId) {
-        console.log(`Socket already connected for game ${gameId}.`);
+        // console.log(`Socket already connected for game ${gameId}.`); // DEBUG REMOVED
         // Trigger connect callbacks immediately if someone registers later
         setTimeout(() => this.onConnectCallbacks.forEach(cb => cb()), 0);
         return;
     }
     if (this.socket && this.gameId !== gameId) {
-        console.log(`Switching game context. Disconnecting from ${this.gameId}.`);
+        // console.log(`Switching game context. Disconnecting from ${this.gameId}.`); // DEBUG REMOVED
         this.disconnect(); 
     }
     if (this.isConnecting) {
-         console.log("Connection attempt already in progress.");
+         // console.log("Connection attempt already in progress."); // DEBUG REMOVED
          return;
     }
 
@@ -39,16 +39,16 @@ const socketClient = {
       const self = this;
 
       this.socket.on('connect', () => {
-        console.log("Socket connected event");
+        // console.log("Socket connected event"); // DEBUG REMOVED
         self.connected = true;
         self.isConnecting = false;
         self.hasJoinedRoom = false;
-        console.log(`SocketIO connected successfully for game ${self.gameId}. Triggering connect callbacks.`);
+        // console.log(`SocketIO connected successfully for game ${self.gameId}. Triggering connect callbacks.`); // DEBUG REMOVED
         self.onConnectCallbacks.forEach(function(cb) { if (typeof cb === 'function') cb(); });
       });
 
       this.socket.on('disconnect', (reason) => {
-        console.log(`Socket disconnected: ${reason}`);
+        // console.log(`Socket disconnected: ${reason}`); // DEBUG REMOVED
         const wasConnected = self.connected;
         self.connected = false;
         self.isConnecting = false;
@@ -60,7 +60,7 @@ const socketClient = {
 
       // Add other necessary listeners back
       this.socket.on('player_list', function(data) {
-         console.log(`Received player_list event for game ${self.gameId}:`, data);
+         // console.log(`Received player_list event for game ${self.gameId}:`, data); // DEBUG REMOVED
          const playerList = document.getElementById('player-list');
          if (playerList && data?.players) {
           playerList.innerHTML = ''; 
@@ -85,7 +85,7 @@ const socketClient = {
       });
 
       this.socket.on('player_joined', function(data) {
-          console.log(`Received player_joined event for game ${self.gameId}:`, data);
+          // console.log(`Received player_joined event for game ${self.gameId}:`, data); // DEBUG REMOVED
           const playerList = document.getElementById('player-list'); 
           if (playerList && data && data.username && data.user_id) {
              if (!playerList.querySelector(`li[data-user-id="${data.user_id}"]`)) {
@@ -103,7 +103,7 @@ const socketClient = {
       });
 
       this.socket.on('player_left', function(data) {
-          console.log(`Received player_left event for game ${self.gameId}:`, data);
+          // console.log(`Received player_left event for game ${self.gameId}:`, data); // DEBUG REMOVED
           const playerList = document.getElementById('player-list'); 
           if (playerList && data && data.user_id) {
              const playerItem = playerList.querySelector(`li[data-user-id="${data.user_id}"]`);
@@ -113,10 +113,10 @@ const socketClient = {
       });
 
       this.socket.on('player_status_update', function(data) {
-        console.log(`Received player_status_update event:`, data);
+        // console.log(`Received player_status_update event:`, data); // DEBUG REMOVED
         if (data && data.user_id && typeof data.is_ready !== 'undefined') {
           const event = new CustomEvent('playerStatusUpdate', { detail: { userId: data.user_id, isReady: data.is_ready } });
-          console.log(`Dispatching playerStatusUpdate event for userId=${data.user_id}, isReady=${data.is_ready}`);
+          // console.log(`Dispatching playerStatusUpdate event for userId=${data.user_id}, isReady=${data.is_ready}`); // DEBUG REMOVED
           window.dispatchEvent(event);
           // Also call checkAllPlayersReady directly if needed in lobby context
           if (typeof checkAllPlayersReady === 'function') checkAllPlayersReady();
@@ -124,7 +124,7 @@ const socketClient = {
       });
 
       this.socket.on('game_started', function(data) {
-          console.log(`Received game_started event for game ${self.gameId}:`, data);
+          // console.log(`Received game_started event for game ${self.gameId}:`, data); // DEBUG REMOVED
           if (data.game_id == self.gameId) {
              window.location.href = `/game/${self.gameId}/play`;
          }
@@ -161,35 +161,35 @@ const socketClient = {
   },
 
   joinRoom: function(gameId) {
-    console.log(`joinRoom(${gameId}) called. State: connected=${this.connected}, hasJoinedRoom=${this.hasJoinedRoom}`);
+    // console.log(`joinRoom(${gameId}) called. State: connected=${this.connected}, hasJoinedRoom=${this.hasJoinedRoom}`); // DEBUG REMOVED
     if (gameId !== this.gameId) {
-      console.warn(`joinRoom: ID mismatch.`);
+      // console.warn(`joinRoom: ID mismatch.`); // DEBUG REMOVED
       return;
     }
     if (this.connected && this.socket && !this.hasJoinedRoom) {
-       console.log(`joinRoom: Emitting join_game for ${this.gameId}.`);
+       // console.log(`joinRoom: Emitting join_game for ${this.gameId}.`); // DEBUG REMOVED
        this.socket.emit('join_game', {
          game_id: this.gameId,
          user_id: window.currentUserId
        });
        this.hasJoinedRoom = true; // Set flag AFTER emitting
      } else if (this.hasJoinedRoom) {
-       console.warn(`joinRoom: Already attempted join for this connection cycle. Skipping emit.`);
+       // console.warn(`joinRoom: Already attempted join for this connection cycle. Skipping emit.`); // DEBUG REMOVED
      } else {
-       console.warn(`joinRoom: Not connected or socket not available. Cannot emit join_game.`);
+       // console.warn(`joinRoom: Not connected or socket not available. Cannot emit join_game.`); // DEBUG REMOVED
      }
   },
 
   emitPlayerReady: function() {
-    console.log(`emitPlayerReady called. State: connected=${this.connected}, gameId=${this.gameId}`);
+    // console.log(`emitPlayerReady called. State: connected=${this.connected}, gameId=${this.gameId}`); // DEBUG REMOVED
     if (this.gameId && this.connected && this.socket) {
-      console.log(`Emitting player_ready for game ${this.gameId}, user ${window.currentUserId}`);
+      // console.log(`Emitting player_ready for game ${this.gameId}, user ${window.currentUserId}`); // DEBUG REMOVED
       this.socket.emit('player_ready', {
         game_id: this.gameId,
         user_id: window.currentUserId
       });
     } else {
-      console.warn(`Conditions not met to emit player_ready.`);
+      // console.warn(`Conditions not met to emit player_ready.`); // DEBUG REMOVED
     }
   },
 
@@ -208,15 +208,15 @@ const socketClient = {
 
   // Add disconnect method
   disconnect: function() {
-     console.log(`socketClient.disconnect() called. Current gameId: ${this.gameId}`);
+     // console.log(`socketClient.disconnect() called. Current gameId: ${this.gameId}`); // DEBUG REMOVED
      if (this.socket) {
-       console.log(`Disconnecting socket instance for game ${this.gameId}`);
+       // console.log(`Disconnecting socket instance for game ${this.gameId}`); // DEBUG REMOVED
        this.socket.disconnect();
        this.socket = null; 
      }
      this.connected = false;
      this.isConnecting = false;
-     console.log(`State after disconnect: connected=${this.connected}, isConnecting=${this.isConnecting}`);
+     // console.log(`State after disconnect: connected=${this.connected}, isConnecting=${this.isConnecting}`); // DEBUG REMOVED
      this.gameId = null;
      this.hasJoinedRoom = false; 
      this.onConnectCallbacks = []; 
@@ -224,13 +224,13 @@ const socketClient = {
    }
 };
 
-console.log("socketClient object created.");
+// console.log("socketClient object created."); // DEBUG REMOVED
 
 // --- Game State Update Handlers ---
 // Listeners will be added inside the onReady callback
 
 function updateGameState(state) {
-    console.log("Updating game state display with:", state); 
+    // console.log("Updating game state display with:", state);  // DEBUG REMOVED
     
     // Update Action Controls
     if (state && state.actions) {
@@ -300,7 +300,7 @@ function updateGameState(state) {
 function updateGameLog(log) {
     const gameLog = document.getElementById('gameLog');
     if (!gameLog) {
-        console.error("gameLog element not found");
+        // console.error("gameLog element not found"); // DEBUG REMOVED
         return;
     }
     gameLog.innerHTML = ''; // Clear previous logs
@@ -329,14 +329,14 @@ function updateTotalCostDisplay(cost) {
         // Format cost to 4 decimal places
         costElement.textContent = `Cost: $${cost.toFixed(4)}`;
     } else {
-        console.warn("totalCostDisplay element not found.");
+        // console.warn("totalCostDisplay element not found."); // DEBUG REMOVED
     }
 }
 
 function updateActionControls(actions) {
     const actionControls = document.getElementById('actionControls');
      if (!actionControls) {
-        console.error("actionControls element not found");
+        // console.error("actionControls element not found"); // DEBUG REMOVED
         return;
     }
     actionControls.innerHTML = ''; // Clear previous actions
@@ -346,11 +346,11 @@ function updateActionControls(actions) {
             button.className = 'btn btn-primary mb-2 w-100'; // Make buttons full width
             // TODO: Use a more descriptive property than 'name' if available
             button.innerText = typeof action === 'object' ? action.name || JSON.stringify(action) : action; 
-            button.onclick = () => performAction(action);
+            button.onclick = () => socketClient.performAction(action); // Ensure calling the method
             actionControls.appendChild(button);
         });
     } else {
-        console.warn("No valid actions received to update controls.");
+        // console.warn("No valid actions received to update controls."); // DEBUG REMOVED
         actionControls.innerHTML = '<p class="text-muted">No actions available.</p>';
     }
 }
@@ -359,7 +359,7 @@ function updateActionControls(actions) {
 function updateLocationHistory(locations) {
     const locationHistoryDisplay = document.getElementById('locationHistoryDisplay');
     if (!locationHistoryDisplay) {
-        console.warn("locationHistoryDisplay element not found.");
+        // console.warn("locationHistoryDisplay element not found."); // DEBUG REMOVED
         return;
     }
     locationHistoryDisplay.innerHTML = ''; // Clear previous locations
@@ -385,7 +385,7 @@ function updateLocationHistory(locations) {
 function updatePlayerLocations(playerLocations) {
     const playerLocationsDisplay = document.getElementById('playerLocationsDisplay');
     if (!playerLocationsDisplay) {
-        console.warn("playerLocationsDisplay element not found.");
+        // console.warn("playerLocationsDisplay element not found."); // DEBUG REMOVED
         return;
     }
     playerLocationsDisplay.innerHTML = ''; // Clear previous locations
@@ -415,29 +415,79 @@ function updatePlayerLocations(playerLocations) {
 
 // --- Action Emission ---
 
-function performAction(action) {
-    console.log("Performing action:", action); // Add log
-    // Emit action to server
-    const gameTitleElement = document.getElementById('gameTitle');
-    if (!gameTitleElement) {
-         console.error("gameTitle element not found, cannot perform action.");
-         return;
+// This performAction will now be a method of socketClient and handle slash command differentiation
+// function performAction(actionInputText) { // Becomes a method
+socketClient.performAction = function(actionInputText) {
+    const rawInput = actionInputText;
+    const trimmedActionText = actionInputText ? actionInputText.trim() : "";
+
+    // console.log(`[socketClient.mjs] socketClient.performAction START. Raw: "${rawInput}", Trimmed: "${trimmedActionText}"`);
+
+    if (!trimmedActionText) {
+        // console.log("[socketClient.mjs] socketClient.performAction: Trimmed text is empty. Exiting.");
+        return;
     }
-    const game_id = gameTitleElement.dataset.gameId;
-    const user_id = gameTitleElement.dataset.userId;
-    
-    // TODO: Structure the action payload correctly based on server expectations
-    // Assuming the server expects the 'action' object directly for now
-    if (socketClient && socketClient.socket) {
-        socketClient.socket.emit('player_action', {
-            game_id: game_id,
-            user_id: user_id,
-            action: action // Send the action object/string received
-        });
+
+    const isSlashCommand = trimmedActionText.startsWith('/');
+    // console.log(`[socketClient.mjs] socketClient.performAction: isSlashCommand = ${isSlashCommand} (checked on "${trimmedActionText}")`);
+
+    if (isSlashCommand) {
+        // console.log("[socketClient.mjs] Slash command DETECTED by socketClient.performAction:", trimmedActionText);
+        const parts = trimmedActionText.substring(1).split(' ');
+        const command = parts[0].toLowerCase();
+        const args = parts.slice(1);
+        
+        // gameId needs to be accessible. Assuming it's set on socketClient or globally by play.html
+        // For safety, let's try to get it from the DOM if socketClient.gameId isn't reliable here.
+        const gameIdForEmit = socketClient.gameId || document.getElementById('gameTitle')?.dataset.gameId;
+        const userIdForEmit = window.currentUserId || document.getElementById('gameTitle')?.dataset.userId;
+
+
+        if (!gameIdForEmit) {
+            // console.error("[socketClient.mjs] CRITICAL: gameIdForEmit is undefined for slash command."); // DEBUG REMOVED
+            return; 
+        }
+        if (!userIdForEmit) {
+            // console.error("[socketClient.mjs] CRITICAL: userIdForEmit is undefined for slash command."); // DEBUG REMOVED
+            return;
+        }
+
+        if (socketClient.socket && socketClient.connected) {
+            socketClient.socket.emit('slash_command', {
+                game_id: gameIdForEmit,
+                user_id: userIdForEmit,
+                command: command,
+                args: args
+            });
+            // console.log(`[socketClient.mjs] Emitted slash_command: ${command} with args: ${JSON.stringify(args)}`);
+        } else {
+            // console.error("[socketClient.mjs] socketClient not available/connected for slash_command emission."); // DEBUG REMOVED
+        }
     } else {
-         console.error("socketClient or socketClient.socket not available! Cannot emit player_action.");
+        // console.log("[socketClient.mjs] Regular action DETECTED by socketClient.performAction:", trimmedActionText);
+        const gameTitleElement = document.getElementById('gameTitle');
+        if (!gameTitleElement) {
+             // console.error("[socketClient.mjs] gameTitle element not found for regular action."); // DEBUG REMOVED
+             return;
+        }
+        const game_id = gameTitleElement.dataset.gameId;
+        const user_id = gameTitleElement.dataset.userId;
+        
+        if (socketClient.socket && socketClient.connected) {
+            socketClient.socket.emit('player_action', {
+                game_id: game_id,
+                user_id: user_id,
+                action: trimmedActionText
+            });
+            // console.log("[socketClient.mjs] Emitted player_action:", trimmedActionText);
+        } else {
+             // console.error("[socketClient.mjs] socketClient not available/connected for player_action emission."); // DEBUG REMOVED
+        }
     }
-}
+    // Responsibility of clearing the input field should ideally be with the direct event handler in play.html
+    // This method shouldn't assume it needs to clear it.
+    // console.log("[socketClient.mjs] socketClient.performAction END.");
+}; // End of performAction method
 
 // --- State Rendering ---
 
@@ -473,20 +523,20 @@ if (gameId) {
         // Check socketClient.socket directly
         const userId = document.getElementById('gameTitle')?.dataset.userId; // Get user_id
         if (!initialStateRequested && socketClient.socket && socketClient.connected && userId) {
-            console.log(`Requesting initial state for game ${gameId} by user ${userId}`);
+            // console.log(`Requesting initial state for game ${gameId} by user ${userId}`); // DEBUG REMOVED
             socketClient.socket.emit('request_state', { game_id: gameId, user_id: userId }); // Add user_id
             initialStateRequested = true;
         } else if (!initialStateRequested) {
-             console.log("Socket not ready/available when requestInitialState was called.");
+             // console.log("Socket not ready/available when requestInitialState was called."); // DEBUG REMOVED
         }
     };
 
     // Setup listeners after connection
     const setupListenersAndRequestState = () => {
-        console.log("Play page: Socket connected. Setting up listeners and requesting initial state.");
+        // console.log("Play page: Socket connected. Setting up listeners and requesting initial state."); // DEBUG REMOVED
 
         if (!socketClient.socket) {
-             console.error("Play page: setupListenersAndRequestState called but socketClient.socket is not available! Aborting setup.");
+             // console.error("Play page: setupListenersAndRequestState called but socketClient.socket is not available! Aborting setup."); // DEBUG REMOVED
              return;
         }
         
@@ -494,29 +544,29 @@ if (gameId) {
         socketClient.joinRoom(gameId); 
 
         // --- Setup Listeners ---
-        console.log("Play page: Setting up socket listeners.");
+        // console.log("Play page: Setting up socket listeners."); // DEBUG REMOVED
         socketClient.socket.off('game_state_update'); // Clear potential old listeners
         socketClient.socket.off('game_state');
 
         socketClient.socket.on('game_state_update', (data) => {
-            console.log("Play page: Received game_state_update:", data);
+            // console.log("Play page: Received game_state_update:", data); // DEBUG REMOVED
             updateGameState(data);
         });
 
         socketClient.socket.on('game_state', (state) => {
-            console.log("Play page: Received full game state:", state);
+            // console.log("Play page: Received full game state:", state); // DEBUG REMOVED
             updateGameState(state);
         });
 
         socketClient.socket.on('game_concluded', (data) => {
-            console.log("Play page: Received game_concluded event:", data);
+            // console.log("Play page: Received game_concluded event:", data); // DEBUG REMOVED
             if (data.game_id === gameId) {
                 // Update UI to show game is completed
                 const gameStatusDisplay = document.getElementById('gameStatusDisplay'); // Assumes this element exists or will be added
                 if (gameStatusDisplay) {
                     gameStatusDisplay.textContent = 'Status: Completed';
                 } else {
-                    console.warn("gameStatusDisplay element not found. Cannot update status.");
+                    // console.warn("gameStatusDisplay element not found. Cannot update status."); // DEBUG REMOVED
                 }
 
                 // Disable action input
@@ -550,11 +600,11 @@ if (gameId) {
     socketClient.onConnectCallbacks.push(setupListenersAndRequestState);
 
     // Initiate the connection process for this game ID.
-    console.log("Calling socketClient.connect(gameId) for play page.");
+    // console.log("Calling socketClient.connect(gameId) for play page."); // DEBUG REMOVED
     socketClient.connect(gameId); // This will eventually trigger the callbacks in onConnectCallbacks
 
 } else {
-    console.error("Game ID not found in DOM, cannot initialize socket connection.");
+    // console.error("Game ID not found in DOM, cannot initialize socket connection."); // DEBUG REMOVED
 }
 
 // --- Custom Action Input Handler ---
@@ -566,7 +616,7 @@ if (customActionInput && submitCustomActionButton) {
     submitCustomActionButton.addEventListener('click', () => {
         const actionText = customActionInput.value.trim();
         if (actionText) {
-            performAction(actionText); // Use the existing function to send the action
+            socketClient.performAction(actionText); // Ensure calling the method
             customActionInput.value = ''; // Clear the input field
         }
     });
@@ -579,8 +629,8 @@ if (customActionInput && submitCustomActionButton) {
         }
     });
 } else {
-    console.error("Custom action input elements not found.");
+    // console.error("Custom action input elements not found."); // DEBUG REMOVED
 }
 
 export default socketClient;
-console.log("socketClient exported.");
+// console.log("socketClient exported."); // DEBUG REMOVED

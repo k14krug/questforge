@@ -71,7 +71,20 @@ def build_campaign_prompt(template: Template, template_overrides: Optional[Dict[
     add_line('world_description', 'World Description')
     add_line('scene_suggestions', 'Scene Suggestions')
     add_line('player_character_guidance', 'Player Character Guidance')
-    add_line('difficulty', 'Difficulty')
+    
+    # Handle Difficulty with more specific instructions
+    difficulty_value = template_overrides.get('difficulty', getattr(template, 'difficulty', 'medium')) # Default to medium if not found
+    if difficulty_value:
+        prompt_lines.append(f"- Difficulty: {difficulty_value.capitalize()}")
+        if str(difficulty_value).lower() == 'easy':
+            prompt_lines.append("  - Interpretation: Generate a straightforward adventure. Resources should be relatively easy to find. Challenges should be simpler, and NPCs more helpful. Plot points should be clearly signposted.")
+        elif str(difficulty_value).lower() == 'medium':
+            prompt_lines.append("  - Interpretation: Generate a balanced adventure. Resources are available but may require some effort. Challenges are present but fair. NPCs offer a mix of help and hindrance. Plot points require some investigation.")
+        elif str(difficulty_value).lower() == 'hard':
+            prompt_lines.append("  - Interpretation: Generate a challenging scenario. Resources should be scarce or well-guarded. Adversaries should be cunning and obstacles significant. NPCs might be deceptive or unhelpful. Plot points may be obscure and require clever solutions. Consider fewer initial resources or more complex starting situations for the players.")
+        elif str(difficulty_value).lower() == 'very hard':
+            prompt_lines.append("  - Interpretation: Generate an extremely difficult scenario. Resources are exceptionally rare and dangerous to obtain. Adversaries are highly intelligent and unforgiving. Obstacles are numerous and complex. NPCs are likely hostile or misleading. Plot points are deeply hidden and require exceptional insight. The initial situation should be perilous.")
+    
     add_line('estimated_length', 'Estimated Length')
     add_line('default_rules', 'Default Rules/Mechanics') # Handles JSON
 
@@ -157,7 +170,10 @@ def build_response_prompt(context: str, player_action: str, is_stuck: bool = Fal
     """
     prompt_lines = [
         "You are a Game Master for a text-based adventure game.",
-        "Based on the provided context (including the 'Current Objective/Focus') and the player's action, describe what happens next.",
+        "Your primary task is to describe the direct and immediate result of the player's stated action. Detail what happens in this single moment or step.",
+        "Focus your response on what transpires in *this specific turn*. Do not narrate subsequent actions the player characters might take, or events that would logically follow *after* the immediate outcome, unless they are an unavoidable and instantaneous consequence.",
+        "The narrative should pause, awaiting the next player input. After describing the outcome, ensure your 'available_actions' present clear choices for the player to drive the story forward.",
+        "Based on the provided context (including the 'Current Objective/Focus') and the player's action, describe the immediate outcome of that action.", # Rephrased
         "**IMPORTANT: Refer to players by their names as listed in the 'Players Present' section of the context.**",
         "Consider the following aspects while generating the response:",
         "1. **Objective Adherence & Logic:** Evaluate the player's action against the 'Current Objective/Focus' provided in the Game Context. If the action attempts to bypass or ignore this objective without strong narrative justification, your response should explain *why* it's difficult or impossible at this time (e.g., 'The ancient gate is sealed by a powerful magic; perhaps the runes in the library hold a clue?'). Prioritize realistic outcomes and narrative progression towards the Current Objective/Focus.",
@@ -170,8 +186,8 @@ def build_response_prompt(context: str, player_action: str, is_stuck: bool = Fal
     
     prompt_lines.extend([
         "5. **State Changes:** Clearly outline any changes to the game state resulting from the action. If an action is denied or has no effect, state changes might be minimal or empty.",
-        "   - **Plot Point Achievement:** If the player's action *directly and successfully achieves* the 'Current Objective/Focus', YOU MUST include an `achieved_plot_point_id` key in your `state_changes` object. The value for this key MUST BE THE EXACT `id` (e.g., `\"pp_001\"`) of the 'Current Objective/Focus' that was completed, as provided in the 'Major Plot Points' list in the Game Context. Do NOT return the description here.",
-        "   - **Critical Event Flags for Conclusion:** Review the 'Conclusion Conditions' list provided in the Game Context. If the player's action directly results in satisfying one of these conditions (e.g., the narrative describes a successful escape and a condition is `{'type': 'state_key_equals', 'key': 'escaped', 'value': true}`), YOU MUST include the corresponding key and value (e.g., `'escaped': true`) in your `state_changes` object. This is essential for the game to recognize the conclusion.",
+        "   - **Plot Point Achievement:** If the player's *single, current action directly and successfully achieves* the 'Current Objective/Focus', YOU MUST include an `achieved_plot_point_id` key in your `state_changes` object. The value for this key MUST BE THE EXACT `id` (e.g., `\"pp_001\"`) of the 'Current Objective/Focus' that was completed, as provided in the 'Major Plot Points' list in the Game Context. Do NOT return the description here.",
+        "   - **Critical Event Flags for Conclusion:** Review the 'Conclusion Conditions' list provided in the Game Context. If the player's *single, current action directly results* in satisfying one of these conditions (e.g., the narrative describes a successful escape and a condition is `{'type': 'state_key_equals', 'key': 'escaped', 'value': true}`), YOU MUST include the corresponding key and value (e.g., `'escaped': true`) in your `state_changes` object. This is essential for the game to recognize the conclusion.",
         "6. **Available Actions:** List relevant actions the player can take *after* this event, reflecting the new situation.",
         "---",
         "Your response MUST be a JSON object containing three keys:",
@@ -208,3 +224,43 @@ Description: "{description}"
 
 Generated Name:"""
     return prompt.strip()
+
+
+def build_hint_prompt(context: str, campaign_objective: Optional[str] = None, next_required_plot_point_desc: Optional[str] = None) -> str:
+    """
+    Builds a prompt for the AI to generate a game hint.
+
+    Args:
+        context: The current game context string (includes recent log, current location, etc.).
+        campaign_objective: The overall campaign objective.
+        next_required_plot_point_desc: The description of the next immediate required plot point.
+
+    Returns:
+        A string containing the prompt for the AI.
+    """
+    prompt_lines = [
+        "You are a helpful Game Master for a text-based adventure game.",
+        "A player has asked for a hint. Your goal is to provide a subtle, non-spoilery clue to help them progress.",
+        "Consider the provided game context, the overall campaign objective, and especially the next immediate required plot point.",
+        "---",
+        "GAME CONTEXT:",
+        context,
+        "---"
+    ]
+
+    if campaign_objective:
+        prompt_lines.append(f"Overall Campaign Objective: {campaign_objective}")
+    
+    if next_required_plot_point_desc:
+        prompt_lines.append(f"Next Immediate Goal/Plot Point: {next_required_plot_point_desc}")
+    
+    prompt_lines.extend([
+        "---",
+        "YOUR TASK:",
+        "Based on all the information above, provide one concise, subtle hint to guide the player. The hint should encourage exploration or thought related to their current situation or next objective.",
+        "Do NOT give away direct solutions or spoil upcoming events.",
+        "Output ONLY the hint text itself, as a single string. No extra labels, no JSON.",
+        "---",
+        "Hint:"
+    ])
+    return "\n".join(prompt_lines)

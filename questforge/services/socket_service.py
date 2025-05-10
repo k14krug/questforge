@@ -6,14 +6,15 @@ from sqlalchemy import func # Import func for sum aggregation
 import json # Import json for logging state_data
 from ..extensions import db
 from ..extensions.socketio import get_socketio
-from ..models import Game, User, GamePlayer, GameState, Template, ApiUsageLog # Added GameState, Template, ApiUsageLog
+from ..models import Game, User, GamePlayer, GameState, Template, ApiUsageLog, Campaign # Added Campaign
 from decimal import Decimal # For cost calculation
+from questforge.utils.context_manager import build_context # Import build_context
 
 socketio = get_socketio()
 from .game_state_service import game_state_service # Import the instance
 from .ai_service import ai_service # Import the singleton INSTANCE
 # Import the specific function needed, not a non-existent instance
-from .campaign_service import generate_campaign_structure 
+from .campaign_service import generate_campaign_structure
 
 class SocketService:
     @staticmethod
@@ -749,3 +750,174 @@ class SocketService:
                     db.session.rollback()
                     current_app.logger.error(f"Database error updating character details for user {user_id} in game {game_id}: {str(e)}", exc_info=True) # Updated log
                     emit('error', {'message': 'Failed to save details'}, room=request.sid) # Updated message
+
+        @socketio.on('slash_command')
+        def handle_slash_command(data):
+            game_id = data.get('game_id')
+            user_id = data.get('user_id')
+            command = data.get('command', '').lower() # Ensure lowercase for command matching
+            args = data.get('args', [])
+
+            if not all([game_id, user_id, command]):
+                emit('slash_command_response', {
+                    'command': command,
+                    'type': 'error',
+                    'message': 'Missing required fields for slash command (game_id, user_id, command).'
+                }, room=request.sid)
+                return
+
+            current_app.logger.info(f"Processing slash_command: /{command} {args} from user {user_id} in game {game_id}.")
+
+            with current_app.app_context():
+                game = db.session.get(Game, game_id)
+                if not game:
+                    emit('slash_command_response', {
+                        'command': command,
+                        'type': 'error',
+                        'message': 'Game not found.'
+                    }, room=request.sid)
+                    return
+
+                # User authentication/validation (optional, but good for security)
+                # user = db.session.get(User, user_id)
+                # if not user or not current_user.is_authenticated or str(current_user.id) != str(user_id):
+                #     emit('slash_command_response', {'command': command, 'type': 'error', 'message': 'Authentication error.'}, room=request.sid)
+                #     return
+
+                if command == 'help':
+                    available_commands = [
+                        "/help - Shows this help message.",
+                        "/remaining_plot_points - Shows how many plot points are left.",
+                        "/show_plot_points - Shows details of remaining plot points.",
+                        "/game_help - Asks the AI for a hint."
+                    ]
+                    emit('slash_command_response', {
+                        'command': command,
+                        'type': 'info',
+                        'header': 'Available Slash Commands:', # Optional header for client display
+                        'lines': available_commands
+                    }, room=request.sid)
+
+                elif command == 'remaining_plot_points':
+                    campaign = db.session.query(Campaign).filter_by(game_id=game_id).first()
+                    game_state_obj = db.session.query(GameState).filter_by(game_id=game_id).first()
+
+                    if not campaign or not game_state_obj:
+                        emit('slash_command_response', {
+                            'command': command,
+                            'type': 'error',
+                            'message': 'Could not retrieve game data to calculate plot points.'
+                        }, room=request.sid)
+                        return
+
+                    state_data = game_state_obj.state_data or {}
+                    completed_plot_points_data = state_data.get('completed_plot_points', [])
+                    if not isinstance(completed_plot_points_data, list):
+                        completed_plot_points_data = []
+                    
+                    completed_ids = [pp.get('id') for pp in completed_plot_points_data if isinstance(pp, dict) and pp.get('id')]
+                    
+                    major_plot_points_list = campaign.major_plot_points
+                    if not isinstance(major_plot_points_list, list):
+                        major_plot_points_list = []
+
+                    required_plot_points = [pp for pp in major_plot_points_list if isinstance(pp, dict) and pp.get('required')]
+                    remaining_required = [pp for pp in required_plot_points if pp.get('id') not in completed_ids]
+                    
+                    count = len(remaining_required)
+                    total_required = len(required_plot_points)
+                    
+                    message = f"There are {count} out of {total_required} required plot points remaining."
+                    if count == 0 and total_required > 0:
+                        message = "All required plot points have been completed!"
+                    elif total_required == 0:
+                        message = "This campaign does not have any specifically required plot points defined."
+
+                    emit('slash_command_response', {
+                        'command': command,
+                        'type': 'info',
+                        'message': message
+                    }, room=request.sid)
+
+                elif command == 'show_plot_points':
+                    campaign = db.session.query(Campaign).filter_by(game_id=game_id).first()
+                    game_state_obj = db.session.query(GameState).filter_by(game_id=game_id).first()
+
+                    if not campaign or not game_state_obj:
+                        emit('slash_command_response', {
+                            'command': command,
+                            'type': 'error',
+                            'message': 'Could not retrieve game data to show plot points.'
+                        }, room=request.sid)
+                        return
+
+                    state_data = game_state_obj.state_data or {}
+                    completed_plot_points_data = state_data.get('completed_plot_points', [])
+                    if not isinstance(completed_plot_points_data, list):
+                        completed_plot_points_data = []
+                    
+                    completed_ids = [pp.get('id') for pp in completed_plot_points_data if isinstance(pp, dict) and pp.get('id')]
+                    
+                    major_plot_points_list = campaign.major_plot_points
+                    if not isinstance(major_plot_points_list, list):
+                        major_plot_points_list = []
+
+                    plot_point_details_list = []
+                    if not major_plot_points_list:
+                        message = "No plot points defined for this campaign."
+                        plot_point_details_list.append(message)
+                    else:
+                        for pp in major_plot_points_list:
+                            if isinstance(pp, dict):
+                                desc = pp.get('description', 'No description')
+                                req_status = "Required" if pp.get('required') else "Optional"
+                                completion_status = "Completed" if pp.get('id') in completed_ids else "Pending"
+                                plot_point_details_list.append(f"- {desc} ({req_status}, {completion_status})")
+                        
+                        if not plot_point_details_list: # Should not happen if major_plot_points_list was not empty
+                             message = "All plot points have been completed or no plot points to show."
+                        else:
+                             message = "Plot Points Status:" # Header for the list
+
+                    emit('slash_command_response', {
+                        'command': command,
+                        'type': 'info',
+                        'header': message, # Use message as a header
+                        'lines': plot_point_details_list # Send as a list of strings
+                    }, room=request.sid)
+
+                elif command == 'game_help':
+                    campaign = db.session.query(Campaign).filter_by(game_id=game_id).first()
+                    game_state_obj = db.session.query(GameState).filter_by(game_id=game_id).first()
+
+                    if not campaign or not game_state_obj:
+                        emit('slash_command_response', {
+                            'command': command,
+                            'type': 'error',
+                            'message': 'Could not retrieve game data to provide a hint.'
+                        }, room=request.sid)
+                        return # Early exit
+
+                    hint_result = ai_service.get_ai_hint(game_state=game_state_obj, campaign=campaign)
+
+                    if hint_result:
+                        hint_text, model_used, usage_data = hint_result
+                        current_app.logger.info(f"AI Hint for game {game_id}: '{hint_text}' (model: {model_used})")
+                        emit('slash_command_response', {
+                            'command': command,
+                            'type': 'hint', # Specific type for hints
+                            'message': hint_text
+                        }, room=request.sid)
+                    else:
+                        current_app.logger.error(f"Failed to get AI hint for game {game_id}.")
+                        emit('slash_command_response', {
+                            'command': command,
+                            'type': 'error',
+                            'message': 'Sorry, I could not come up with a hint right now.'
+                        }, room=request.sid)
+                else:
+                    emit('slash_command_response', {
+                        'command': command,
+                        'type': 'error',
+                        'message': f"Unknown command: /{command}"
+                    }, room=request.sid)

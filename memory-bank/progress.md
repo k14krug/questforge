@@ -62,6 +62,11 @@
 **Feature: Completed Game Badge Styling (Completed)**
     *   Modified `questforge/templates/game/list.html` to display a green badge (`bg-success`) for games with status 'completed'. Other statuses retain the default gray badge (`bg-secondary`).
 
+**Feature: Login with Username (Completed)**
+    *   Modified `questforge/views/forms.py`: Changed `LoginForm` to use `username` field instead of `email`, updated validators.
+    *   Modified `questforge/views/auth.py`: Updated `login` function to query `User` by `username` and adjusted flash message.
+    *   Modified `questforge/templates/auth/login.html`: Updated login form to use `form.username`.
+
 ## Remaining Work (Phased Approach from Spec)
 
 **Phase 1: Template Redesign & Character Definition (Completed)**
@@ -136,12 +141,54 @@
         *   Updates game status in DB to 'completed'.
     *   **Memory Bank:** Plan file cleanup handled.
 
-**Current Task: Game Screen Redesign (`play.html`)** (Low Priority - In Progress)
+**Feature: Slash Command System (Completed)**
+*   **Objective:** Allowed players to use slash commands (`/help`, `/remaining_plot_points`, `/game_help`) for in-game information and actions.
+*   **Phase 1: Frontend Detection & Backend Stub (Completed)**
+    *   Modified `questforge/static/js/socketClient.mjs`: Centralized action processing in `socketClient.performAction`, which now differentiates slash commands (emitting `slash_command` event) from regular actions (emitting `player_action` event).
+    *   Modified `questforge/templates/game/play.html`: Event handlers for custom input now call `socketClient.performAction()` and clear the input field afterwards.
+*   **Phase 2: Backend Logic for `/help`, `/remaining_plot_points`, and `/show_plot_points` (Completed)**
+    *   Modified `questforge/services/socket_service.py`:
+        *   Implemented logic in `handle_slash_command` for `/help` (returns command list) and `/remaining_plot_points` (calculates remaining required plot points).
+        *   Updated `/show_plot_points` to list all plot points, their required/optional status, and their completion status (Completed/Pending), formatted as a list of strings.
+        *   Updated `/help` command to include `/show_plot_points`.
+*   **Phase 3: Backend AI Interaction for `/game_help` (Completed)**
+    *   Modified `questforge/utils/prompt_builder.py`: Added `build_hint_prompt`.
+    *   Modified `questforge/services/ai_service.py`: Added `get_ai_hint` method to `AIService`; corrected `log_api_usage` to align with `ApiUsageLog` model (removed `player_id`, `endpoint`).
+    *   Modified `questforge/services/socket_service.py`: `handle_slash_command` now calls `ai_service.get_ai_hint()` for `/game_help`.
+*   **Phase 4: Frontend Display of Slash Command Responses (Completed)**
+    *   Modified `questforge/templates/game/play.html`: Added SocketIO listener for `slash_command_response` to display responses in `gameStateVisualization`.
+*   **Debugging & Refinements (Completed):**
+    *   Resolved various client-side JavaScript and backend Python issues.
+    *   Removed diagnostic `console.log` statements from JavaScript files.
 
-*   Consolidate Game Log & Narrative display.
-*   Restructure right column with always-visible actions and tabs for secondary info (Status, Details).
+**Feature: Difficulty Setting Enhancement (Implementation Completed, Awaiting Testing)**
+*   **Objective:** Make the "difficulty" setting chosen during game creation more impactful on the generated campaign.
+*   **Investigation (Completed):**
+    *   Traced data flow of "difficulty" from `create.html` UI -> `Game.template_overrides` -> `campaign_service` -> `ai_service` -> `prompt_builder`.
+    *   Confirmed "difficulty" was included in the AI prompt but likely lacked specific instructions for impact.
+*   **Implementation (Completed):**
+    *   Modified `questforge/utils/prompt_builder.py` (`build_campaign_prompt` function):
+        *   Added logic to retrieve the `difficulty_value` (defaulting to 'medium').
+        *   Appended more explicit instructions to the AI prompt based on the `difficulty_value` ('easy', 'medium', 'hard', 'very hard'). These instructions guide the AI on aspects like resource availability, challenge complexity, NPC behavior, and plot point clarity.
+*   **Next Steps:** User to test by creating games with various difficulty settings. Document effective AI patterns in `.clinerules/clinerules.md` if discovered.
+
+**Ongoing Task: AI Response Granularity Tuning** (Medium Priority - In Progress)
+
+*   **Objective:** Refine AI prompts to prevent overly verbose responses or the AI performing multiple actions from a single player input.
+*   **Actions Taken:**
+    *   Modified `questforge/utils/prompt_builder.py` (`build_response_prompt`):
+        *   Added explicit instructions for the AI to focus on the immediate outcome of the player's current action.
+        *   Emphasized a single-turn mentality.
+        *   Reinforced that plot point achievements and conclusion condition flags should only be triggered by the single, current player action.
+*   **Next Steps:** Test changes, iterate on prompts if needed, document successful strategies.
+
+**Previous Task: Game Screen Redesign (`play.html`)** (Low Priority - Partially Completed)
+
+*   Consolidate Game Log & Narrative display. (Pending)
+*   Restructure right column with always-visible actions and tabs for secondary info (Status, Details). (Partially Completed)
     *   **NPC Details Display (Completed):** Added display of `campaign.key_characters` (NPCs and their attributes) to the "Details" tab in `questforge/templates/game/play.html`.
-*   Display player names instead of IDs.
+*   **Sticky Navbar (Completed):** Modified `questforge/static/css/styles.css` to make the navbar sticky.
+*   Display player names instead of IDs. (Pending)
 *   Relocate API cost display.
 *   Apply subtle thematic styling.
 
