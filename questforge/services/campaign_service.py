@@ -203,6 +203,40 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
         initial_narrative = initial_scene_data.get('description', 'The adventure begins...')
         initial_actions = initial_scene_data.get('goals', []) # Use initial goals as first actions
 
+        # --- START: New logic for initial historical summary ---
+        if initial_state_dict and initial_narrative: # Ensure we have data to summarize
+            logger.info(f"Generating initial historical summary for game {game_id}...")
+            initial_event_action = "The adventure begins." # Placeholder action for game start
+
+            summary_text = ai_service.generate_historical_summary(
+                player_action=initial_event_action,
+                stage_one_narrative=initial_narrative,
+                state_changes=initial_state_dict, # Pass the full initial state
+                game_id=game_id
+            )
+
+            # Ensure 'historical_summary' key exists in initial_state_dict and is a list
+            if not isinstance(initial_state_dict.get('historical_summary'), list):
+                initial_state_dict['historical_summary'] = []
+
+            if summary_text:
+                initial_state_dict['historical_summary'].append(summary_text)
+
+                # Enforce MAX_HISTORICAL_SUMMARIES
+                max_summaries = current_app.config.get('MAX_HISTORICAL_SUMMARIES', 10) # Get from app config
+                if len(initial_state_dict['historical_summary']) > max_summaries:
+                    initial_state_dict['historical_summary'] = initial_state_dict['historical_summary'][-max_summaries:] # Keep the last N items
+
+                logger.info(f"Successfully added initial historical summary to state_data for game {game_id}.")
+            else:
+                logger.warning(f"Failed to generate or empty initial historical summary for game {game_id}.")
+        else:
+            logger.warning(f"Missing initial_state_dict or initial_narrative for game {game_id}. Skipping initial summary generation.")
+            # Ensure historical_summary list exists even if we skip, if not already present
+            if 'historical_summary' not in initial_state_dict:
+                initial_state_dict['historical_summary'] = []
+        # --- END: New logic for initial historical summary ---
+
         if not initial_state_dict or not isinstance(initial_state_dict, dict):
              logger.error(f"Invalid or missing 'initial_scene.state' in AI response for game {game_id}")
              db.session.rollback() # Rollback campaign creation
@@ -450,9 +484,14 @@ def check_conclusion(game_state: GameState):
                     value_to_contain = condition.get('value')
                     actual_value = state_data.get(key)
                     if key is not None and value_to_contain is not None:
-                        if isinstance(actual_value, (list, str)):
-                            condition_met = value_to_contain in actual_value
-                            logger.debug(f"--- Debug: Condition type 'state_key_contains': key='{key}', expected_to_contain='{value_to_contain}', actual='{actual_value}', met={condition_met} ---")
+                        if isinstance(actual_value, list):
+                            # Fuzzy match for lists: check if any item in actual_value (list) contains value_to_contain (string)
+                            condition_met = any(str(value_to_contain).lower() in str(item).lower() for item in actual_value)
+                            logger.debug(f"--- Debug: Condition type 'state_key_contains' (list): key='{key}', expected_to_contain='{value_to_contain}', actual='{actual_value}', met={condition_met} (fuzzy) ---")
+                        elif isinstance(actual_value, str):
+                            # Fuzzy match for strings: check if actual_value (string) contains value_to_contain (string)
+                            condition_met = str(value_to_contain).lower() in str(actual_value).lower()
+                            logger.debug(f"--- Debug: Condition type 'state_key_contains' (string): key='{key}', expected_to_contain='{value_to_contain}', actual='{actual_value}', met={condition_met} (fuzzy) ---")
                         else:
                             logger.debug(f"--- Debug: Condition type 'state_key_contains': key='{key}' value is not list or string: {actual_value}. Condition not met. ---")
                     else:
@@ -460,13 +499,14 @@ def check_conclusion(game_state: GameState):
                         logger.debug(f"--- Debug: Condition type 'state_key_contains' invalid (missing key or value). ---")
 
                 elif condition_type == 'location_visited':
-                    location_name = condition.get('location')
-                    visited_locations = state_data.get('visited_locations', []) 
-                    if location_name is not None and isinstance(visited_locations, list):
-                        condition_met = location_name in visited_locations
-                        logger.debug(f"--- Debug: Condition type 'location_visited': location='{location_name}', visited={visited_locations}, met={condition_met} ---")
-                    elif not isinstance(visited_locations, list):
-                         logger.warning(f"Invalid location_visited check: 'visited_locations' in state_data is not a list.")
+                    location_name_condition = condition.get('location') # The location name from the condition
+                    visited_locations_state = state_data.get('visited_locations', []) # The list of visited locations from state
+                    if location_name_condition is not None and isinstance(visited_locations_state, list):
+                        # Fuzzy match: check if any visited location string contains the condition location string
+                        condition_met = any(str(location_name_condition).lower() in str(visited_loc).lower() for visited_loc in visited_locations_state)
+                        logger.debug(f"--- Debug: Condition type 'location_visited': condition_location='{location_name_condition}', visited_in_state='{visited_locations_state}', met={condition_met} (fuzzy) ---")
+                    elif not isinstance(visited_locations_state, list):
+                         logger.warning(f"Invalid location_visited check: 'visited_locations' in state_data is not a list: {visited_locations_state}")
                          logger.debug(f"--- Debug: Condition type 'location_visited' invalid ('visited_locations' not a list). ---")
                     else:
                         logger.warning(f"Invalid location_visited condition (missing location): {condition}")

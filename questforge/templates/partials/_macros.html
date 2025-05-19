@@ -1,0 +1,41 @@
+{% macro render_json_data(data, title) %}
+    {% if title %}
+        <strong>{{ title }}:</strong>
+    {% endif %}
+    {% if data is mapping %} {# Check if it's a dictionary-like object #}
+        <ul class="list-unstyled ms-3 mt-1">
+        {% for key, value in data.items() %}
+            <li>
+                <strong>{{ key | replace('_', ' ') | title }}:</strong>
+                {% if value is mapping or (value is iterable and value is not string and value is not number) %}
+                    {{ render_json_data(value, None) }} {# Recursive call for nested structures #}
+                {% elif value is boolean %}
+                    {{ 'Yes' if value else 'No' }}
+                {% else %}
+                    <span style="white-space: pre-wrap;">{{ value | default('N/A') }}</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% elif data is iterable and data is not string and data is not number %} {# Check if it's a list-like object #}
+        <ul class="list-unstyled ms-3 mt-1">
+        {% for item in data %}
+            <li>
+                {% if item is mapping or (item is iterable and item is not string and item is not number) %}
+                    {{ render_json_data(item, None) }} {# Recursive call for nested structures #}
+                {% elif item is boolean %}
+                    {{ 'Yes' if item else 'No' }}
+                {% else %}
+                    - <span style="white-space: pre-wrap;">{{ item | default('N/A') }}</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% elif data is boolean %}
+        {{ 'Yes' if data else 'No' }}
+    {% elif data %}
+        <span style="white-space: pre-wrap;">{{ data }}</span>
+    {% else %}
+        <p class="ms-3 mt-1">No data available or not applicable.</p>
+    {% endif %}
+{% endmacro %}

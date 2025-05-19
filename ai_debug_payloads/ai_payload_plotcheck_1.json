@@ -1,0 +1,143 @@
+Purpose: Check atomic plot completion
+
+--- AI Prompt ---
+[system]:
+You are an analytical AI assistant. Evaluate the game event based on the provided objective and context. Respond ONLY with the requested JSON object.
+
+[user]:
+You are an analytical AI assistant evaluating game events with high precision.
+Your task is to determine if a specific, single game objective (an atomic plot point) has been completed based on the provided information. Scrutinize all provided context.
+---
+OBJECTIVE TO EVALUATE:
+  Plot Point ID: pp_005
+  Description: "Ken successfully launches an escape pod before the Artimis crashes."
+---
+CRITERIA FOR COMPLETION (General Guidelines - adapt to the specific plot point description):
+  - **Location-based:** Is the player (or relevant entity) at the specified location AND has any other condition tied to that location in the plot point description been met? (e.g., 'Reach the Control Room and activate the console'). The `current_game_state_data.location` is key.
+  - **Item-based (Acquisition/Usage):** Has the player acquired the necessary item, or used it in the manner described? Check `current_game_state_data.inventory_changes` or other relevant state keys for item presence/usage.
+  - **NPC Interaction:** Has the specified interaction with an NPC occurred as described (e.g., 'Convince Guard Captain to help', 'Defeat the Goblin Sentry')? Look for changes in `current_game_state_data.npc_status` or narrative confirmation.
+  - **State Change:** Does the `current_game_state_data` reflect a specific condition mentioned in the plot point (e.g., 'Disable the security system' might be `current_game_state_data.security_system_status: "disabled"`)?
+  - **Action-based:** Did the player's action *directly and unambiguously* fulfill the plot point's requirement as described in the narrative and reflected in state changes?
+  - **Information Gathering:** Has the player obtained the specific piece of information mentioned in the plot point? This might be reflected in the narrative or a specific state variable.
+---
+CONTEXT FOR EVALUATION:
+  1. Player's Action This Turn: "Fasten seat harness and initiate launch sequence"
+  2. Narrative Result of Action (from Stage 1 AI): "Ken snaps the heavy, padded harness across his chest. The thick straps lock with a reassuring click, pinning him to the narrow acceleration couch inside Escape Pod 1. Sweat beads on his brow as he fumbles for the console—alarms outside are now a shrill, overlapping cacophony, the hull around him groaning from the gravitational stress of reentry. Ken's trembling fingers stab at the LAUNCH toggle. The pod's status lights flare green. With a muffled pneumatic thump, explosive bolts fire, and a violent lurch throws Ken back into his seat as the pod rips away from the failing Artimis. The viewport fills with spinning stars, then the looming grey surface of the moon. For a heartbeat, silence reigns inside the pod—only Ken's ragged breath and the distant hiss of life support remain, as the battered Artimis shrinks behind him in the void."
+     - Pay close attention to explicit statements in the narrative that confirm or deny the objective's conditions.
+  3. Full Current Game State Data (this reflects changes from the player's action and Stage 1 AI):
+     {
+  "location": "Escape Pod 1 (in flight, clear of Artimis)",
+  "historical_summary": [
+    "Ken awakens on the failing Bridge of the doomed Artimis spaceship with urgent warnings from a hologram of Captain Grant.",
+    "Ken discovers the Artemis is locked on a collision course with the moon and must reach Engineering to power the escape pods before impact.",
+    "Ken reaches the sealed Engineering Bay door but is blocked by an active security lock, preventing access to reroute power.",
+    "Ken recalls that the emergency override code is a six-digit palindrome, providing a crucial hint to unlock the sealed Engineering Bay door.",
+    "Ken successfully unlocks the Engineering Bay door with the palindromic code, gaining partial access and spotting Dr. Mira Voss inside.",
+    "Ken's attempt to reroute power to the escape pods is blocked by a locked reactor console requiring launch codes, with Dr. Mira Voss now suspiciously guarding the controls.",
+    "Dr. Voss reluctantly provides the launch codes 830038, enabling Ken to input them and attempt to reroute power for escape.",
+    "Entering the launch code unlocked the reactor console and restored power to the Escape Pod Bay, enabling escape systems.",
+    "Ken reaches the powered and unlocked Escape Pod Bay blast doors, ready for evacuation.",
+    "Ken enters the Escape Pod Bay and finds Pod 1 ready and available for use amid damaged and malfunctioning pods.",
+    "Ken has sealed himself inside Escape Pod 1, which is now launch-ready as the ship undergoes catastrophic descent.",
+    "Ken successfully launched Escape Pod 1 and is now restrained and alive, rapidly distancing from the failing Artimis."
+  ],
+  "completed_plot_points": [
+    {
+      "id": "pp_001",
+      "description": "Ken discovers the ship is on a collision course with the moon.",
+      "required": true
+    },
+    {
+      "id": "pp_002",
+      "description": "Ken bypasses the security lock to access the Engineering Bay.",
+      "required": true
+    },
+    {
+      "id": "pp_003",
+      "description": "Ken obtains the escape pod launch codes from Dr. Mira Voss.",
+      "required": true
+    },
+    {
+      "id": "pp_004",
+      "description": "Ken restores power to the Escape Pod Bay using the ship's reactor controls.",
+      "required": true
+    }
+  ],
+  "turns_since_plot_progress": 4,
+  "inventory": [],
+  "npc_states": {},
+  "world_objects": {},
+  "visited_locations": [
+    "Bridge",
+    "Bridge Corridor (outside Engineering Bay)",
+    "Engineering Bay (entrance)",
+    "Engineering Bay (near reactor console)",
+    "Escape Pod Bay (outside blast doors)",
+    "Escape Pod Bay (inside, in front of Pod 1)",
+    "Escape Pod 1 (sealed interior, launch-ready)",
+    "Escape Pod 1 (in flight, clear of Artimis)"
+  ],
+  "world_object_states": {
+    "escape_pods": {
+      "Pod 1": "LAUNCHED (Ken aboard, in flight, systems nominal)",
+      "Pod 2": "DAMAGED (offline, not usable)",
+      "Pod 3": "DAMAGED (offline, not usable)",
+      "Pod 4": "READY (hatch sealed, available)",
+      "Pod 5": "MALFUNCTION (hatch jammed, sparking, not usable)"
+    }
+  },
+  "inventory_changes": {},
+  "npc_status": {
+    "Dr. Mira Voss": {
+      "status": "wary",
+      "location": "Engineering Bay (near reactor console)",
+      "relationship_to_kkrug": "reluctantly cooperative"
+    }
+  },
+  "player_character_status": {
+    "kkrug": {
+      "condition": "restrained in harness, shaken but alive"
+    }
+  },
+  "environmental_conditions": {
+    "proximity_to_artimis": "increasing distance, Artimis rapidly receding",
+    "pod_status": "sealed, life support active, trajectory stable"
+  },
+  "escape_pod_launched": true
+}
+     - This is the **primary source of truth** for objective conditions. The narrative should align with state changes.
+---
+INSTRUCTION:
+Carefully consider the objective for plot point "pp_005" (Description: "Ken successfully launches an escape pod before the Artimis crashes.").
+Evaluate if this specific atomic plot point was **directly and unambiguously** completed **THIS TURN** based on the player's action, the narrative result, AND, most importantly, the **Full Current Game State Data**.
+Do not infer completion if the state data does not support it, even if the narrative is suggestive. The state data is paramount.
+---
+Your response MUST be a single, valid JSON object with NO additional text before or after it. The JSON object must contain exactly these three keys:
+1. `plot_point_id`: The string ID of the plot point you evaluated (which MUST be "{plot_point_id}").
+2. `completed`: A boolean value (`true` or `false`). Set to `true` ONLY if all conditions of the plot point description are met according to the provided context, especially the game state data.
+3. `confidence_score`: A floating-point number between 0.0 (no confidence) and 1.0 (absolute confidence) representing your certainty in the `completed` status. Be conservative with high confidence unless completion is undeniable from the state and narrative.
+---
+Example of a valid JSON response (DO NOT include this example in your actual response):
+{"plot_point_id": "pp_example_001", "completed": true, "confidence_score": 0.85}
+---
+Generate the JSON response now for plot point "{plot_point_id}":
+
+--- AI API JSON Payload ---
+{
+    "max_tokens": 256,
+    "messages": [
+        {
+            "content": "You are an analytical AI assistant. Evaluate the game event based on the provided objective and context. Respond ONLY with the requested JSON object.",
+            "role": "system"
+        },
+        {
+            "content": "You are an analytical AI assistant evaluating game events with high precision.\nYour task is to determine if a specific, single game objective (an atomic plot point) has been completed based on the provided information. Scrutinize all provided context.\n---\nOBJECTIVE TO EVALUATE:\n  Plot Point ID: pp_005\n  Description: \"Ken successfully launches an escape pod before the Artimis crashes.\"\n---\nCRITERIA FOR COMPLETION (General Guidelines - adapt to the specific plot point description):\n  - **Location-based:** Is the player (or relevant entity) at the specified location AND has any other condition tied to that location in the plot point description been met? (e.g., 'Reach the Control Room and activate the console'). The `current_game_state_data.location` is key.\n  - **Item-based (Acquisition/Usage):** Has the player acquired the necessary item, or used it in the manner described? Check `current_game_state_data.inventory_changes` or other relevant state keys for item presence/usage.\n  - **NPC Interaction:** Has the specified interaction with an NPC occurred as described (e.g., 'Convince Guard Captain to help', 'Defeat the Goblin Sentry')? Look for changes in `current_game_state_data.npc_status` or narrative confirmation.\n  - **State Change:** Does the `current_game_state_data` reflect a specific condition mentioned in the plot point (e.g., 'Disable the security system' might be `current_game_state_data.security_system_status: \"disabled\"`)?\n  - **Action-based:** Did the player's action *directly and unambiguously* fulfill the plot point's requirement as described in the narrative and reflected in state changes?\n  - **Information Gathering:** Has the player obtained the specific piece of information mentioned in the plot point? This might be reflected in the narrative or a specific state variable.\n---\nCONTEXT FOR EVALUATION:\n  1. Player's Action This Turn: \"Fasten seat harness and initiate launch sequence\"\n  2. Narrative Result of Action (from Stage 1 AI): \"Ken snaps the heavy, padded harness across his chest. The thick straps lock with a reassuring click, pinning him to the narrow acceleration couch inside Escape Pod 1. Sweat beads on his brow as he fumbles for the console—alarms outside are now a shrill, overlapping cacophony, the hull around him groaning from the gravitational stress of reentry. Ken's trembling fingers stab at the LAUNCH toggle. The pod's status lights flare green. With a muffled pneumatic thump, explosive bolts fire, and a violent lurch throws Ken back into his seat as the pod rips away from the failing Artimis. The viewport fills with spinning stars, then the looming grey surface of the moon. For a heartbeat, silence reigns inside the pod—only Ken's ragged breath and the distant hiss of life support remain, as the battered Artimis shrinks behind him in the void.\"\n     - Pay close attention to explicit statements in the narrative that confirm or deny the objective's conditions.\n  3. Full Current Game State Data (this reflects changes from the player's action and Stage 1 AI):\n     {\n  \"location\": \"Escape Pod 1 (in flight, clear of Artimis)\",\n  \"historical_summary\": [\n    \"Ken awakens on the failing Bridge of the doomed Artimis spaceship with urgent warnings from a hologram of Captain Grant.\",\n    \"Ken discovers the Artemis is locked on a collision course with the moon and must reach Engineering to power the escape pods before impact.\",\n    \"Ken reaches the sealed Engineering Bay door but is blocked by an active security lock, preventing access to reroute power.\",\n    \"Ken recalls that the emergency override code is a six-digit palindrome, providing a crucial hint to unlock the sealed Engineering Bay door.\",\n    \"Ken successfully unlocks the Engineering Bay door with the palindromic code, gaining partial access and spotting Dr. Mira Voss inside.\",\n    \"Ken's attempt to reroute power to the escape pods is blocked by a locked reactor console requiring launch codes, with Dr. Mira Voss now suspiciously guarding the controls.\",\n    \"Dr. Voss reluctantly provides the launch codes 830038, enabling Ken to input them and attempt to reroute power for escape.\",\n    \"Entering the launch code unlocked the reactor console and restored power to the Escape Pod Bay, enabling escape systems.\",\n    \"Ken reaches the powered and unlocked Escape Pod Bay blast doors, ready for evacuation.\",\n    \"Ken enters the Escape Pod Bay and finds Pod 1 ready and available for use amid damaged and malfunctioning pods.\",\n    \"Ken has sealed himself inside Escape Pod 1, which is now launch-ready as the ship undergoes catastrophic descent.\",\n    \"Ken successfully launched Escape Pod 1 and is now restrained and alive, rapidly distancing from the failing Artimis.\"\n  ],\n  \"completed_plot_points\": [\n    {\n      \"id\": \"pp_001\",\n      \"description\": \"Ken discovers the ship is on a collision course with the moon.\",\n      \"required\": true\n    },\n    {\n      \"id\": \"pp_002\",\n      \"description\": \"Ken bypasses the security lock to access the Engineering Bay.\",\n      \"required\": true\n    },\n    {\n      \"id\": \"pp_003\",\n      \"description\": \"Ken obtains the escape pod launch codes from Dr. Mira Voss.\",\n      \"required\": true\n    },\n    {\n      \"id\": \"pp_004\",\n      \"description\": \"Ken restores power to the Escape Pod Bay using the ship's reactor controls.\",\n      \"required\": true\n    }\n  ],\n  \"turns_since_plot_progress\": 4,\n  \"inventory\": [],\n  \"npc_states\": {},\n  \"world_objects\": {},\n  \"visited_locations\": [\n    \"Bridge\",\n    \"Bridge Corridor (outside Engineering Bay)\",\n    \"Engineering Bay (entrance)\",\n    \"Engineering Bay (near reactor console)\",\n    \"Escape Pod Bay (outside blast doors)\",\n    \"Escape Pod Bay (inside, in front of Pod 1)\",\n    \"Escape Pod 1 (sealed interior, launch-ready)\",\n    \"Escape Pod 1 (in flight, clear of Artimis)\"\n  ],\n  \"world_object_states\": {\n    \"escape_pods\": {\n      \"Pod 1\": \"LAUNCHED (Ken aboard, in flight, systems nominal)\",\n      \"Pod 2\": \"DAMAGED (offline, not usable)\",\n      \"Pod 3\": \"DAMAGED (offline, not usable)\",\n      \"Pod 4\": \"READY (hatch sealed, available)\",\n      \"Pod 5\": \"MALFUNCTION (hatch jammed, sparking, not usable)\"\n    }\n  },\n  \"inventory_changes\": {},\n  \"npc_status\": {\n    \"Dr. Mira Voss\": {\n      \"status\": \"wary\",\n      \"location\": \"Engineering Bay (near reactor console)\",\n      \"relationship_to_kkrug\": \"reluctantly cooperative\"\n    }\n  },\n  \"player_character_status\": {\n    \"kkrug\": {\n      \"condition\": \"restrained in harness, shaken but alive\"\n    }\n  },\n  \"environmental_conditions\": {\n    \"proximity_to_artimis\": \"increasing distance, Artimis rapidly receding\",\n    \"pod_status\": \"sealed, life support active, trajectory stable\"\n  },\n  \"escape_pod_launched\": true\n}\n     - This is the **primary source of truth** for objective conditions. The narrative should align with state changes.\n---\nINSTRUCTION:\nCarefully consider the objective for plot point \"pp_005\" (Description: \"Ken successfully launches an escape pod before the Artimis crashes.\").\nEvaluate if this specific atomic plot point was **directly and unambiguously** completed **THIS TURN** based on the player's action, the narrative result, AND, most importantly, the **Full Current Game State Data**.\nDo not infer completion if the state data does not support it, even if the narrative is suggestive. The state data is paramount.\n---\nYour response MUST be a single, valid JSON object with NO additional text before or after it. The JSON object must contain exactly these three keys:\n1. `plot_point_id`: The string ID of the plot point you evaluated (which MUST be \"{plot_point_id}\").\n2. `completed`: A boolean value (`true` or `false`). Set to `true` ONLY if all conditions of the plot point description are met according to the provided context, especially the game state data.\n3. `confidence_score`: A floating-point number between 0.0 (no confidence) and 1.0 (absolute confidence) representing your certainty in the `completed` status. Be conservative with high confidence unless completion is undeniable from the state and narrative.\n---\nExample of a valid JSON response (DO NOT include this example in your actual response):\n{\"plot_point_id\": \"pp_example_001\", \"completed\": true, \"confidence_score\": 0.85}\n---\nGenerate the JSON response now for plot point \"{plot_point_id}\":",
+            "role": "user"
+        }
+    ],
+    "model": "gpt-4.1-mini",
+    "response_format": {
+        "type": "json_object"
+    },
+    "temperature": 0.2
+}

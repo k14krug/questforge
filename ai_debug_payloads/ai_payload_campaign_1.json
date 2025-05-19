@@ -1,0 +1,74 @@
+Purpose: Generate campaign from template
+
+--- AI Prompt ---
+[system]:
+You are a creative game master designing the beginning of a text-based adventure game according to the user's template and inputs. Output ONLY the requested JSON object.
+
+[user]:
+You are a creative and detailed Game Master designing a text-based adventure game campaign.
+Your goal is to generate a complete campaign structure based on the provided template guidance, template overrides, and creator customizations.
+---
+TEMPLATE GUIDANCE:
+- Name: v5 template
+- Genre: Sci-Fi
+- Core Conflict/Goal: Escape the Artimis spaceship before it crashes into the moon
+- Description: Space Adventure
+- Desired Tone: Serious
+- Difficulty: Hard
+  - Interpretation: Generate a challenging scenario. Resources should be scarce or well-guarded. Adversaries should be cunning and obstacles significant. NPCs might be deceptive or unhelpful. Plot points may be obscure and require clever solutions. Consider fewer initial resources or more complex starting situations for the players.
+---
+PLAYER CHARACTERS:
+- Player (ID: 2) - Name: Ken: Human Male
+---
+YOUR TASK:
+Based primarily on the Template Guidance, Template Overrides, Creator Customizations, and Player Characters (if provided) above, generate a complete campaign structure. Be creative and fill in the details, ensuring the generated components align cohesively with all provided inputs.
+Generate the following components:
+1.  **campaign_objective:** A clear, concise overall objective for the players, directly derived from the `Core Conflict/Goal` field in the TEMPLATE GUIDANCE section above.
+2.  **generated_locations:** A JSON list of 3-5 key location objects. Inspired by `World Description` and `Scene Suggestions`, fitting `Theme` and `Desired Tone`, relevant to `campaign_objective`, and incorporating any locations from `Creator Customizations`. Each object: 'name', 'description'.
+    - Example: `[{"name": "Whispering Caves", "description": "A dark, damp cave system rumored to hold the artifact."}, ...]`
+3.  **generated_characters:** A JSON list of 2-3 key NPC objects relevant to plot and `campaign_objective`. Align with `Theme` and `Desired Tone`, incorporating NPCs from `Creator Customizations`. Each object: 'name', 'role', 'description'.
+    - Example: `[{"name": "Elara", "role": "Mysterious Guide", "description": "An old hermit who knows the mountain paths."}, ...]`
+4.  **generated_plot_points:** A JSON list outlining 3-5 major stages/events progressing towards `campaign_objective`. **CRITICAL: Each plot point MUST be ATOMIC**, representing a single, verifiable condition or achievement. Avoid compound objectives.
+    - Each item MUST be a JSON object with 'id' (string, unique, simple, e.g., "pp_001", "obj_reactor"), 'description' (string, clearly stating the single condition), and 'required' (boolean).
+    - Ensure 'id' values are unique. At least one plot point should be 'required: true'.
+    - **Atomicity Examples:**
+        - **GOOD (Atomic):** `{"id": "pp_find_key", "description": "Player finds the rusty cell key.", "required": true}`
+        - **GOOD (Atomic):** `{"id": "pp_unlock_door", "description": "Player unlocks the cell door using the rusty key.", "required": true}` (Depends on previous)
+        - **BAD (Compound):** `{"id": "pp_key_and_door", "description": "Player finds the key and unlocks the door.", "required": true}` (This should be two separate plot points)
+        - **GOOD (Atomic):** `{"id": "pp_talk_guard", "description": "Player convinces the guard to share information about the escape route.", "required": true}`
+        - **BAD (Vague/Multiple Outcomes):** `{"id": "pp_interact_guard", "description": "Player interacts with the guard.", "required": true}` (What is the specific, verifiable outcome?)
+    - Consider `Player Character Guidance` and `PLAYER CHARACTERS` details. Incorporate plot hooks from `Creator Customizations`.
+    - Example List: `[{"id": "pp_001", "description": "Players learn about the stolen artifact from the village elder.", "required": true}, {"id": "pp_002", "description": "Players find a map fragment in the abandoned shack.", "required": false}, {"id": "pp_003", "description": "Players reach the entrance of the Whispering Caves.", "required": true}, ...]`
+5.  **initial_scene:** A JSON object describing the start. 'description' sets the scene vividly (using `Theme`, `Desired Tone`, and incorporating the provided `PLAYER CHARACTERS` details, **referring to players by their provided names**). 'state' MUST include 'location'. 'goals' are 1-3 immediate actions. Align with relevant `Creator Customizations` (e.g., starting location).
+    - Example: `{"description": "Torbin, the gruff warrior, and Lyra, the nimble rogue, awaken in a damp cellar...", "state": {"location": "Tavern Cellar"}, "goals": ["Look for a way out", "Search the barrels", "Listen at the door"]}`
+6.  **campaign_summary (Optional):** Brief overall summary.
+7.  **conclusion_conditions:** JSON *list* of condition objects that MUST ALL be met. Each object: 'type' and parameters. Supported types: `state_key_equals`, `state_key_exists`, `state_key_contains`, `location_visited`.
+    - Example: `[{"type": "state_key_equals", "key": "boss_defeated", "value": true}, {"type": "location_visited", "location": "Throne Room"}]`
+8.  **possible_branches (Optional):** JSON object outlining 1-2 potential major narrative branches.
+9.  **special_rules (Optional):** JSON object or string outlining special rules, incorporating rules from `Creator Customizations`.
+10. **exclusions (Optional):** JSON list of strings outlining exclusions, incorporating exclusions from `Creator Customizations`.
+---
+OUTPUT FORMAT:
+Provide the entire response as a single, valid JSON object containing the keys corresponding to the numbered items above (e.g., `campaign_objective`, `generated_locations`, etc.). Ensure all nested values are valid JSON.
+---
+Generate the complete campaign structure JSON now:
+
+--- AI API JSON Payload ---
+{
+    "max_tokens": 2048,
+    "messages": [
+        {
+            "content": "You are a creative game master designing the beginning of a text-based adventure game according to the user's template and inputs. Output ONLY the requested JSON object.",
+            "role": "system"
+        },
+        {
+            "content": "You are a creative and detailed Game Master designing a text-based adventure game campaign.\nYour goal is to generate a complete campaign structure based on the provided template guidance, template overrides, and creator customizations.\n---\nTEMPLATE GUIDANCE:\n- Name: v5 template\n- Genre: Sci-Fi\n- Core Conflict/Goal: Escape the Artimis spaceship before it crashes into the moon\n- Description: Space Adventure\n- Desired Tone: Serious\n- Difficulty: Hard\n  - Interpretation: Generate a challenging scenario. Resources should be scarce or well-guarded. Adversaries should be cunning and obstacles significant. NPCs might be deceptive or unhelpful. Plot points may be obscure and require clever solutions. Consider fewer initial resources or more complex starting situations for the players.\n---\nPLAYER CHARACTERS:\n- Player (ID: 2) - Name: Ken: Human Male\n---\nYOUR TASK:\nBased primarily on the Template Guidance, Template Overrides, Creator Customizations, and Player Characters (if provided) above, generate a complete campaign structure. Be creative and fill in the details, ensuring the generated components align cohesively with all provided inputs.\nGenerate the following components:\n1.  **campaign_objective:** A clear, concise overall objective for the players, directly derived from the `Core Conflict/Goal` field in the TEMPLATE GUIDANCE section above.\n2.  **generated_locations:** A JSON list of 3-5 key location objects. Inspired by `World Description` and `Scene Suggestions`, fitting `Theme` and `Desired Tone`, relevant to `campaign_objective`, and incorporating any locations from `Creator Customizations`. Each object: 'name', 'description'.\n    - Example: `[{\"name\": \"Whispering Caves\", \"description\": \"A dark, damp cave system rumored to hold the artifact.\"}, ...]`\n3.  **generated_characters:** A JSON list of 2-3 key NPC objects relevant to plot and `campaign_objective`. Align with `Theme` and `Desired Tone`, incorporating NPCs from `Creator Customizations`. Each object: 'name', 'role', 'description'.\n    - Example: `[{\"name\": \"Elara\", \"role\": \"Mysterious Guide\", \"description\": \"An old hermit who knows the mountain paths.\"}, ...]`\n4.  **generated_plot_points:** A JSON list outlining 3-5 major stages/events progressing towards `campaign_objective`. **CRITICAL: Each plot point MUST be ATOMIC**, representing a single, verifiable condition or achievement. Avoid compound objectives.\n    - Each item MUST be a JSON object with 'id' (string, unique, simple, e.g., \"pp_001\", \"obj_reactor\"), 'description' (string, clearly stating the single condition), and 'required' (boolean).\n    - Ensure 'id' values are unique. At least one plot point should be 'required: true'.\n    - **Atomicity Examples:**\n        - **GOOD (Atomic):** `{\"id\": \"pp_find_key\", \"description\": \"Player finds the rusty cell key.\", \"required\": true}`\n        - **GOOD (Atomic):** `{\"id\": \"pp_unlock_door\", \"description\": \"Player unlocks the cell door using the rusty key.\", \"required\": true}` (Depends on previous)\n        - **BAD (Compound):** `{\"id\": \"pp_key_and_door\", \"description\": \"Player finds the key and unlocks the door.\", \"required\": true}` (This should be two separate plot points)\n        - **GOOD (Atomic):** `{\"id\": \"pp_talk_guard\", \"description\": \"Player convinces the guard to share information about the escape route.\", \"required\": true}`\n        - **BAD (Vague/Multiple Outcomes):** `{\"id\": \"pp_interact_guard\", \"description\": \"Player interacts with the guard.\", \"required\": true}` (What is the specific, verifiable outcome?)\n    - Consider `Player Character Guidance` and `PLAYER CHARACTERS` details. Incorporate plot hooks from `Creator Customizations`.\n    - Example List: `[{\"id\": \"pp_001\", \"description\": \"Players learn about the stolen artifact from the village elder.\", \"required\": true}, {\"id\": \"pp_002\", \"description\": \"Players find a map fragment in the abandoned shack.\", \"required\": false}, {\"id\": \"pp_003\", \"description\": \"Players reach the entrance of the Whispering Caves.\", \"required\": true}, ...]`\n5.  **initial_scene:** A JSON object describing the start. 'description' sets the scene vividly (using `Theme`, `Desired Tone`, and incorporating the provided `PLAYER CHARACTERS` details, **referring to players by their provided names**). 'state' MUST include 'location'. 'goals' are 1-3 immediate actions. Align with relevant `Creator Customizations` (e.g., starting location).\n    - Example: `{\"description\": \"Torbin, the gruff warrior, and Lyra, the nimble rogue, awaken in a damp cellar...\", \"state\": {\"location\": \"Tavern Cellar\"}, \"goals\": [\"Look for a way out\", \"Search the barrels\", \"Listen at the door\"]}`\n6.  **campaign_summary (Optional):** Brief overall summary.\n7.  **conclusion_conditions:** JSON *list* of condition objects that MUST ALL be met. Each object: 'type' and parameters. Supported types: `state_key_equals`, `state_key_exists`, `state_key_contains`, `location_visited`.\n    - Example: `[{\"type\": \"state_key_equals\", \"key\": \"boss_defeated\", \"value\": true}, {\"type\": \"location_visited\", \"location\": \"Throne Room\"}]`\n8.  **possible_branches (Optional):** JSON object outlining 1-2 potential major narrative branches.\n9.  **special_rules (Optional):** JSON object or string outlining special rules, incorporating rules from `Creator Customizations`.\n10. **exclusions (Optional):** JSON list of strings outlining exclusions, incorporating exclusions from `Creator Customizations`.\n---\nOUTPUT FORMAT:\nProvide the entire response as a single, valid JSON object containing the keys corresponding to the numbered items above (e.g., `campaign_objective`, `generated_locations`, etc.). Ensure all nested values are valid JSON.\n---\nGenerate the complete campaign structure JSON now:",
+            "role": "user"
+        }
+    ],
+    "model": "gpt-4.1",
+    "response_format": {
+        "type": "json_object"
+    },
+    "temperature": 0.7
+}

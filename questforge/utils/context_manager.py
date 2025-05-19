@@ -142,19 +142,17 @@ def build_context(game_state: GameState, next_required_plot_point: Optional[str]
     if game_state.completed_plot_points:
          context_lines.append(f"Completed Plot Points: {json.dumps(game_state.completed_plot_points)}")
 
+    # X. Historical Summary (New Section)
+    # current_state_dict is game_state.state_data
+    historical_summary = current_state_dict.get('historical_summary')
+    if historical_summary and isinstance(historical_summary, list) and len(historical_summary) > 0:
+        context_lines.append("\n--- Game History Summary ---") # Renamed section header as per plan
+        for i, summary_entry in enumerate(historical_summary):
+            context_lines.append(f"{i+1}. {str(summary_entry)}") # Numbered list
+        # No explicit "---" end marker here, as the next section will start with its own "---"
+    # else: No historical summary or it's empty, so we add nothing.
 
-    # 3. Recent History (Game Log)
-    context_lines.append("\n--- Recent Events (Game Log) ---")
-    # Use game_state.game_log for recent history
-    if game_state.game_log:
-        # Show last few log entries (e.g., last 5)
-        num_log_entries = 5 
-        recent_log = game_state.game_log[-num_log_entries:]
-        for entry in recent_log:
-             # Ensure entry is a string before appending
-             context_lines.append(f"- {str(entry)}") 
-    else:
-        context_lines.append("No recent events available.")
+    # Section for Recent Game Log has been removed as per plan Task 4.1
 
     # 4. Current Objective/Focus
     context_lines.append("\n--- Current Objective/Focus ---")

@@ -91,7 +91,7 @@ def play(game_id): # Renamed from play_game to play for consistency
     total_cost = total_cost_query if total_cost_query is not None else Decimal('0.0')
 
     # Get the AI model from config
-    ai_model = current_app.config.get('OPENAI_MODEL', 'Not Configured')
+    ai_model = current_app.config.get('OPENAI_MODEL_LOGIC', 'Not Configured') # Changed to OPENAI_MODEL_LOGIC
 
     # Fetch player details (username, character name, and description)
     player_associations = GamePlayer.query.filter_by(game_id=game_id).options(db.joinedload(GamePlayer.user)).all()
@@ -187,6 +187,30 @@ def delete_game(game_id):
         flash("An error occurred while trying to delete the game.", "danger")
 
     return redirect(url_for('game.list_games'))
+
+
+@game_bp.route('/<int:game_id>/details', methods=['GET'])
+@login_required
+def game_details(game_id):
+    """Displays the details of a specific game."""
+    game = Game.query.get_or_404(game_id)
+    template = game.template  # Access associated Template
+    campaign = game.campaign  # Access associated Campaign (can be None)
+
+    players_details = []
+    if game.player_associations:  # Check if player_associations is not None
+        for assoc in game.player_associations:
+            players_details.append({
+                'username': assoc.user.username if assoc.user else 'Unknown User',
+                'character_name': assoc.character_name,
+                'character_description': assoc.character_description
+            })
+
+    return render_template('game/details.html',
+                           game=game,
+                           template_data=template,
+                           campaign_data=campaign,
+                           players_details=players_details)
 
 # ==============================================================================
 # Game State/Action API Endpoints (`/game/api/<id>/...`)

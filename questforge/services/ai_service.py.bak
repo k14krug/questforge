@@ -1,19 +1,19 @@
 import os
-import json
-import re
+import json # Add json import
+import re # For regex pattern matching in plot point validation
 from openai import OpenAI
 from flask import current_app
 from questforge.models.game import Game
 from questforge.models.game_state import GameState
 from questforge.models.template import Template
-from questforge.models.campaign import Campaign
-from questforge.utils.prompt_builder import build_campaign_prompt, build_response_prompt, build_character_name_prompt, build_hint_prompt, build_plot_completion_check_prompt, build_summary_prompt # Added build_summary_prompt
+from questforge.models.campaign import Campaign # Import Campaign
+from questforge.utils.prompt_builder import build_campaign_prompt, build_response_prompt, build_character_name_prompt, build_hint_prompt, build_plot_completion_check_prompt
 from questforge.utils.context_manager import build_context
 from typing import Dict, Optional, Tuple, Any, List
 import requests
-from decimal import Decimal
-from ..models.api_usage_log import ApiUsageLog
-from ..extensions import db
+from decimal import Decimal 
+from ..models.api_usage_log import ApiUsageLog 
+from ..extensions import db 
 
 class AIService:
     """Service for handling AI interactions, including campaign generation and responses."""
@@ -23,89 +23,102 @@ class AIService:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             try:
-                app = current_app._get_current_object()
-                app.logger.warning("OPENAI_API_KEY environment variable not set. AI service may not function.")
+                 app = current_app._get_current_object()
+                 app.logger.warning("OPENAI_API_KEY environment variable not set. AI service may not function.")
             except RuntimeError:
-                print("Warning: OPENAI_API_KEY not set and running outside Flask app context.")
+                 print("Warning: OPENAI_API_KEY not set and running outside Flask app context.")
             self.client = None
         else:
             self.client = OpenAI(api_key=api_key)
             self.temperature = float(os.getenv("OPENAI_TEMPERATURE") or 0.7)
             self.max_tokens = int(os.getenv("OPENAI_MAX_TOKENS") or 1024)
-
+    
     def _check_plot_point_atomicity(self, plot_point_description: str) -> Tuple[bool, List[str]]:
+        """
+        Checks if a plot point description is likely to be atomic.
+        
+        Args:
+            plot_point_description: The description of the plot point to check.
+            
+        Returns:
+            A tuple containing:
+            - is_atomic (bool): True if the plot point appears to be atomic, False otherwise.
+            - issues (List[str]): A list of identified issues if not atomic.
+        """
         issues = []
-
+        
+        # 1. Check for conjunctions that often indicate compound actions
         conjunction_patterns = [
-            r'\\band\\b', r'\\bthen\\b', r'\\bwhile\\b', r'\\bafter\\b', r'\\bbefore\\b',
-            r'\\bas well as\\b', r'\\balong with\\b', r'\\bin addition to\\b'
+            r'\band\b', r'\bthen\b', r'\bwhile\b', r'\bafter\b', r'\bbefore\b',
+            r'\bas well as\b', r'\balong with\b', r'\bin addition to\b'
         ]
-
+        
         for pattern in conjunction_patterns:
             if re.search(pattern, plot_point_description.lower()):
                 issues.append(f"Contains conjunction '{re.search(pattern, plot_point_description.lower()).group(0)}' that may indicate multiple actions")
-
+        
+        # 2. Check for multiple verbs that might indicate distinct actions
+        # This is a simplified approach - a more robust solution would use NLP parsing
         action_verb_pairs = [
-            (r'\\bfind\\b.*\\buse\\b', "contains 'find' and 'use' verbs"),
-            (r'\\bgo\\b.*\\btalk\\b', "contains 'go' and 'talk' verbs"),
-            (r'\\bcollect\\b.*\\bbring\\b', "contains 'collect' and 'bring' verbs"),
-            (r'\\bsolve\\b.*\\bobtain\\b', "contains 'solve' and 'obtain' verbs"),
-            (r'\\benter\\b.*\\bactivate\\b', "contains 'enter' and 'activate' verbs"),
-            (r'\\bfind\\b.*\\bdeliver\\b', "contains 'find' and 'deliver' verbs"),
-            (r'\\brescue\\b.*\\bescape\\b', "contains 'rescue' and 'escape' verbs")
+            (r'\bfind\b.*\buse\b', "contains 'find' and 'use' verbs"),
+            (r'\bgo\b.*\btalk\b', "contains 'go' and 'talk' verbs"),
+            (r'\bcollect\b.*\bbring\b', "contains 'collect' and 'bring' verbs"),
+            (r'\bsolve\b.*\bobtain\b', "contains 'solve' and 'obtain' verbs"),
+            (r'\benter\b.*\bactivate\b', "contains 'enter' and 'activate' verbs"),
+            (r'\bfind\b.*\bdeliver\b', "contains 'find' and 'deliver' verbs"),
+            (r'\brescue\b.*\bescape\b', "contains 'rescue' and 'escape' verbs")
         ]
-
+        
         for pattern, message in action_verb_pairs:
             if re.search(pattern, plot_point_description.lower()):
                 issues.append(f"Multiple action verbs: {message}")
-
+        
+        # 3. Check for phrases that often indicate multiple steps
         compound_phrases = [
-            r'\\bin order to\\b', r'\\bso that\\b', r'\\bto enable\\b', r'\\bwhich allows\\b',
-            r'\\bto unlock\\b', r'\\bto access\\b', r'\\bto proceed\\b'
+            r'\bin order to\b', r'\bso that\b', r'\bto enable\b', r'\bwhich allows\b',
+            r'\bto unlock\b', r'\bto access\b', r'\bto proceed\b'
         ]
-
+        
         for pattern in compound_phrases:
             if re.search(pattern, plot_point_description.lower()):
                 issues.append(f"Contains phrase '{re.search(pattern, plot_point_description.lower()).group(0)}' that may indicate a multi-step objective")
-
-        location_pattern = r'from\\s+\\w+\\s+to\\s+\\w+'
+        
+        # 4. Check for multiple locations
+        location_pattern = r'from\s+\w+\s+to\s+\w+'
         if re.search(location_pattern, plot_point_description.lower()):
             issues.append("Contains multiple locations (from X to Y pattern)")
-
+        
+        # 5. Check for list indicators
         list_indicators = [',', ';', 'both', 'all of', 'any of', 'either']
         for indicator in list_indicators:
             if indicator in plot_point_description.lower():
                 issues.append(f"Contains potential list indicator '{indicator}'")
-
+        
         return len(issues) == 0, issues
 
     def generate_campaign(self, template: Template, template_overrides: Optional[Dict[str, Any]] = None, creator_customizations: Optional[Dict[str, Any]] = None, player_details: Optional[Dict[str, Dict[str, str]]] = None) -> Dict[str, Any]:
-        from questforge.utils.ai_debug_logger import log_ai_debug_payload
         app = current_app._get_current_object()
         if not self.client:
             app.logger.error("OpenAI client not initialized. Cannot generate campaign.")
             return {"error": "AI service not available."}
-        prompt = build_campaign_prompt(template, template_overrides, creator_customizations, player_details)
-        app.logger.debug(f"--- AI Service: Generating campaign with prompt ---\\n{prompt}\\n-------------------------------------------------")
+        prompt = build_campaign_prompt(template, template_overrides, creator_customizations, player_details) 
+        app.logger.debug(f"--- AI Service: Generating campaign with prompt ---\n{prompt}\n-------------------------------------------------")
         generated_content = ""
         try:
-            # Use OPENAI_MODEL_LOGIC for critical logic-heavy calls
-            model_to_use = app.config.get('OPENAI_MODEL_LOGIC', 'gpt-4o')
-            app.logger.debug(f"Using OPENAI_MODEL_LOGIC for generate_campaign: {model_to_use}")
-            payload = {
-                "model": model_to_use,
-                "messages": [
+            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-4o') 
+            app.logger.debug(f"Using model from config for generate_campaign: {model_to_use}")
+            response = self.client.chat.completions.create(
+                model=model_to_use, 
+                messages=[
                     {"role": "system", "content": "You are a creative game master designing the beginning of a text-based adventure game according to the user's template and inputs. Output ONLY the requested JSON object."},
                     {"role": "user", "content": prompt}
                 ],
-                "response_format": {"type": "json_object"},
-                "temperature": self.temperature,
-                "max_tokens": 2048
-            }
-            log_ai_debug_payload("Generate campaign from template", payload, "campaign", 1)
-            response = self.client.chat.completions.create(**payload)
+                response_format={ "type": "json_object" }, 
+                temperature=self.temperature,
+                max_tokens=2048 # Increased max_tokens for campaign generation
+            )
             generated_content = response.choices[0].message.content
-            app.logger.debug(f"--- AI Service: Received raw response ---\\n{generated_content}\\n------------------------------------------")
+            app.logger.debug(f"--- AI Service: Received raw response ---\n{generated_content}\n------------------------------------------")
             parsed_data = json.loads(generated_content)
             required_top_level_keys = ['campaign_objective', 'generated_locations', 'generated_characters', 'generated_plot_points', 'initial_scene']
             missing_keys = [k for k in required_top_level_keys if k not in parsed_data]
@@ -119,17 +132,17 @@ class AIService:
                 app.logger.debug(f"Received initial_scene: {initial_scene}")
                 return {"error": "Invalid 'initial_scene' structure in AI response."}
             if not isinstance(initial_scene.get('state'), dict):
-                app.logger.error("AI campaign response 'initial_scene.state' is not a dictionary.")
-                app.logger.debug(f"Received initial_scene state: {initial_scene.get('state')}")
-                return {"error": "Invalid 'initial_scene.state' structure in AI response."}
+                 app.logger.error("AI campaign response 'initial_scene.state' is not a dictionary.")
+                 app.logger.debug(f"Received initial_scene state: {initial_scene.get('state')}")
+                 return {"error": "Invalid 'initial_scene.state' structure in AI response."}
             if not isinstance(initial_scene.get('goals'), list):
-                app.logger.error("AI campaign response 'initial_scene.goals' is not a list.")
-                app.logger.debug(f"Received initial_scene goals: {initial_scene.get('goals')}")
-                return {"error": "Invalid 'initial_scene.goals' structure in AI response."}
+                 app.logger.error("AI campaign response 'initial_scene.goals' is not a list.")
+                 app.logger.debug(f"Received initial_scene goals: {initial_scene.get('goals')}")
+                 return {"error": "Invalid 'initial_scene.goals' structure in AI response."}
             if not isinstance(parsed_data.get('generated_locations'), list):
-                app.logger.warning("AI campaign response 'generated_locations' is not a list.")
+                 app.logger.warning("AI campaign response 'generated_locations' is not a list.")
             if not isinstance(parsed_data.get('generated_characters'), list):
-                app.logger.warning("AI campaign response 'generated_characters' is not a list.")
+                 app.logger.warning("AI campaign response 'generated_characters' is not a list.")
             plot_points = parsed_data.get('generated_plot_points')
             if not isinstance(plot_points, list):
                 app.logger.error("AI campaign response 'generated_plot_points' is not a list.")
@@ -153,14 +166,15 @@ class AIService:
                 if not isinstance(pp.get('required'), bool):
                     app.logger.error(f"AI campaign response 'generated_plot_points' item {i} 'required' is not a boolean.")
                     return {"error": f"Invalid 'generated_plot_points' item {i} 'required' type."}
-
+            
+            # Validate plot point atomicity
             app.logger.info("Validating plot point atomicity...")
             non_atomic_plot_points = []
             for i, pp in enumerate(plot_points):
                 plot_id = pp.get('id')
                 description = pp.get('description')
                 is_atomic, issues = self._check_plot_point_atomicity(description)
-
+                
                 if not is_atomic:
                     non_atomic_plot_points.append({
                         'id': plot_id,
@@ -170,12 +184,14 @@ class AIService:
                     issue_str = "; ".join(issues)
                     app.logger.warning(f"Plot point '{plot_id}' may not be atomic: {issue_str}")
                     app.logger.warning(f"  Description: '{description}'")
-
+            
             if non_atomic_plot_points:
                 app.logger.warning(f"Found {len(non_atomic_plot_points)} potentially non-atomic plot points out of {len(plot_points)} total.")
+                # In a future enhancement, we could re-prompt the AI to break these down
+                # For now, we'll just log the warnings and proceed
             else:
                 app.logger.info("All plot points appear to be atomic.")
-
+            
             app.logger.info("--- AI Service: Parsed campaign data successfully (new structure) ---")
             usage_data = response.usage if response.usage else None
             model_used = response.model
@@ -189,57 +205,53 @@ class AIService:
             return {"error": f"Failed to call AI service: {e}"}
 
     def generate_initial_scene(self, game: Game) -> dict | None:
-        from questforge.utils.ai_debug_logger import log_ai_debug_payload
         app = current_app._get_current_object()
         if not self.client:
             app.logger.error("OpenAI client not initialized. Cannot generate initial scene.")
             return None
         if not game.campaign:
-            app.logger.error(f"Game {game.id} has no associated campaign loaded. Cannot generate initial scene.")
-            return None
+             app.logger.error(f"Game {game.id} has no associated campaign loaded. Cannot generate initial scene.")
+             return None
         game_state = GameState.query.filter_by(game_id=game.id).first()
         if not game_state:
-            app.logger.error(f"Cannot generate initial scene for game {game.id}: Corresponding GameState not found.")
-            return None
+             app.logger.error(f"Cannot generate initial scene for game {game.id}: Corresponding GameState not found.")
+             return None
         campaign_data_dict = game.campaign.campaign_data or {}
         campaign_desc = campaign_data_dict.get('description', "A new adventure.")
         initial_state_dict = game_state.state_data or {}
         initial_state_desc = json.dumps(initial_state_dict, indent=2)
         prompt = (
-            f"You are a game master starting a text adventure based on the following campaign:\\n"
-            f"Description: {campaign_desc}\\n"
-            f"Initial State: {initial_state_desc}\\n\\n"
+            f"You are a game master starting a text adventure based on the following campaign:\n"
+            f"Description: {campaign_desc}\n"
+            f"Initial State: {initial_state_desc}\n\n"
             f"Generate the very first scene description (narrative) and the initial set of available actions for the player(s). "
             f"Output ONLY a JSON object with the keys 'narrative' (string, the opening scene description) and 'actions' (list of strings, the first available actions)."
         )
-        app.logger.debug(f"--- AI Service: Generating initial scene with prompt ---\\n{prompt}\\n-------------------------------------------------")
+        app.logger.debug(f"--- AI Service: Generating initial scene with prompt ---\n{prompt}\n-------------------------------------------------")
         generated_content = ""
         try:
-            # Use OPENAI_MODEL_LOGIC for critical logic-heavy calls
-            model_to_use = app.config.get('OPENAI_MODEL_LOGIC', 'gpt-4o')
-            app.logger.debug(f"Using OPENAI_MODEL_LOGIC for generate_initial_scene: {model_to_use}")
+            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+            app.logger.debug(f"Using model from config for generate_initial_scene: {model_to_use}")
             app.logger.info(f"Attempting OpenAI API call for initial scene (Game {game.id})...")
-            payload = {
-                "model": model_to_use,
-                "messages": [{"role": "user", "content": prompt}],
-                "response_format": {"type": "json_object"},
-                "temperature": self.temperature,
-                "max_tokens": self.max_tokens
-            }
-            log_ai_debug_payload("Generate initial scene", payload, "initial_scene", 1)
-            response = self.client.chat.completions.create(**payload)
+            response = self.client.chat.completions.create(
+                model=model_to_use, 
+                messages=[{"role": "user", "content": prompt}],
+                response_format={ "type": "json_object" },
+                temperature=self.temperature, 
+                max_tokens=self.max_tokens
+            )
             app.logger.info(f"OpenAI API call successful for initial scene (Game {game.id}).")
             generated_content = response.choices[0].message.content
-            app.logger.debug(f"--- AI Service: Received raw initial scene response ---\\n{generated_content}\\n------------------------------------------")
-            parsed_data = json.loads(generated_content)
+            app.logger.debug(f"--- AI Service: Received raw initial scene response ---\n{generated_content}\n------------------------------------------")
             app.logger.info(f"Attempting to parse JSON for initial scene (Game {game.id})...")
+            parsed_data = json.loads(generated_content)
             app.logger.info(f"JSON parsing successful for initial scene (Game {game.id}).")
             if not all(k in parsed_data for k in ['narrative', 'actions']):
-                app.logger.error("Initial scene response missing required keys ('narrative', 'actions').")
-                return None
+                 app.logger.error("Initial scene response missing required keys ('narrative', 'actions').")
+                 return None
             if not isinstance(parsed_data.get('narrative'), str) or not isinstance(parsed_data.get('actions'), list):
-                app.logger.error("Initial scene response has incorrect types for 'narrative' or 'actions'.")
-                return None
+                 app.logger.error("Initial scene response has incorrect types for 'narrative' or 'actions'.")
+                 return None
             app.logger.info(f"--- AI Service: Parsed initial scene successfully for game {game.id} ---")
             return {'narrative': parsed_data['narrative'], 'actions': parsed_data['actions']}
         except json.JSONDecodeError as e:
@@ -250,8 +262,7 @@ class AIService:
             app.logger.error(f"Error generating initial scene: {e}", exc_info=True)
             return None
 
-    def get_response(self, game_state: GameState, player_action: str, is_stuck: bool = False, next_required_plot_point: Optional[str] = None, current_difficulty: Optional[str] = None) -> dict | None:
-        from questforge.utils.ai_debug_logger import log_ai_debug_payload
+    def get_response(self, game_state: GameState, player_action: str, is_stuck: bool = False, next_required_plot_point: Optional[str] = None) -> dict | None:
         app = current_app._get_current_object()
         if not self.client:
             app.logger.error("OpenAI client not initialized. Cannot get response.")
@@ -260,34 +271,33 @@ class AIService:
         if context.startswith("Error:"):
             app.logger.error(f"Error building context: {context}")
             return None
-        app.logger.debug(f"--- AI Service: Context built for get_response ---\\n{context}\\n-------------------------------------------------")
-        prompt = build_response_prompt(context, player_action, is_stuck, next_required_plot_point, current_difficulty)
-        app.logger.debug(f"--- AI Service: Getting response with prompt ---\\n{prompt}\\n---------------------------------------------")
+        app.logger.debug(f"--- AI Service: Context built for get_response ---\n{context}\n-------------------------------------------------")
+        prompt = build_response_prompt(context, player_action, is_stuck, next_required_plot_point)
+        app.logger.debug(f"--- AI Service: Getting response with prompt ---\n{prompt}\n---------------------------------------------")
         generated_content = ""
         try:
-            # Use OPENAI_MODEL_LOGIC for critical logic-heavy calls
-            model_to_use = app.config.get('OPENAI_MODEL_LOGIC', 'gpt-4o')
-            app.logger.debug(f"Using OPENAI_MODEL_LOGIC for get_response: {model_to_use}")
-            payload = {
-                "model": model_to_use,
-                "messages": [{"role": "user", "content": prompt}],
-                "response_format": {"type": "json_object"},
-                "temperature": self.temperature,
-                "max_tokens": self.max_tokens
-            }
-            log_ai_debug_payload("Get AI response for player action", payload, "response", 1)
-            response = self.client.chat.completions.create(**payload)
+            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+            app.logger.debug(f"Using model from config for get_response: {model_to_use}")
+            response = self.client.chat.completions.create(
+                model=model_to_use, 
+                messages=[{"role": "user", "content": prompt}],
+                response_format={ "type": "json_object" }, 
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
+            )
             generated_content = response.choices[0].message.content
-            app.logger.debug(f"--- AI Service: Received raw response ---\\n{generated_content}\\n------------------------------------------")
+            app.logger.debug(f"--- AI Service: Received raw response ---\n{generated_content}\n------------------------------------------")
             parsed_data = json.loads(generated_content)
 
+            # Validate core structure of the AI's response for Stage 1
             if not isinstance(parsed_data.get('content'), str):
                 app.logger.error("AI Stage 1 response 'content' (narrative) is missing or not a string.")
-                return None
+                return None # Or an error structure
             if not isinstance(parsed_data.get('available_actions'), list):
-                app.logger.error("AI Stage 1 response 'available_actions' is missing or not a list.")
-                return None
+                 app.logger.error("AI Stage 1 response 'available_actions' is missing or not a list.")
+                 return None
 
+            # Enhanced state_changes validation and fallback logic
             ai_state_changes = parsed_data.get('state_changes', {})
             if not isinstance(ai_state_changes, dict):
                 app.logger.error("AI Stage 1 response 'state_changes' is not a dictionary. Using empty state changes.")
@@ -296,16 +306,18 @@ class AIService:
             final_state_changes = {}
             previous_state_data = game_state.state_data or {}
 
+            # 1. Location
             new_location = ai_state_changes.get('location')
             if isinstance(new_location, str) and new_location.strip():
                 final_state_changes['location'] = new_location.strip()
             else:
-                if 'location' in ai_state_changes:
+                if 'location' in ai_state_changes: # AI provided it, but it's invalid
                     app.logger.warning(f"AI provided invalid location: '{new_location}'. Falling back to previous location.")
-                else:
+                else: # AI did not provide it
                     app.logger.warning("AI did not provide 'location' in state_changes. Falling back to previous location.")
                 final_state_changes['location'] = previous_state_data.get('location', "Unknown Location")
 
+            # 2. Inventory
             new_inventory = ai_state_changes.get('inventory')
             if isinstance(new_inventory, list) and all(isinstance(item, str) for item in new_inventory):
                 final_state_changes['inventory'] = new_inventory
@@ -315,9 +327,11 @@ class AIService:
                 else:
                     app.logger.warning("AI did not provide 'inventory' in state_changes. Falling back to previous inventory.")
                 final_state_changes['inventory'] = previous_state_data.get('inventory', [])
-
+            
+            # 3. NPC States
             new_npc_states = ai_state_changes.get('npc_states')
             if isinstance(new_npc_states, dict):
+                # Basic validation: ensure keys are strings and values are dicts (further schema validation could be added)
                 valid_npc_states = True
                 for npc_id, npc_data in new_npc_states.items():
                     if not isinstance(npc_id, str) or not isinstance(npc_data, dict):
@@ -332,11 +346,13 @@ class AIService:
                 if 'npc_states' in ai_state_changes:
                     app.logger.warning(f"AI provided invalid npc_states (not a dict): '{new_npc_states}'. Falling back.")
                 else:
-                    app.logger.debug("AI did not provide 'npc_states'. Using previous or default.")
+                     app.logger.debug("AI did not provide 'npc_states'. Using previous or default.") # Less critical if missing
                 final_state_changes['npc_states'] = previous_state_data.get('npc_states', {})
 
+            # 4. World Objects
             new_world_objects = ai_state_changes.get('world_objects')
             if isinstance(new_world_objects, dict):
+                 # Basic validation: ensure keys are strings and values are dicts
                 valid_world_objects = True
                 for obj_id, obj_data in new_world_objects.items():
                     if not isinstance(obj_id, str) or not isinstance(obj_data, dict):
@@ -351,26 +367,28 @@ class AIService:
                 if 'world_objects' in ai_state_changes:
                     app.logger.warning(f"AI provided invalid world_objects (not a dict): '{new_world_objects}'. Falling back.")
                 else:
-                    app.logger.debug("AI did not provide 'world_objects'. Using previous or default.")
+                    app.logger.debug("AI did not provide 'world_objects'. Using previous or default.") # Less critical if missing
                 final_state_changes['world_objects'] = previous_state_data.get('world_objects', {})
 
+            # Merge other custom keys from AI's state_changes, avoiding overwriting already processed standard keys
             standard_keys = {'location', 'inventory', 'npc_states', 'world_objects', 'achieved_plot_point_id'}
             for key, value in ai_state_changes.items():
                 if key not in standard_keys:
                     final_state_changes[key] = value
                     app.logger.debug(f"Merged custom AI state key '{key}'.")
-
-            if 'achieved_plot_point_id' in final_state_changes:
+            
+            # Ensure no 'achieved_plot_point_id' is present in state_changes from Stage 1 AI
+            if 'achieved_plot_point_id' in final_state_changes: # Check final_state_changes now
                 app.logger.warning("AI Stage 1 response unexpectedly included 'achieved_plot_point_id'. This should be handled by Stage 3. Removing it.")
                 del final_state_changes['achieved_plot_point_id']
 
             app.logger.info("--- AI Service: Processed and validated Stage 1 response data successfully ---")
             usage_data = response.usage if response.usage else None
             model_used = response.model
-
+            
             stage_one_ai_output = {
                 'narrative': parsed_data['content'],
-                'state_changes': final_state_changes,
+                'state_changes': final_state_changes, # Use the validated and potentially augmented state_changes
                 'available_actions': parsed_data['available_actions']
             }
             return stage_one_ai_output, model_used, usage_data
@@ -383,30 +401,25 @@ class AIService:
             return None
 
     def generate_character_name(self, description: str) -> str | None:
-        from questforge.utils.ai_debug_logger import log_ai_debug_payload
         app = current_app._get_current_object()
         if not self.client:
             app.logger.error("OpenAI client not initialized. Cannot generate character name.")
             return None
         prompt = build_character_name_prompt(description)
-        app.logger.debug(f"--- AI Service: Generating character name with prompt ---\\n{prompt}\\n-------------------------------------------------")
+        app.logger.debug(f"--- AI Service: Generating character name with prompt ---\n{prompt}\n-------------------------------------------------")
         generated_name = None
         try:
-            # Use OPENAI_MODEL_MAIN for less critical calls
-            model_to_use = app.config.get('OPENAI_MODEL_MAIN', 'gpt-4o-mini')
-            app.logger.debug(f"Using OPENAI_MODEL_MAIN for generate_character_name: {model_to_use}")
-            payload = {
-                "model": model_to_use,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": self.temperature,
-                "max_tokens": 50
-            }
-            log_ai_debug_payload("Generate character name", payload, "charactername", 1)
-            response = self.client.chat.completions.create(**payload)
+            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-4o')
+            app.logger.debug(f"Using model from config for generate_character_name: {model_to_use}")
+            response = self.client.chat.completions.create(
+                model=model_to_use,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=self.temperature, 
+                max_tokens=50 
+            )
             generated_name = response.choices[0].message.content.strip()
-            app.logger.debug(f"--- AI Service: Received raw name response ---\\n{generated_name}\\n------------------------------------------")
+            app.logger.debug(f"--- AI Service: Received raw name response ---\n{generated_name}\n------------------------------------------")
             generated_name = generated_name.strip('"\'')
-
             if not generated_name:
                 app.logger.warning("AI generated an empty character name.")
                 return None
@@ -417,7 +430,17 @@ class AIService:
             return None
 
     def get_ai_hint(self, game_state: GameState, campaign: Campaign) -> Optional[Tuple[str, str, Optional[Dict[str, int]]]]:
-        from questforge.utils.ai_debug_logger import log_ai_debug_payload
+        """
+        Gets a hint from the AI based on the current game state and campaign.
+
+        Args:
+            game_state: The current GameState object.
+            campaign: The current Campaign object.
+
+        Returns:
+            A tuple containing the hint text (str), model_used (str), and usage_data (dict),
+            or None on failure.
+        """
         app = current_app._get_current_object()
         if not self.client:
             app.logger.error("OpenAI client not initialized. Cannot get hint.")
@@ -429,7 +452,7 @@ class AIService:
         if not isinstance(completed_plot_points_data, list):
             completed_plot_points_data = []
         completed_plot_point_ids = [pp.get('id') for pp in completed_plot_points_data if isinstance(pp, dict) and pp.get('id')]
-
+        
         major_plot_points_list = campaign.major_plot_points
         if not isinstance(major_plot_points_list, list):
             major_plot_points_list = []
@@ -438,15 +461,15 @@ class AIService:
             if isinstance(plot_point, dict) and plot_point.get('required') and plot_point.get('id') not in completed_plot_point_ids:
                 next_required_plot_point_desc = plot_point.get('description')
                 break
-
+        
         context_for_hint = build_context(game_state, next_required_plot_point_desc)
         if context_for_hint.startswith("Error:"):
             app.logger.error(f"Error building context for hint: {context_for_hint}")
             return None
+        
+        app.logger.debug(f"--- AI Service: Context built for get_ai_hint ---\n{context_for_hint}\n-------------------------------------------------")
 
-        app.logger.debug(f"--- AI Service: Context built for get_ai_hint ---\\n{context_for_hint}\\n-------------------------------------------------")
-
-        campaign_objective_text = "Achieve the campaign goal."
+        campaign_objective_text = "Achieve the campaign goal." 
         if campaign.campaign_data:
             campaign_data_dict = campaign.campaign_data
             if isinstance(campaign.campaign_data, str):
@@ -454,8 +477,8 @@ class AIService:
                     campaign_data_dict = json.loads(campaign.campaign_data)
                 except json.JSONDecodeError:
                     app.logger.error(f"Failed to parse campaign.campaign_data string for game {game_state.game_id} in get_ai_hint.")
-                    campaign_data_dict = {}
-
+                    campaign_data_dict = {} 
+            
             if isinstance(campaign_data_dict, dict):
                 campaign_objective_text = campaign_data_dict.get('campaign_objective', campaign_objective_text)
             else:
@@ -466,24 +489,21 @@ class AIService:
             campaign_objective=campaign_objective_text,
             next_required_plot_point_desc=next_required_plot_point_desc
         )
-        app.logger.debug(f"--- AI Service: Getting hint with prompt ---\\n{prompt}\\n---------------------------------------------")
+        app.logger.debug(f"--- AI Service: Getting hint with prompt ---\n{prompt}\n---------------------------------------------")
 
         generated_hint = ""
         try:
-            # Use OPENAI_MODEL_MAIN for less critical calls
-            model_to_use = app.config.get('OPENAI_MODEL_MAIN', 'gpt-4o-mini')
-            app.logger.debug(f"Using OPENAI_MODEL_MAIN for get_ai_hint: {model_to_use}")
-
-            payload = {
-                "model": model_to_use,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": self.temperature,
-                "max_tokens": 150
-            }
-            log_ai_debug_payload("Get AI hint", payload, "hint", 1)
-            response = self.client.chat.completions.create(**payload)
+            model_to_use = app.config.get('OPENAI_MODEL', 'gpt-3.5-turbo') 
+            app.logger.debug(f"Using model from config for get_ai_hint: {model_to_use}")
+            
+            response = self.client.chat.completions.create(
+                model=model_to_use,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=self.temperature,
+                max_tokens=150 
+            )
             generated_hint = response.choices[0].message.content.strip()
-            app.logger.debug(f"--- AI Service: Received raw hint response ---\\n{generated_hint}\\n------------------------------------------")
+            app.logger.debug(f"--- AI Service: Received raw hint response ---\n{generated_hint}\n------------------------------------------")
 
             if not generated_hint:
                 app.logger.warning("AI generated an empty hint.")
@@ -491,18 +511,19 @@ class AIService:
 
             usage_data = response.usage if response.usage else None
             model_used = response.model
-
-            if game_state.game_id and usage_data:
+            
+            if game_state.game_id and usage_data: 
                 cost = calculate_cost(model_used, {'prompt_tokens': usage_data.prompt_tokens, 'completion_tokens': usage_data.completion_tokens})
-                log_api_usage(
+                log_api_usage( # No player_id here
                     model_name=model_used,
                     prompt_tokens=usage_data.prompt_tokens,
                     completion_tokens=usage_data.completion_tokens,
                     total_tokens=usage_data.total_tokens,
                     cost=cost,
+                    # endpoint='get_ai_hint', # Removed endpoint
                     game_id=game_state.game_id
                 )
-
+            
             return generated_hint, model_used, usage_data
 
         except Exception as e:
@@ -518,7 +539,22 @@ class AIService:
         stage_one_narrative: str,
         game_id: Optional[int] = None
     ) -> Dict[str, Any] | None:
-        from questforge.utils.ai_debug_logger import log_ai_debug_payload
+        """
+        Calls the AI to check if a specific atomic plot point was completed.
+        (Stage 3 of the plot point completion strategy)
+
+        Args:
+            plot_point_id: The ID of the atomic plot point.
+            plot_point_description: The description of the atomic plot point.
+            current_game_state_data: The full current game state.
+            player_action: The player's action this turn.
+            stage_one_narrative: The narrative generated by Stage 1 AI.
+            game_id: Optional ID of the game for logging.
+
+        Returns:
+            A dictionary with 'plot_point_id', 'completed' (bool), 'confidence_score' (float),
+            'model_used' (str), and 'usage_data' (dict), or None on failure or if client not initialized.
+        """
         app = current_app._get_current_object()
         if not self.client:
             app.logger.error("OpenAI client not initialized. Cannot check plot point completion.")
@@ -531,30 +567,29 @@ class AIService:
             player_action=player_action,
             stage_one_narrative=stage_one_narrative
         )
-        app.logger.debug(f"--- AI Service: Checking plot point completion with prompt ---\\n{prompt}\\n-------------------------------------------------")
+        app.logger.debug(f"--- AI Service: Checking plot point completion with prompt ---\n{prompt}\n-------------------------------------------------")
         generated_content = ""
         try:
-            # Use OPENAI_MODEL_MAIN for less critical calls; remove OPENAI_MODEL_PLOT_CHECK usage
-            model_to_use = app.config.get('OPENAI_MODEL_MAIN', 'gpt-4o-mini')
-            app.logger.debug(f"Using OPENAI_MODEL_MAIN for check_atomic_plot_completion: {model_to_use}")
+            # Using a potentially more capable model for this analytical task, can be configured
+            model_to_use = app.config.get('OPENAI_MODEL_PLOT_CHECK', app.config.get('OPENAI_MODEL', 'gpt-4o'))
+            app.logger.debug(f"Using model from config for check_atomic_plot_completion: {model_to_use}")
 
-            payload = {
-                "model": model_to_use,
-                "messages": [
+            response = self.client.chat.completions.create(
+                model=model_to_use,
+                messages=[
                     {"role": "system", "content": "You are an analytical AI assistant. Evaluate the game event based on the provided objective and context. Respond ONLY with the requested JSON object."},
                     {"role": "user", "content": prompt}
                 ],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.2,
-                "max_tokens": 256
-            }
-            log_ai_debug_payload("Check atomic plot completion", payload, "plotcheck", 1)
-            response = self.client.chat.completions.create(**payload)
+                response_format={"type": "json_object"},
+                temperature=0.2, # Lower temperature for more deterministic analysis
+                max_tokens=256 # Usually a small JSON response
+            )
             generated_content = response.choices[0].message.content
-            app.logger.debug(f"--- AI Service: Received raw plot check response ---\\n{generated_content}\\n------------------------------------------")
-
+            app.logger.debug(f"--- AI Service: Received raw plot check response ---\n{generated_content}\n------------------------------------------")
+            
             parsed_data = json.loads(generated_content)
 
+            # Validate response structure
             required_keys = ['plot_point_id', 'completed', 'confidence_score']
             missing_keys = [k for k in required_keys if k not in parsed_data]
             if missing_keys:
@@ -567,18 +602,18 @@ class AIService:
             if not isinstance(parsed_data.get('completed'), bool):
                 app.logger.error(f"AI plot check response 'completed' is not a boolean. Got: {parsed_data.get('completed')}")
                 return {"error": "Invalid 'completed' type in AI response", "raw_content": generated_content}
-            if not isinstance(parsed_data.get('confidence_score'), (float, int)):
+            if not isinstance(parsed_data.get('confidence_score'), (float, int)): # Allow int if it's 0 or 1
                 app.logger.error(f"AI plot check response 'confidence_score' is not a float/int. Got: {parsed_data.get('confidence_score')}")
                 return {"error": "Invalid 'confidence_score' type in AI response", "raw_content": generated_content}
-
+            
             confidence = float(parsed_data['confidence_score'])
             if not (0.0 <= confidence <= 1.0):
                 app.logger.error(f"AI plot check response 'confidence_score' out of range (0.0-1.0). Got: {confidence}")
                 return {"error": "'confidence_score' out of range", "raw_content": generated_content}
-            parsed_data['confidence_score'] = confidence
+            parsed_data['confidence_score'] = confidence # Ensure it's float
 
             app.logger.info(f"--- AI Service: Parsed plot check data successfully for {plot_point_id} ---")
-
+            
             usage_data = response.usage if response.usage else None
             model_used = response.model
 
@@ -592,7 +627,7 @@ class AIService:
                     cost=cost,
                     game_id=game_id
                 )
-
+            
             return {
                 'plot_point_id': parsed_data['plot_point_id'],
                 'completed': parsed_data['completed'],
@@ -613,71 +648,8 @@ class AIService:
             app.logger.error(f"Error in check_atomic_plot_completion for {plot_point_id}: {e}", exc_info=True)
             return {"error": f"Failed to check plot point completion: {e}"}
 
-    def generate_historical_summary(self, player_action: str, stage_one_narrative: str, state_changes: Dict[str, Any], game_id: Optional[int] = None) -> Optional[str]:
-        """
-        Generates a concise historical summary of a game turn using a secondary AI model.
-        """
-        from questforge.utils.ai_debug_logger import log_ai_debug_payload
-        app = current_app._get_current_object()
-        if not self.client:
-            app.logger.error("OpenAI client not initialized. Cannot generate historical summary.")
-            return None
 
-        prompt = build_summary_prompt(
-            player_action=player_action,
-            stage_one_narrative=stage_one_narrative,
-            state_changes=state_changes
-        )
-        app.logger.debug(f"--- AI Service: Generating historical summary with prompt ---\\n{prompt}\\n-------------------------------------------------")
-        
-        generated_summary = ""
-        try:
-            model_to_use = app.config.get('OPENAI_MODEL_MAIN', 'gpt-4o-mini') # Use OPENAI_MODEL_MAIN
-            app.logger.debug(f"Using OPENAI_MODEL_MAIN for generate_historical_summary: {model_to_use}")
-            
-            payload = {
-                "model": model_to_use,
-                "messages": [
-                    {"role": "system", "content": "You are an AI assistant that concisely summarizes game events. Output ONLY the summary string."},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.5, # Slightly lower temperature for more factual summary
-                "max_tokens": 100 # Max tokens for a concise summary
-            }
-            # Assuming game_id is available if we want to log this payload specifically
-            # log_ai_debug_payload("Generate historical summary", payload, "summary", game_id if game_id else 0) # game_id might not be directly available here, consider passing if needed for logging
-
-            response = self.client.chat.completions.create(**payload)
-            generated_summary = response.choices[0].message.content.strip()
-            
-            app.logger.debug(f"--- AI Service: Received raw summary response ---\\n{generated_summary}\\n------------------------------------------")
-
-            if not generated_summary:
-                app.logger.warning("AI generated an empty historical summary.")
-                return None
-
-            # Log API usage
-            usage_data = response.usage if response.usage else None
-            model_used = response.model
-            if game_id and usage_data: # Ensure game_id is passed if logging is desired
-                cost = calculate_cost(model_used, {'prompt_tokens': usage_data.prompt_tokens, 'completion_tokens': usage_data.completion_tokens})
-                log_api_usage(
-                    model_name=model_used,
-                    prompt_tokens=usage_data.prompt_tokens,
-                    completion_tokens=usage_data.completion_tokens,
-                    total_tokens=usage_data.total_tokens,
-                    cost=cost,
-                    game_id=game_id
-                )
-                app.logger.info(f"Logged API usage for historical summary (Game {game_id}). Cost: {cost}")
-            
-            return generated_summary
-
-        except Exception as e:
-            app.logger.error(f"Error generating historical summary: {e}", exc_info=True)
-            return None
-
-
+# Helper functions for API calls and cost calculation (moved from game.py)
 def call_openai_api(prompt: str, model: str = 'gpt-4o') -> Tuple[Dict[str, Any], Decimal]:
     api_key = current_app.config.get('OPENAI_API_KEY')
     if not api_key:
@@ -690,18 +662,17 @@ def call_openai_api(prompt: str, model: str = 'gpt-4o') -> Tuple[Dict[str, Any],
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
-        "response_format": {"type": "json_object"}
+        "response_format": { "type": "json_object" } 
     }
     try:
         response = requests.post(url, headers=headers, json=payload)
-        response.raise_for_status()
+        response.raise_for_status() 
         response_data = response.json()
         cost = calculate_cost(model, response_data.get('usage', {}))
         return response_data, cost
     except requests.exceptions.RequestException as e:
         print(f"HTTP Request failed: {e}")
         raise
-
 
 def calculate_cost(model: str, usage: Dict[str, int]) -> Decimal:
     pricing = current_app.config.get('OPENAI_PRICING', {})
@@ -714,29 +685,30 @@ def calculate_cost(model: str, usage: Dict[str, int]) -> Decimal:
     total_cost = prompt_cost + completion_cost
     return total_cost.quantize(Decimal('0.000001'))
 
-
-def log_api_usage(model_name: str, prompt_tokens: int, completion_tokens: int, total_tokens: int, cost: Decimal, game_id: Optional[int] = None):
+def log_api_usage(model_name: str, prompt_tokens: int, completion_tokens: int, total_tokens: int, cost: Decimal, game_id: Optional[int] = None): # Removed endpoint from signature
     """
     Logs API usage to the database.
-
+    
     Args:
         model_name: The name of the AI model used.
         prompt_tokens: Number of tokens in the prompt.
         completion_tokens: Number of tokens in the completion.
         total_tokens: Total number of tokens.
         cost: The calculated cost of the API call.
+        # endpoint: A string identifying the API endpoint or action. # Removed endpoint from docstring
         game_id: Optional ID of the game associated with the usage.
     """
-    log_entry = ApiUsageLog(
+    log_entry = ApiUsageLog( # No player_id here
         model_name=model_name,
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
         total_tokens=total_tokens,
         cost=cost,
+        # endpoint=endpoint, # Removed endpoint from instantiation
         game_id=game_id
     )
     db.session.add(log_entry)
     db.session.commit()
 
-
+# Singleton instance
 ai_service = AIService()

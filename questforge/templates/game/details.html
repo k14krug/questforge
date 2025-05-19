@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as macros %}
+
+{% block title %}Game Details: {{ game.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h1 class="mb-0">Game Details: {{ game.name }}</h1>
+        </div>
+        <div class="card-body">
+            <p><strong>Based on Template:</strong> {{ template_data.name }}</p>
+            <p><strong>Status:</strong> <span class="badge bg-secondary">{{ game.status | capitalize }}</span></p>
+            <p><strong>Created By:</strong> {{ game.creator.username if game.creator else 'Unknown' }}</p>
+            <p><strong>Created At:</strong> {{ game.created_at.strftime('%Y-%m-%d %H:%M:%S') if game.created_at else 'N/A' }}</p>
+
+            <hr>
+
+            <h4>Players</h4>
+            {% if players_details %}
+                <ul class="list-group mb-3">
+                    {% for player in players_details %}
+                        <li class="list-group-item">
+                            <strong>Player:</strong> {{ player.username }}<br>
+                            {% if player.character_name %}
+                                <strong>Character Name:</strong> {{ player.character_name }}<br>
+                            {% endif %}
+                            {% if player.character_description %}
+                                <strong>Character Description:</strong><br>
+                                <p style="white-space: pre-wrap;">{{ player.character_description }}</p>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No players have joined this game yet.</p>
+            {% endif %}
+
+            <hr>
+
+            <h4>Original Game Blueprint (from Template: {{ template_data.name }})</h4>
+            <div class="mb-3">
+                <strong>Description:</strong>
+                <p style="white-space: pre-wrap;">{{ template_data.description | default('Not specified') }}</p>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Genre:</strong> {{ template_data.genre | default('Not specified') }}</p>
+                    <p><strong>Theme:</strong> {{ template_data.theme | default('Not specified') }}</p>
+                    <p><strong>Desired Tone:</strong> {{ template_data.desired_tone | default('Not specified') }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Difficulty:</strong> {{ template_data.difficulty | default('Not specified') }}</p>
+                    <p><strong>Estimated Length:</strong> {{ template_data.estimated_length | default('Not specified') }}</p>
+                </div>
+            </div>
+            <div class="mb-3">
+                <strong>Core Conflict:</strong>
+                <p style="white-space: pre-wrap;">{{ template_data.core_conflict | default('Not specified') }}</p>
+            </div>
+            <div class="mb-3">
+                <strong>World Description:</strong>
+                <p style="white-space: pre-wrap;">{{ template_data.world_description | default('Not specified') }}</p>
+            </div>
+            <div class="mb-3">
+                <strong>Scene Suggestions:</strong>
+                <p style="white-space: pre-wrap;">{{ template_data.scene_suggestions | default('Not specified') }}</p>
+            </div>
+            <div class="mb-3">
+                <strong>Player Character Guidance (Template):</strong>
+                <p style="white-space: pre-wrap;">{{ template_data.player_character_guidance | default('Not specified') }}</p>
+            </div>
+            <div class="mb-3">
+                <strong>Default Rules (Template):</strong>
+                {% if template_data.default_rules %}
+                    {{ macros.render_json_data(template_data.default_rules, "Default Rules") }}
+                {% else %}
+                    <p>No default rules specified in the template.</p>
+                {% endif %}
+            </div>
+
+            <hr>
+
+            <h4>Generated Campaign Specifics</h4>
+            {% if campaign_data %}
+                <div class="mb-3">
+                    <strong>Key Characters (NPCs):</strong>
+                    {% if campaign_data.key_characters %}
+                         {{ macros.render_json_data(campaign_data.key_characters, "Key Characters") }}
+                    {% else %}
+                        <p>No key characters specified in the campaign.</p>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <strong>Key Locations:</strong>
+                     {% if campaign_data.key_locations %}
+                        {{ macros.render_json_data(campaign_data.key_locations, "Key Locations") }}
+                    {% else %}
+                        <p>No key locations specified in the campaign.</p>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <strong>Objectives:</strong>
+                    {% if campaign_data.objectives %}
+                        {{ macros.render_json_data(campaign_data.objectives, "Objectives") }}
+                    {% else %}
+                        <p>No objectives specified in the campaign.</p>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <strong>Major Plot Points:</strong>
+                    {% if campaign_data.major_plot_points %}
+                        {{ macros.render_json_data(campaign_data.major_plot_points, "Major Plot Points") }}
+                    {% else %}
+                        <p>No major plot points specified in the campaign.</p>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <strong>Conclusion Conditions:</strong>
+                    {% if campaign_data.conclusion_conditions %}
+                        {{ macros.render_json_data(campaign_data.conclusion_conditions, "Conclusion Conditions") }}
+                    {% else %}
+                        <p>No conclusion conditions specified in the campaign.</p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p>Campaign specifics have not been generated for this game yet.</p>
+            {% endif %}
+
+            <hr>
+
+            <h4>Creator Customizations & Overrides</h4>
+            <div class="mb-3">
+                <strong>Template Overrides:</strong>
+                {% if game.template_overrides %}
+                    {{ macros.render_json_data(game.template_overrides, "Template Overrides") }}
+                {% else %}
+                    <p>No template overrides applied.</p>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <strong>Creator Customizations:</strong>
+                {% if game.creator_customizations %}
+                    {{ macros.render_json_data(game.creator_customizations, "Creator Customizations") }}
+                {% else %}
+                    <p>No creator customizations applied.</p>
+                {% endif %}
+            </div>
+
+        </div>
+        <div class="card-footer text-center">
+            <a href="{{ url_for('game.list_games') }}" class="btn btn-secondary">Back to Join Game List</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

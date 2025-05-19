@@ -67,7 +67,46 @@
     *   Modified `questforge/views/auth.py`: Updated `login` function to query `User` by `username` and adjusted flash message.
     *   Modified `questforge/templates/auth/login.html`: Updated login form to use `form.username`.
 
+**Feature: UI Display Fixes for `play.html` (Completed)**
+    *   **Objective:** Ensure correct and complete display of game log, player location, inventory, and visited locations.
+    *   **`socketClient.mjs` Changes:**
+        *   Centralized all UI update logic (game log, player/visited locations, inventory, actions, cost).
+        *   Revised `updateGameLog` to target `gameStateVisualization`, render full history with styling, and show current location.
+        *   Revised `updateGameState` to call all necessary helper functions for UI updates.
+        *   Ensured helper functions (`updatePlayerLocationsDisplay`, `updateInventoryDisplay`, `updateVisitedLocationsDisplay`) correctly access data and update their respective elements.
+    *   **`play.html` Changes:**
+        *   Removed redundant UI update JavaScript functions from the inline script.
+        *   Simplified inline script to primarily handle initialization and global variable setup (`window.currentUserId`, `window.playerDetails`).
+    *   **Outcome:** Resolved issues of blank UI sections and incomplete game log.
+
+**Feature: Plot Point Completion System Enhancement (v3 Strategy - Phases 1-3 Completed)**
+*   **Objective:** Improve the plot point completion system to address issues identified during testing, evolving from v2.
+*   **Documentation:** New strategy detailed in `memory-bank/plot_point_completion_strategy_v3.md`. (Supersedes v2 documentation).
+*   **Phase 1: AI Service Enhancements (Completed)**
+    *   Updated `build_plot_completion_check_prompt` (`prompt_builder.py`) with clearer criteria, examples, and emphasis on full game state for Stage 3 AI calls.
+    *   Updated `build_response_prompt` (`prompt_builder.py`) for Stage 1 AI calls to encourage detailed state updates (NPCs, world objects, etc.) and ensure AI focuses on narrative and general state, not plot completion.
+    *   Enhanced `ai_service.py`:
+        *   `get_response` (Stage 1): Improved validation and augmentation of AI-provided `state_changes` (location, inventory, NPC status, world objects), ensuring robustness and fallback to previous state if AI output is invalid or missing critical fields. Explicitly removed `achieved_plot_point_id` if AI tried to include it.
+        *   `check_atomic_plot_completion` (Stage 3): Implemented for focused AI analysis of individual plot points, using the new prompt. Includes validation of AI response structure.
+    *   Confidence threshold adjustment deferred to testing if still needed after other improvements.
+*   **Phase 2: Plausibility Check & State Management Enhancements (Completed)**
+    *   Enhanced the plausibility check (Stage 2) in `socket_service.py` (`handle_player_action`):
+        *   Improved word matching (TF-IDF inspired approach).
+        *   Added location-based relevance checks.
+        *   Added NPC-based relevance checks (considering NPCs present in the current location).
+        *   Added special handling for critical/required plot points and for situations where players might be stuck.
+    *   Ensured `socket_service.py` correctly merges validated `state_changes` from `ai_service.get_response` (Stage 1) into its working `state_data` before Stage 2 and 3 processing.
+*   **Phase 3: Campaign Generation & Advanced Semantic Matching (Completed)**
+    *   Updated `build_campaign_prompt` (`prompt_builder.py`) with more explicit examples of good atomic plot points and emphasized their importance.
+    *   Enhanced `generate_campaign` (`ai_service.py`) to add validation ensuring plot points are atomic and clearly defined using a new `_check_plot_point_atomicity` helper function (checks for conjunctions, multiple verbs, etc.), logging warnings for non-atomic points.
+    *   Advanced semantic matching for Stage 2 (Task 3.3 of v3 plan) deferred, to be revisited if testing shows current methods are insufficient.
+
 ## Remaining Work (Phased Approach from Spec)
+
+**Feature: Plot Point Completion System Enhancement (v3 Strategy - Phase 4 Pending)**
+*   **Phase 4: Debugging & Monitoring Enhancements**
+    *   Add detailed logging of plot point evaluation decisions, "near-miss" completions, and frequently checked but never completed plot points.
+    *   Implement developer tools for debugging plot point completion and manually marking plot points as completed for testing.
 
 **Phase 1: Template Redesign & Character Definition (Completed)**
 *   (Details omitted for brevity - see above)
@@ -86,10 +125,10 @@
 
 **Phase 4: Gameplay Enhancements (Completed)** (See [./phase-4-gameplay-enhancements.md](./phase-4-gameplay-enhancements.md) for details)
 
-*   Implement Inventory Display on `play.html`. **(Completed)**
+*   Implement Inventory Display on `play.html`. **(Verified & Centralized)** - Display logic now correctly implemented in `socketClient.mjs`.
 *   Add AI Prompt Guardrails to `build_response_prompt`. **(Completed)**
-*   Implement Location History tracking and display. **(Completed)**
-*   Implement Multiplayer Location Display. **(Completed)**
+*   Implement Location History tracking and display. **(Verified & Centralized)** - Display logic now correctly implemented in `socketClient.mjs`.
+*   Implement Multiplayer Location Display. **(Verified & Centralized)** - Display logic now correctly implemented in `socketClient.mjs`.
 *   Enable Single-Player Mode. **(Completed)**
 
 **Phase 5: Enhanced Game Creation (Completed)** (See [./phase-5-enhanced-game-creation.md](./phase-5-enhanced-game-creation.md) for details)
@@ -112,7 +151,20 @@
 *   Updated `context_manager.build_context` to include player names/descriptions.
 *   Updated `game.py` view (`play`) to fetch full player details.
 *   Updated `play.html` JS to display character name (fallback to username).
-*   Created `memory-bank/character_naming_system.md`.
+    *   Created `memory-bank/character_naming_system.md`.
+
+**Feature: Game Details Page (Completed)**
+    *   **Objective:** Allow users to view comprehensive details of a game, including template data, campaign specifics, player information, and customizations.
+    *   **Plan:** `memory-bank/game_details_page_plan.md`
+    *   **Backend (`questforge/views/game.py`):**
+        *   Added new route `/game/<int:game_id>/details`.
+        *   Implemented `game_details(game_id)` view function to fetch `Game`, `Template`, `Campaign`, `GamePlayer` data.
+    *   **Frontend (`questforge/templates/game/details.html`):**
+        *   Created new Jinja2 template to display all fetched information.
+        *   Handles display of basic game info, player details, template data, campaign specifics (if available), and creator customizations/overrides.
+        *   Includes formatting for JSON data and a link back to the game list.
+    *   **Linking (`questforge/templates/game/list.html`):**
+        *   Added a "View Details" link on the "Join a Game" screen for each game.
 
 **Feature: Narrative Guidance System (Completed)**
     *   (Details listed under "Completed Features & Documentation" above)
@@ -140,6 +192,50 @@
         *   Emits modified `game_state_update` and `game_concluded` event.
         *   Updates game status in DB to 'completed'.
     *   **Memory Bank:** Plan file cleanup handled.
+
+**Feature: Conclusion Check Logic Refinement (Completed)**
+*   **Objective:** Refine the game's conclusion check logic in `questforge/services/campaign_service.py` to be less restrictive, particularly for string and list comparisons.
+*   **Implementation:**
+    *   Modified `check_conclusion` in `questforge/services/campaign_service.py`:
+        *   For `state_key_contains` conditions:
+            *   If `actual_value` (from `state_data`) is a list, the check now passes if any item in `actual_value` (converted to string) contains the `value_to_contain` (converted to string) as a case-insensitive substring.
+            *   If `actual_value` is a string, the check now passes if `actual_value` contains `value_to_contain` as a case-insensitive substring.
+        *   For `location_visited` conditions:
+            *   The check now passes if the `location_name_condition` (from the conclusion condition) is found as a case-insensitive substring within any of the location strings in `state_data['visited_locations']`.
+    *   This addresses issues where slight variations in strings (e.g., "Escape Pod Bay" vs. "Escape Pod Bay (outside blast doors)") would cause a valid conclusion to fail.
+
+**Feature: Dynamic Gameplay Difficulty (Completed)**
+*   **Objective:** Allow game creators to change game difficulty ('Easy', 'Normal', 'Hard') during active gameplay, influencing AI narrative responses.
+*   **Plan:** `memory-bank/dynamic_gameplay_difficulty_plan.md`
+*   **Database:**
+    *   Added `current_difficulty` to `Game` model (`questforge/models/game.py`).
+    *   Generated and applied DB migration.
+*   **Game Creation:**
+    *   Updated `Game.__init__` and `questforge/views/campaign_api.py` to set initial `current_difficulty`.
+*   **AI Integration:**
+    *   `ai_service.get_response` now accepts `current_difficulty`.
+    *   `prompt_builder.build_response_prompt` now incorporates `current_difficulty` to add specific instructions for AI behavior regarding unreasonable player actions.
+*   **SocketIO:**
+    *   `handle_player_action` in `socket_service.py` passes `game.current_difficulty` to `ai_service.get_response`.
+    *   Added new `change_difficulty` event handler in `socket_service.py` to update `game.current_difficulty` in DB.
+*   **UI:**
+    *   Added difficulty selector dropdown to `play.html` (visible to game creator).
+    *   `socketClient.mjs` emits `change_difficulty` event when dropdown value changes.
+
+**Feature: Historical Game Summary (Completed)**
+*   **Objective:** Provide the AI with a token-efficient, persistent memory of significant game events to improve narrative coherence.
+*   **Plan:** `memory-bank/historical_game_summary_plan.md`
+*   **Database (`GameState`):** Added `historical_summary: []` to `state_data` in `questforge/models/game_state.py`.
+*   **AI Service (`ai_service.py`):**
+    *   Added `generate_historical_summary` method using `OPENAI_MODEL_MAIN`.
+    *   Calls `prompt_builder.build_summary_prompt`.
+*   **Prompt Builder (`prompt_builder.py`):** Added `build_summary_prompt` function.
+*   **Socket Service (`socket_service.py`):**
+    *   `handle_player_action` calls `generate_historical_summary` after Stage 1 AI response.
+    *   Appends summary to `state_data['historical_summary']`, capped by `MAX_HISTORICAL_SUMMARIES`.
+*   **Context Manager (`context_manager.py`):**
+    *   `build_context` prepends `historical_summary` to AI context.
+*   **Configuration (`config.py`):** Added `MAX_HISTORICAL_SUMMARIES` variable.
 
 **Feature: Slash Command System (Completed)**
 *   **Objective:** Allowed players to use slash commands (`/help`, `/remaining_plot_points`, `/game_help`) for in-game information and actions.
@@ -182,15 +278,15 @@
         *   Reinforced that plot point achievements and conclusion condition flags should only be triggered by the single, current player action.
 *   **Next Steps:** Test changes, iterate on prompts if needed, document successful strategies.
 
-**Previous Task: Game Screen Redesign (`play.html`)** (Low Priority - Partially Completed)
+**Previous Task: Game Screen Redesign (`play.html`)** (Progress Update)
 
-*   Consolidate Game Log & Narrative display. (Pending)
-*   Restructure right column with always-visible actions and tabs for secondary info (Status, Details). (Partially Completed)
+*   Consolidate Game Log & Narrative display. **(Completed)** - `gameStateVisualization` now handles full log and current location.
+*   Restructure right column with always-visible actions and tabs for secondary info (Status, Details). (Partially Completed - Tabs exist)
     *   **NPC Details Display (Completed):** Added display of `campaign.key_characters` (NPCs and their attributes) to the "Details" tab in `questforge/templates/game/play.html`.
 *   **Sticky Navbar (Completed):** Modified `questforge/static/css/styles.css` to make the navbar sticky.
-*   Display player names instead of IDs. (Pending)
-*   Relocate API cost display.
-*   Apply subtle thematic styling.
+*   Display player names instead of IDs. **(Completed)** - Implemented in `updatePlayerLocationsDisplay` within `socketClient.mjs`.
+*   Relocate API cost display. **(Completed)** - Moved to "Details" tab.
+*   Apply subtle thematic styling. (Ongoing/Low Priority)
 
 **Phase 6: Testing & Deployment Prep** (Medium Priority - Next)
 

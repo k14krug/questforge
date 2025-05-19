@@ -20,7 +20,7 @@ class Template(db.Model):
     # High-level Guidance Fields (New)
     genre = db.Column(db.String(50), nullable=False) # Required: e.g., Fantasy, Sci-Fi
     core_conflict = db.Column(db.Text, nullable=False) # Required: Short description of main goal/problem
-    theme = db.Column(db.String(50)) # Optional: e.g., Exploration, Mystery
+    theme = db.Column(db.Text) # Optional: e.g., Exploration, Mystery
     desired_tone = db.Column(db.String(50)) # Optional: e.g., Humorous, Grim
     world_description = db.Column(db.Text) # Optional: Freeform notes on world, magic, tech
     scene_suggestions = db.Column(db.Text) # Optional: Ideas for scene types/encounters

@@ -28,6 +28,7 @@ class Game(db.Model):
     status = db.Column(db.String(20), default='active')
     creator_customizations = db.Column(db.JSON, nullable=True) # Creator-provided additions/changes
     template_overrides = db.Column(db.JSON, nullable=True) # Creator-provided overrides for base template fields
+    current_difficulty = db.Column(db.String(20), default='Normal', nullable=False)
 
     template = relationship('Template', backref='games')
     creator = relationship('User', foreign_keys=[created_by]) # Specify foreign key for creator
@@ -42,10 +43,11 @@ class Game(db.Model):
     def players(self):
         return [assoc.user for assoc in self.player_associations]
 
-    def __init__(self, name, template_id, created_by):
+    def __init__(self, name, template_id, created_by, difficulty='Normal'):
         self.name = name
         self.template_id = template_id
         self.created_by = created_by
+        self.current_difficulty = difficulty
         
     def __repr__(self):
         return f'<Game {self.name}>'

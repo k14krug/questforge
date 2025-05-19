@@ -5,46 +5,185 @@
 
 // console.log("Initializing socketClient (no class)..."); // DEBUG REMOVED
 
+let hasSetupListenersForCurrentConnection = false; // Flag to ensure setup runs once per connection
+
 const socketClient = {
   socket: null,
   connected: false,
   isConnecting: false,
   gameId: null,
   hasJoinedRoom: false,
-  onConnectCallbacks: [],
+  // onConnectCallbacks: [], // Removed
   onDisconnectCallbacks: [],
+  initialStateRequestedThisConnection: false, // New flag specific to a connection cycle
+
+  // Method to setup listeners and request initial state
+  setupListenersAndRequestState: function() {
+      if (hasSetupListenersForCurrentConnection) { // Still use the module-level flag for overall idempotency per connection
+          console.log("SocketClient: setupListenersAndRequestState - ALREADY RUN FOR THIS CONNECTION. Skipping.");
+          return;
+      }
+      hasSetupListenersForCurrentConnection = true;
+      console.log("SocketClient: this.setupListenersAndRequestState() called. GameID:", this.gameId);
+
+      if (!this.socket) {
+           console.error("SocketClient: setupListenersAndRequestState called but this.socket is NOT available! Aborting listener setup.");
+          hasSetupListenersForCurrentConnection = false; 
+           return;
+      }
+      console.log("SocketClient: this.socket IS available in this.setupListenersAndRequestState.");
+      
+      this.joinRoom(this.gameId); 
+
+      console.log("SocketClient: Setting up 'game_state_update' and 'game_state' listeners on this.socket.");
+      
+      console.log("SocketClient: Checking this.socket right before attaching game_state/game_state_update listeners:", this.socket);
+      if (!this.socket) {
+          console.error("SocketClient: CRITICAL - this.socket is NULL or UNDEFINED before attaching game_state/game_state_update listeners! Aborting.");
+          hasSetupListenersForCurrentConnection = false; 
+          return; 
+      }
+
+      this.socket.off('game_state_update'); 
+      this.socket.off('game_state'); 
+
+      this.socket.on('game_state_update', (data) => {
+          console.log("SocketClient: 'game_state_update' event received. Data object will be logged on next line.");
+          console.log(data);
+          updateGameState(data); 
+          const plotProgressDisplay = document.getElementById('plot-progress-display');
+          if (plotProgressDisplay) {
+              if (typeof data.total_plot_points_display === 'number' && typeof data.completed_plot_points_display_count === 'number') {
+                  plotProgressDisplay.textContent = `Plot Points: ${data.completed_plot_points_display_count} / ${data.total_plot_points_display}`;
+                  console.log("SocketClient: Updated plot progress from 'game_state_update':", plotProgressDisplay.textContent);
+              } else {
+                  plotProgressDisplay.textContent = ''; 
+                  console.log("SocketClient: Cleared plot progress from 'game_state_update' due to missing/invalid data.");
+              }
+          }
+          if (data.newly_completed_plot_point_message) {
+              console.log("SocketClient: Alerting for newly_completed_plot_point_message:", data.newly_completed_plot_point_message);
+              alert(data.newly_completed_plot_point_message);
+          }
+      });
+
+      this.socket.on('game_state', (state) => { 
+          console.log("SocketClient: 'game_state' event received (initial). Data object will be logged on next line.");
+          console.log(state);
+          updateGameState(state); 
+          const plotProgressDisplay = document.getElementById('plot-progress-display');
+          if (plotProgressDisplay) {
+              if (typeof state.total_plot_points_display === 'number' && typeof state.completed_plot_points_display_count === 'number') {
+                  plotProgressDisplay.textContent = `Plot Points: ${state.completed_plot_points_display_count} / ${state.total_plot_points_display}`;
+                  console.log("SocketClient: Updated plot progress from 'game_state' (initial):", plotProgressDisplay.textContent);
+              } else {
+                  plotProgressDisplay.textContent = ''; 
+                  console.log("SocketClient: Cleared plot progress from 'game_state' (initial) due to missing/invalid data.");
+              }
+          }
+      });
+
+      this.socket.on('slash_command_response', (data) => {
+          console.log("SocketClient: 'slash_command_response' event received:", data);
+          appendSlashCommandResponseToLog(data);
+      });
+
+      this.socket.on('game_concluded', (data) => { /* ... existing handler ... */ });
+      
+      this.requestInitialState(); 
+      this.setupDifficultyChangeListener(); // Call the new method
+      
+      if (typeof this.socket.onAny === 'function') {
+          this.socket.onAny((eventName, ...args) => {
+              console.log(`SocketClient: onAny - Event received: '${eventName}' with data:`, args);
+          });
+          console.log("SocketClient: Attached onAny listener to this.socket.");
+      } else {
+          console.warn("SocketClient: this.socket.onAny is not a function on this Socket.IO client version.");
+      }
+  },
+
+  setupDifficultyChangeListener: function() {
+    const difficultySelector = document.getElementById('difficultySelector');
+    if (difficultySelector && this.socket) {
+        difficultySelector.addEventListener('change', (event) => {
+            const newDifficulty = event.target.value;
+            if (this.gameId) {
+                console.log(`SocketClient: Difficulty changed to ${newDifficulty}. Emitting 'change_difficulty'.`);
+                this.socket.emit('change_difficulty', {
+                    game_id: this.gameId,
+                    new_difficulty: newDifficulty,
+                    user_id: window.currentUserId // Pass user_id for validation on server
+                });
+            } else {
+                console.error("SocketClient: gameId not set, cannot emit change_difficulty.");
+            }
+        });
+        console.log("SocketClient: Attached change listener to difficultySelector.");
+    } else {
+        if (!difficultySelector) console.log("SocketClient: difficultySelector element not found, listener not attached.");
+        if (!this.socket) console.log("SocketClient: socket not available, difficulty listener not attached.");
+    }
+  },
+
+  requestInitialState: function() {
+      const userId = document.getElementById('gameTitle')?.dataset.userId;
+      console.log(`SocketClient: this.requestInitialState called. initialStateRequestedThisConnection: ${this.initialStateRequestedThisConnection}, socket: ${!!this.socket}, connected: ${this.connected}, userId: ${userId}`);
+
+      if (!this.initialStateRequestedThisConnection && this.socket && this.connected && userId) {
+          console.log(`SocketClient: Condition MET for emitting 'request_state'. GameID: ${this.gameId}, UserID: ${userId}`);
+          this.socket.emit('request_state', { game_id: this.gameId, user_id: userId });
+          this.initialStateRequestedThisConnection = true;
+          console.log("SocketClient: Emitted 'request_state'. initialStateRequestedThisConnection set to true.");
+      } else if (!this.initialStateRequestedThisConnection) {
+           console.log(`SocketClient: Condition NOT MET for emitting 'request_state'. initialStateRequestedThisConnection: ${this.initialStateRequestedThisConnection}, socket: ${!!this.socket}, connected: ${this.connected}, userId: ${userId}`);
+      } else {
+          console.log("SocketClient: this.requestInitialState - initial state already requested for this connection.");
+      }
+  },
 
   connect: function(gameId) {
     // console.log(`socketClient.connect(${gameId}) called.`); // DEBUG REMOVED
     if (this.socket && this.connected && this.gameId === gameId) {
-        // console.log(`Socket already connected for game ${gameId}.`); // DEBUG REMOVED
-        // Trigger connect callbacks immediately if someone registers later
-        setTimeout(() => this.onConnectCallbacks.forEach(cb => cb()), 0);
+        console.log(`SocketClient: Connect called for game ${gameId}, but already connected to it. Triggering setup directly if needed.`);
+        // If already connected, ensure setup runs if it hasn't for this connection cycle.
+        // The hasSetupListenersForCurrentConnection flag handles idempotency.
+        if (typeof this.setupListenersAndRequestState === 'function') {
+             setTimeout(() => this.setupListenersAndRequestState(), 0);
+        }
         return;
     }
     if (this.socket && this.gameId !== gameId) {
-        // console.log(`Switching game context. Disconnecting from ${this.gameId}.`); // DEBUG REMOVED
+        console.log(`SocketClient: Switching game context. Disconnecting from ${this.gameId}.`);
         this.disconnect(); 
     }
-    if (this.isConnecting) {
-         // console.log("Connection attempt already in progress."); // DEBUG REMOVED
+    if (this.isConnecting && this.gameId === gameId) { // Check if connecting to the *same* game
+         console.log("SocketClient: Connection attempt already in progress for this game.");
          return;
     }
 
+    console.log(`SocketClient: Attempting to connect for gameId: ${gameId}`);
     this.gameId = gameId;
     this.isConnecting = true;
+    this.initialStateRequestedThisConnection = false; // Reset for new connection attempt
 
     try {
       this.socket = io({ path: '/socket.io/' });
-      const self = this;
+      const self = this; // self is socketClient
 
       this.socket.on('connect', () => {
-        // console.log("Socket connected event"); // DEBUG REMOVED
+        console.log("SocketClient: 'connect' event successfully fired. Setting up client state.");
         self.connected = true;
         self.isConnecting = false;
         self.hasJoinedRoom = false;
-        // console.log(`SocketIO connected successfully for game ${self.gameId}. Triggering connect callbacks.`); // DEBUG REMOVED
-        self.onConnectCallbacks.forEach(function(cb) { if (typeof cb === 'function') cb(); });
+        hasSetupListenersForCurrentConnection = false; // Reset global flag for the new connection instance
+        
+        console.log(`SocketClient: SocketIO connected for game ${self.gameId}. Now calling setupListenersAndRequestState.`);
+        if (typeof self.setupListenersAndRequestState === 'function') {
+            self.setupListenersAndRequestState(); // Direct call
+        } else {
+            console.error("SocketClient: CRITICAL - self.setupListenersAndRequestState is not a function!");
+        }
       });
 
       this.socket.on('disconnect', (reason) => {
@@ -193,134 +332,211 @@ const socketClient = {
     }
   },
 
-  // Add onConnect method for compatibility with existing calls
-  onConnect: function(callback) {
-    if (typeof callback === 'function') {
-        if (this.connected) setTimeout(callback, 0); // Call immediately if already connected
-        else this.onConnectCallbacks.push(callback);
-    }
-  },
+  // onConnect method is no longer needed as we call setupListenersAndRequestState directly.
+  // onConnect: function(callback) { ... }, 
 
-  // Add onDisconnect method
+  // Add onDisconnect method (keep if used elsewhere, or remove if not)
   onDisconnect: function(callback) {
+     console.log("SocketClient: socketClient.onDisconnect method CALLED.");
      if (typeof callback === 'function') this.onDisconnectCallbacks.push(callback);
   },
 
   // Add disconnect method
   disconnect: function() {
-     // console.log(`socketClient.disconnect() called. Current gameId: ${this.gameId}`); // DEBUG REMOVED
+     console.log(`SocketClient: socketClient.disconnect() called. Current gameId: ${this.gameId}`);
      if (this.socket) {
-       // console.log(`Disconnecting socket instance for game ${this.gameId}`); // DEBUG REMOVED
+       console.log(`SocketClient: Disconnecting socket instance for game ${this.gameId}`);
        this.socket.disconnect();
        this.socket = null; 
      }
      this.connected = false;
      this.isConnecting = false;
-     // console.log(`State after disconnect: connected=${this.connected}, isConnecting=${this.isConnecting}`); // DEBUG REMOVED
      this.gameId = null;
      this.hasJoinedRoom = false; 
-     this.onConnectCallbacks = []; 
-     this.onDisconnectCallbacks = [];
+     // this.onConnectCallbacks = []; // No longer used
+     this.onDisconnectCallbacks = []; // Keep for now
+     hasSetupListenersForCurrentConnection = false; // Reset this flag too
+     this.initialStateRequestedThisConnection = false;
+     console.log(`SocketClient: State after disconnect: connected=${this.connected}, isConnecting=${this.isConnecting}`);
    }
 };
 
 // console.log("socketClient object created."); // DEBUG REMOVED
 
 // --- Game State Update Handlers ---
-// Listeners will be added inside the onReady callback
+// These functions are called by the event handlers inside socketClient.setupListenersAndRequestState
 
+// Revised function to update all relevant UI parts from state
 function updateGameState(state) {
-    // console.log("Updating game state display with:", state);  // DEBUG REMOVED
+    console.log("--- updateGameState received state:", JSON.stringify(state, null, 2)); // Re-enable for debugging
+
+    // 1. Update Action Controls
+    updateActionControls(state?.actions || []);
+
+    // 2. Update Game Log / Visualization Area
+    // Extract log and location safely
+    const logToShow = state?.log || [];
+    const locationToShow = state?.state?.location; // Access nested location
+    updateGameLog(logToShow, locationToShow); // Call the revised log function
+
+    // 3. Update Player Locations Display
+    // Create a player_locations object using the current user's location
+    const currentUserId = window.currentUserId;
+    const currentLocation = state?.state?.location;
+    let playerLocations = null;
     
-    // Update Action Controls
-    if (state && state.actions) {
-        updateActionControls(state.actions);
-    } else {
-        updateActionControls([]); // Clear actions if none provided
+    if (currentUserId && currentLocation) {
+        // Create a simple mapping of the current user to their location
+        playerLocations = {
+            [currentUserId]: currentLocation
+        };
+        console.log("Created playerLocations object:", playerLocations);
     }
+    updatePlayerLocationsDisplay(playerLocations);
 
-    // Update Game Log History Panel
-    if (state && state.log) {
-        updateGameLog(state.log); // Update the history panel
+    // 4. Update Visited Locations Display
+    updateVisitedLocationsDisplay(state?.state?.visited_locations || []); // Corrected path to state.state.visited_locations
+
+    // 5. Update Inventory Display
+    // Log the full state.state object to see all available keys
+    console.log("Full state.state object:", state?.state);
+    
+    // Extract inventory from inventory_changes.items_added
+    let inventory = null;
+    if (state?.state?.inventory_changes?.items_added) {
+        inventory = state.state.inventory_changes.items_added;
+        console.log("Inventory data found at path: state.state.inventory_changes.items_added");
+    } else if (state?.state?.current_inventory) {
+        inventory = state.state.current_inventory;
+        console.log("Inventory data found at path: state.state.current_inventory");
+    } else if (state?.state?.inventory) {
+        inventory = state.state.inventory;
+        console.log("Inventory data found at path: state.state.inventory");
+    } else if (state?.inventory) {
+        inventory = state.inventory;
+        console.log("Inventory data found at path: state.inventory");
     } else {
-        updateGameLog([]); // Clear log if none provided
+        console.log("No inventory found in any expected path");
     }
+    
+    console.log("Inventory data:", inventory);
+    updateInventoryDisplay(inventory); // Pass null/undefined if not found
 
-    // Update Main Game State Visualization (Current Scene)
-    const gameStateVisualization = document.getElementById('gameStateVisualization');
-    if (gameStateVisualization) {
-        // Preserve or create a static location element
-        let staticLocation = gameStateVisualization.querySelector('.static-location');
-        if (!staticLocation) {
-            staticLocation = document.createElement('p');
-            staticLocation.className = 'static-location';
-            // Prepend static location to existing content
-            gameStateVisualization.prepend(staticLocation);
-        }
-        staticLocation.innerText = `Current Location: ${state.state.location || "Unknown"}`;
-
-        // Update narrative section without overwriting the static location
-        let narrativeElem = gameStateVisualization.querySelector('.current-scene');
-        const narrative = (state && state.log && state.log.length > 0) ? state.log[state.log.length - 1] : "";
-        const narrativeHtml = renderCurrentScene(narrative);
-        if (narrativeElem) {
-            narrativeElem.outerHTML = narrativeHtml;
-        } else {
-            gameStateVisualization.insertAdjacentHTML('beforeend', narrativeHtml);
-        }
-    } else {
-        console.error("gameStateVisualization element not found");
-    }
-
-    // Optionally, render other state data if needed separately
-    // renderOtherStateData(state.state); // Example if you have another function/area
-
-    // Update total cost display if present in the update
-    if (state && typeof state.total_cost !== 'undefined') {
+    // 6. Update Total Cost Display
+    if (typeof state?.total_cost !== 'undefined') {
         updateTotalCostDisplay(state.total_cost);
     }
 
-    // Update Location History Display
-    if (state && state.visited_locations) {
-        updateLocationHistory(state.visited_locations);
-    } else {
-        updateLocationHistory([]); // Clear history if none provided
-    }
+    // 7. Update Game Status (Example - if needed)
+    // const gameStatusDisplay = document.getElementById('gameStatusDisplay');
+    // if (gameStatusDisplay && state?.status) {
+    //     gameStatusDisplay.textContent = state.status;
+    // }
 
-    // Update Player Locations Display
-    if (state && state.player_locations) {
-        updatePlayerLocations(state.player_locations);
-    } else {
-        updatePlayerLocations({}); // Clear locations if none provided
-    }
+    // 8. Update Plot Point Display (Already handled in event handlers, but could be centralized here)
+    // const plotProgressDisplay = document.getElementById('plot-progress-display');
+    // if (plotProgressDisplay) {
+    //     if (typeof state?.completed_plot_points_display_count === 'number' && typeof state?.total_plot_points_display === 'number') {
+    //         plotProgressDisplay.textContent = `Plot Points: ${state.completed_plot_points_display_count} / ${state.total_plot_points_display}`;
+    //     } else {
+    //         plotProgressDisplay.textContent = '';
+    //     }
+    // }
 }
 
 // --- UI Update Functions ---
 
-function updateGameLog(log) {
-    const gameLog = document.getElementById('gameLog');
-    if (!gameLog) {
-        // console.error("gameLog element not found"); // DEBUG REMOVED
+// Revised function to update the combined log/narrative display in gameStateVisualization
+function updateGameLog(log, currentLocation) {
+    const visualizationArea = document.getElementById('gameStateVisualization');
+    if (!visualizationArea) {
+        console.error("gameStateVisualization element not found"); // Keep error
         return;
     }
-    gameLog.innerHTML = ''; // Clear previous logs
-    log.forEach(item => {
-        const logEntry = document.createElement('div');
-        logEntry.classList.add('log-entry');
-        if (typeof item === 'object' && item !== null && item.type) {
-            logEntry.innerText = item.content;
-            if (item.type === "player") {
-                logEntry.classList.add('log-entry-player');
-            } else if (item.type === "ai") {
-                logEntry.classList.add('log-entry-ai');
+    visualizationArea.innerHTML = ''; // Clear previous content
+
+    // Add Current Location at the top
+    const locationElement = document.createElement('p');
+    locationElement.className = 'static-location fw-bold mb-3'; // Added styling classes
+    locationElement.innerText = `Current Location: ${currentLocation || "Unknown"}`;
+    visualizationArea.appendChild(locationElement);
+
+    // Add separator
+    visualizationArea.appendChild(document.createElement('hr'));
+
+    // Add log entries
+    if (log && log.length > 0) {
+        console.log("Rendering log entries:", log.length, "entries");
+        log.forEach((item, index) => { // Added index for debugging
+            const logEntry = document.createElement('div');
+            logEntry.classList.add('log-entry');
+            let content = '';
+            let type = 'unknown';
+
+            if (typeof item === 'object' && item !== null && item.content) {
+                content = item.content;
+                type = item.type || 'unknown';
+                console.log(`Log entry ${index}: type=${type}, content=${content.substring(0, 30)}...`);
+            } else {
+                content = String(item); // Ensure it's a string
+                console.log(`Log entry ${index}: simple string content=${content.substring(0, 30)}...`);
             }
-        } else {
-            logEntry.innerText = item;
-        }
-        gameLog.appendChild(logEntry);
-    });
-    gameLog.scrollTop = gameLog.scrollHeight;
+
+            logEntry.innerText = content; // Use innerText to prevent potential HTML injection
+
+            if (type === "player") {
+                logEntry.classList.add('log-entry-player');
+            } else if (type === "ai") {
+                logEntry.classList.add('log-entry-ai');
+            } else if (type === "system") { // Add system message styling if needed
+                 logEntry.classList.add('log-entry-system', 'text-muted', 'fst-italic');
+            }
+            visualizationArea.appendChild(logEntry);
+        });
+    } else {
+        const noLogEntry = document.createElement('div');
+        noLogEntry.className = 'log-entry text-muted';
+        noLogEntry.innerText = 'No log entries yet.';
+        visualizationArea.appendChild(noLogEntry);
+    }
+
+    // Scroll to the bottom
+    visualizationArea.scrollTop = visualizationArea.scrollHeight;
 }
+
+// New function to append slash command responses to the game log
+function appendSlashCommandResponseToLog(data) {
+    const visualizationArea = document.getElementById('gameStateVisualization');
+    if (!visualizationArea) {
+        console.error("gameStateVisualization element not found for slash command response");
+        return;
+    }
+
+    if (data && data.lines && data.lines.length > 0) {
+        const headerEntry = document.createElement('div');
+        headerEntry.classList.add('log-entry', 'log-entry-system', 'fw-bold'); // System styling, bold header
+        headerEntry.innerText = data.header || `${data.command} response:`; // Use provided header or default
+        visualizationArea.appendChild(headerEntry);
+
+        data.lines.forEach(line => {
+            const lineEntry = document.createElement('div');
+            lineEntry.classList.add('log-entry', 'log-entry-system', 'ms-2'); // System styling, indented
+            lineEntry.innerText = line;
+            visualizationArea.appendChild(lineEntry);
+        });
+         visualizationArea.appendChild(document.createElement('hr')); // Add a separator after the response
+    } else if (data && data.message) { // Handle simple message responses
+        const messageEntry = document.createElement('div');
+        messageEntry.classList.add('log-entry', 'log-entry-system');
+        messageEntry.innerText = data.message;
+        visualizationArea.appendChild(messageEntry);
+        visualizationArea.appendChild(document.createElement('hr'));
+    } else {
+        console.warn("Received slash_command_response with no lines or message to display:", data);
+    }
+    visualizationArea.scrollTop = visualizationArea.scrollHeight;
+}
+
 
 // New function to update the total cost display
 function updateTotalCostDisplay(cost) {
@@ -345,7 +561,7 @@ function updateActionControls(actions) {
             const button = document.createElement('button');
             button.className = 'btn btn-primary mb-2 w-100'; // Make buttons full width
             // TODO: Use a more descriptive property than 'name' if available
-            button.innerText = typeof action === 'object' ? action.name || JSON.stringify(action) : action; 
+            button.innerText = typeof action === 'object' ? action.name || JSON.stringify(action) : action;
             button.onclick = () => socketClient.performAction(action); // Ensure calling the method
             actionControls.appendChild(button);
         });
@@ -355,61 +571,95 @@ function updateActionControls(actions) {
     }
 }
 
-// New function to update the location history display
-function updateLocationHistory(locations) {
-    const locationHistoryDisplay = document.getElementById('locationHistoryDisplay');
-    if (!locationHistoryDisplay) {
-        // console.warn("locationHistoryDisplay element not found."); // DEBUG REMOVED
+// New function to update Player Locations display
+function updatePlayerLocationsDisplay(playerLocations) {
+    // console.log("--- updatePlayerLocationsDisplay received:", JSON.stringify(playerLocations, null, 2)); // DEBUG REMOVED
+    const displayElement = document.getElementById('playerLocationsDisplay');
+    if (!displayElement) {
+        console.error("playerLocationsDisplay element not found"); // Keep error for debugging
         return;
     }
-    locationHistoryDisplay.innerHTML = ''; // Clear previous locations
-    if (locations && Array.isArray(locations)) {
-        if (locations.length > 0) {
-            const ul = document.createElement('ul');
-            ul.classList.add('list-unstyled', 'mb-0');
-            locations.forEach(location => {
-                const li = document.createElement('li');
-                li.innerText = location;
-                ul.appendChild(li);
-            });
-            locationHistoryDisplay.appendChild(ul);
-        } else {
-            locationHistoryDisplay.innerHTML = '<p class="text-muted mb-0">No locations visited yet.</p>';
+    let html = '<ul class="list-unstyled mb-0">';
+    // Access playerDetails globally (assuming it's set by play.html)
+    const playerDetails = window.playerDetails || {};
+    if (playerLocations && Object.keys(playerLocations).length > 0) {
+        for (const [userId, location] of Object.entries(playerLocations)) {
+            const details = playerDetails[userId];
+            const displayName = details?.character_name || details?.username || `User ${userId}`;
+            html += `<li>${displayName}: ${location || 'Unknown'}</li>`;
         }
+    } else if (playerLocations === null) {
+        html += '<li class="text-muted">Player location data not available from server.</li>';
     } else {
-        locationHistoryDisplay.innerHTML = '<p class="text-muted mb-0">Location history data not available.</p>';
+        html += '<li class="text-muted">No player location data.</li>';
     }
+    html += '</ul>';
+    displayElement.innerHTML = html;
 }
 
-// New function to update the player locations display
-function updatePlayerLocations(playerLocations) {
-    const playerLocationsDisplay = document.getElementById('playerLocationsDisplay');
-    if (!playerLocationsDisplay) {
-        // console.warn("playerLocationsDisplay element not found."); // DEBUG REMOVED
+// New function to update Visited Locations display
+function updateVisitedLocationsDisplay(visitedLocations) {
+    console.log("--- updateVisitedLocationsDisplay received:", JSON.stringify(visitedLocations, null, 2));
+    const displayElement = document.getElementById('locationHistoryDisplay');
+    if (!displayElement) {
+        console.error("locationHistoryDisplay element not found"); // Keep error
         return;
     }
-    playerLocationsDisplay.innerHTML = ''; // Clear previous locations
-    if (playerLocations && typeof playerLocations === 'object') {
-        const ul = document.createElement('ul');
-        ul.classList.add('list-unstyled', 'mb-0');
-        // Iterate over the playerLocations dictionary
-        for (const userId in playerLocations) {
-            if (playerLocations.hasOwnProperty(userId)) {
-                const location = playerLocations[userId];
-                const li = document.createElement('li');
-                // TODO: Fetch username based on user ID if needed, for now just show ID and location
-                li.innerText = `Player ${userId}: ${location}`;
-                ul.appendChild(li);
+    let html = '<ul class="list-unstyled mb-0">';
+    if (visitedLocations && visitedLocations.length > 0) {
+        visitedLocations.forEach(location => {
+            html += `<li>${location}</li>`;
+        });
+    } else {
+        html += '<li class="text-muted">No locations visited yet.</li>';
+    }
+    html += '</ul>';
+    displayElement.innerHTML = html;
+    console.log("Visited locations display updated with HTML:", html);
+}
+
+// New function to update Inventory display
+function updateInventoryDisplay(inventory) {
+    console.log("--- updateInventoryDisplay received:", JSON.stringify(inventory, null, 2)); // Re-enable for debugging
+    const displayElement = document.getElementById('inventoryDisplay');
+    if (!displayElement) {
+        console.error("inventoryDisplay element not found"); // Keep error
+        return;
+    }
+    let html = '<ul class="list-unstyled mb-0">';
+    
+    // Handle different inventory data structures
+    if (inventory === null || inventory === undefined) { 
+        // Case 1: No inventory data
+        html += '<li class="text-muted">Inventory data not available from server.</li>';
+    } else if (Array.isArray(inventory) && inventory.length > 0) { 
+        // Case 2: Array of items
+        inventory.forEach(item => {
+            if (typeof item === 'object' && item !== null && item.name) {
+                html += `<li>${item.name}</li>`; // Object with name property
+            } else {
+                html += `<li>${item}</li>`; // String or other primitive
+            }
+        });
+    } else if (typeof inventory === 'object' && inventory !== null && Object.keys(inventory).length > 0) {
+        // Case 3: Object with key-value pairs (possibly a dictionary of items)
+        for (const [key, value] of Object.entries(inventory)) {
+            if (typeof value === 'object' && value !== null) {
+                // If value is an object, try to extract a name or description
+                const itemName = value.name || value.description || key;
+                html += `<li>${itemName}</li>`;
+            } else {
+                // If value is a primitive, use the key as the item name
+                html += `<li>${key}</li>`;
             }
         }
-        if (ul.children.length > 0) {
-            playerLocationsDisplay.appendChild(ul);
-        } else {
-            playerLocationsDisplay.innerHTML = '<p class="text-muted mb-0">No player locations available.</p>';
-        }
     } else {
-        playerLocationsDisplay.innerHTML = '<p class="text-muted mb-0">Player location data not available.</p>';
+        // Case 4: Empty inventory
+        html += '<li class="text-muted">Inventory is empty.</li>';
     }
+    
+    html += '</ul>';
+    displayElement.innerHTML = html;
 }
 
 
@@ -491,120 +741,24 @@ socketClient.performAction = function(actionInputText) {
 
 // --- State Rendering ---
 
-// New function to render just the current scene/narrative
-function renderCurrentScene(narrative) {
-    let html = '<div class="current-scene p-3">'; // Add padding
-    if (narrative) {
-        let content = "";
-        if (typeof narrative === 'object' && narrative !== null && narrative.content) {
-            content = narrative.content;
-        } else {
-            content = narrative;
-        }
-        html += `<p>${content}</p>`;
-    } else {
-        html += '<p class="text-muted">Waiting for the story to unfold...</p>';
-    }
-    html += '</div>';
-    return html;
-}
+// Removed renderCurrentScene function as it's integrated into updateGameLog
 
 // Optional: Function to render other state details if needed elsewhere
 // function renderOtherStateData(stateData) { ... }
 
 // --- Initial Setup ---
-const gameId = document.getElementById('gameTitle')?.dataset.gameId; // Get gameId early
+// The functions requestInitialState and setupListenersAndRequestState are now methods of socketClient.
+// The main connection logic is now more self-contained within socketClient.
+
+const gameId = document.getElementById('gameTitle')?.dataset.gameId; 
 
 if (gameId) {
-    let initialStateRequested = false;
-
-    // Define the function to request initial state
-    const requestInitialState = () => {
-        // Check socketClient.socket directly
-        const userId = document.getElementById('gameTitle')?.dataset.userId; // Get user_id
-        if (!initialStateRequested && socketClient.socket && socketClient.connected && userId) {
-            // console.log(`Requesting initial state for game ${gameId} by user ${userId}`); // DEBUG REMOVED
-            socketClient.socket.emit('request_state', { game_id: gameId, user_id: userId }); // Add user_id
-            initialStateRequested = true;
-        } else if (!initialStateRequested) {
-             // console.log("Socket not ready/available when requestInitialState was called."); // DEBUG REMOVED
-        }
-    };
-
-    // Setup listeners after connection
-    const setupListenersAndRequestState = () => {
-        // console.log("Play page: Socket connected. Setting up listeners and requesting initial state."); // DEBUG REMOVED
-
-        if (!socketClient.socket) {
-             // console.error("Play page: setupListenersAndRequestState called but socketClient.socket is not available! Aborting setup."); // DEBUG REMOVED
-             return;
-        }
-        
-        // Join the room for this game (using the object's method)
-        socketClient.joinRoom(gameId); 
-
-        // --- Setup Listeners ---
-        // console.log("Play page: Setting up socket listeners."); // DEBUG REMOVED
-        socketClient.socket.off('game_state_update'); // Clear potential old listeners
-        socketClient.socket.off('game_state');
-
-        socketClient.socket.on('game_state_update', (data) => {
-            // console.log("Play page: Received game_state_update:", data); // DEBUG REMOVED
-            updateGameState(data);
-        });
-
-        socketClient.socket.on('game_state', (state) => {
-            // console.log("Play page: Received full game state:", state); // DEBUG REMOVED
-            updateGameState(state);
-        });
-
-        socketClient.socket.on('game_concluded', (data) => {
-            // console.log("Play page: Received game_concluded event:", data); // DEBUG REMOVED
-            if (data.game_id === gameId) {
-                // Update UI to show game is completed
-                const gameStatusDisplay = document.getElementById('gameStatusDisplay'); // Assumes this element exists or will be added
-                if (gameStatusDisplay) {
-                    gameStatusDisplay.textContent = 'Status: Completed';
-                } else {
-                    // console.warn("gameStatusDisplay element not found. Cannot update status."); // DEBUG REMOVED
-                }
-
-                // Disable action input
-                const customActionInput = document.getElementById('customActionInput');
-                const submitCustomActionButton = document.getElementById('submitCustomAction');
-                if (customActionInput) {
-                    customActionInput.disabled = true;
-                    customActionInput.placeholder = 'Campaign Complete';
-                }
-                if (submitCustomActionButton) {
-                    submitCustomActionButton.disabled = true;
-                }
-                
-                // Display conclusion message
-                if (data.message) {
-                    // Optionally, display this message in a more integrated way in the UI later
-                    alert(data.message); 
-                }
-
-                // Potentially update action controls to show "Campaign Complete"
-                updateActionControls(["Campaign Complete"]);
-            }
-        });
-
-        // --- Request Initial State ---
-        requestInitialState(); // Call the request function now that listeners are set up
-    };
-
-    // Register the setup function to run when the socket connects
-    // Use the onConnectCallbacks array from the socketClient object
-    socketClient.onConnectCallbacks.push(setupListenersAndRequestState);
-
-    // Initiate the connection process for this game ID.
-    // console.log("Calling socketClient.connect(gameId) for play page."); // DEBUG REMOVED
-    socketClient.connect(gameId); // This will eventually trigger the callbacks in onConnectCallbacks
-
+    console.log("SocketClient: Initializing for gameId:", gameId);
+    // The connect call will handle setting up listeners via its internal 'connect' event handler,
+    // which now directly calls this.setupListenersAndRequestState.
+    socketClient.connect(gameId); 
 } else {
-    // console.error("Game ID not found in DOM, cannot initialize socket connection."); // DEBUG REMOVED
+    console.error("SocketClient: Game ID not found in DOM, cannot initialize socket connection.");
 }
 
 // --- Custom Action Input Handler ---

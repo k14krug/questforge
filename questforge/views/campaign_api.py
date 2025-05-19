@@ -135,10 +135,14 @@ def create_game_api():
     try:
         # --- Create Game Record ---
         current_app.logger.debug(f"Creating Game object: Name='{game_name}', TemplateID={template.id}")
+        # Extract difficulty from template_overrides, default to 'Normal'
+        difficulty = template_overrides.get('difficulty', 'Normal')
+        current_app.logger.debug(f"Game difficulty set to: {difficulty}")
         game = Game(
             name=game_name,
             template_id=template.id,
-            created_by=current_user.id
+            created_by=current_user.id,
+            difficulty=difficulty
         )
         # Set overrides and customizations AFTER initialization
         game.template_overrides = template_overrides

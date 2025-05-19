@@ -206,6 +206,19 @@
                                     {% endif %}
                                 </div>
                             </div>
+
+                            {% if game.created_by == user_id %}
+                            <div class="mt-3"> {# Added mt-3 for spacing, was mb-3 on API Cost #}
+                                <h6>Game Difficulty</h6>
+                                <div id="difficultyControl">
+                                    <select class="form-select form-select-sm" id="difficultySelector">
+                                        <option value="Easy" {% if game.current_difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                                        <option value="Normal" {% if game.current_difficulty == 'Normal' %}selected{% endif %}>Normal</option>
+                                        <option value="Hard" {% if game.current_difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+                                    </select>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -279,393 +292,39 @@ const playerDetails = JSON.parse('{{ player_details | tojson | default("{}") | s
 // Use the imported socketClient instance
 // const socket = io(); // REMOVE THIS LINE
 
-// --- Game State Update Handlers ---
-// Listeners will be added inside the onReady callback
-
-function updateGameState(state) {
-    // console.log("Updating game state display with:", state); // DEBUG REMOVED
-    
-    // Update Action Controls
-    if (state && state.actions) {
-        updateActionControls(state.actions);
-    } else {
-        updateActionControls([]); // Clear actions if none provided
-    }
-
-    // Update Game Log / Visualization Area
-    let logToShow = [];
-    let locationToShow = undefined;
-    if (state) {
-        logToShow = state.log || []; // Use state.log if available, otherwise empty array
-        locationToShow = state.state?.location; // Get location if state exists
-    }
-    updateGameLog(logToShow, locationToShow); // Always call updateGameLog with determined values
-
-    // Removed separate main game state visualization update logic - now handled by updateGameLog
-
-    // Update Player Locations Display
-    if (state && state.player_locations) {
-        updatePlayerLocationsDisplay(state.player_locations);
-    } else {
-        updatePlayerLocationsDisplay({}); // Clear if no data
-    }
-
-    // Update Visited Locations Display
-    if (state && state.visited_locations) {
-        updateVisitedLocationsDisplay(state.visited_locations);
-    } else {
-        updateVisitedLocationsDisplay([]); // Clear if no data
-    }
-
-    // Update Inventory Display (using state.state.current_inventory or state.state.inventory)
-    const inventory = state?.state?.current_inventory ?? state?.state?.inventory; // Check both keys
-    if (inventory !== undefined) { // Check if key exists (even if empty list)
-        updateInventoryDisplay(inventory);
-    } else {
-        updateInventoryDisplay(null); // Indicate data not available
-    }
-
-    // Update total cost display if present in the update
-    if (state && typeof state.total_cost !== 'undefined') {
-        updateTotalCostDisplay(state.total_cost);
-    }
-}
-
-// --- UI Update Functions ---
-
-// Updated function to handle the combined log/narrative display in gameStateVisualization
-function updateGameLog(log, currentLocation) {
-    const visualizationArea = document.getElementById('gameStateVisualization');
-    if (!visualizationArea) {
-        // console.error("gameStateVisualization element not found"); // DEBUG REMOVED
-        return;
-    }
-    visualizationArea.innerHTML = ''; // Clear previous content
-
-    // Add Current Location at the top
-    const locationElement = document.createElement('p');
-    locationElement.className = 'static-location fw-bold mb-3'; // Added styling classes
-    locationElement.innerText = `Current Location: ${currentLocation || "Unknown"}`;
-    visualizationArea.appendChild(locationElement);
-
-    // Add separator
-    visualizationArea.appendChild(document.createElement('hr'));
-
-    // Add log entries
-    if (log && log.length > 0) {
-        log.forEach(item => {
-            const logEntry = document.createElement('div');
-            logEntry.classList.add('log-entry');
-            let content = '';
-            let type = 'unknown';
-
-            if (typeof item === 'object' && item !== null && item.content) {
-                content = item.content;
-                type = item.type || 'unknown';
-            } else {
-                content = String(item); // Ensure it's a string
-            }
-
-            logEntry.innerText = content; // Use innerText to prevent potential HTML injection
-
-            if (type === "player") {
-                logEntry.classList.add('log-entry-player');
-            } else if (type === "ai") {
-                logEntry.classList.add('log-entry-ai');
-            }
-            visualizationArea.appendChild(logEntry);
-        });
-    } else {
-        const noLogEntry = document.createElement('div');
-        noLogEntry.className = 'log-entry text-muted';
-        noLogEntry.innerText = 'No log entries yet.';
-        visualizationArea.appendChild(noLogEntry);
-    }
-
-    // Scroll to the bottom
-    visualizationArea.scrollTop = visualizationArea.scrollHeight;
-}
-
-// New function to update the total cost display
-function updateTotalCostDisplay(cost) {
-    const costElement = document.getElementById('totalCostDisplay'); // Need to add this ID to the HTML element
-    if (costElement) {
-        // Format cost to 4 decimal places
-        costElement.textContent = `Cost: $${cost.toFixed(4)}`;
-    } else {
-        // console.warn("totalCostDisplay element not found."); // DEBUG REMOVED
-    }
-}
-
-// New function to update Player Locations display
-function updatePlayerLocationsDisplay(playerLocations) {
-    const displayElement = document.getElementById('playerLocationsDisplay');
-    if (!displayElement) {
-        // console.error("playerLocationsDisplay element not found"); // DEBUG REMOVED
-        return;
-    }
-    let html = '<ul class="list-unstyled mb-0">';
-    if (playerLocations && Object.keys(playerLocations).length > 0) {
-        for (const [userId, location] of Object.entries(playerLocations)) {
-            // Get details for this user ID from the globally available playerDetails
-            const details = playerDetails[userId];
-            // Determine the name to display: character_name or fallback to username
-            const displayName = details?.character_name || details?.username || `User ${userId}`;
-            html += `<li>${displayName}: ${location || 'Unknown'}</li>`; // Display character name or username
-        }
-    } else {
-        html += '<li class="text-muted">No player location data available.</li>';
-    }
-    html += '</ul>';
-    displayElement.innerHTML = html;
-}
-
-// New function to update Visited Locations display
-function updateVisitedLocationsDisplay(visitedLocations) {
-    const displayElement = document.getElementById('locationHistoryDisplay');
-    if (!displayElement) {
-        // console.error("locationHistoryDisplay element not found"); // DEBUG REMOVED
-        return;
-    }
-    let html = '<ul class="list-unstyled mb-0">';
-    if (visitedLocations && visitedLocations.length > 0) {
-        visitedLocations.forEach(location => {
-            html += `<li>${location}</li>`; // Assuming location is a string
-        });
-    } else {
-        html += '<li class="text-muted">No locations visited yet.</li>';
-    }
-    html += '</ul>';
-    displayElement.innerHTML = html;
-}
-
-// New function to update Inventory display
-function updateInventoryDisplay(inventory) {
-    const displayElement = document.getElementById('inventoryDisplay');
-    if (!displayElement) {
-        // console.error("inventoryDisplay element not found"); // DEBUG REMOVED
-        return;
-    }
-    let html = '<ul class="list-unstyled mb-0">';
-    if (inventory === null) {
-         html += '<li class="text-muted">Inventory data not available.</li>';
-    } else if (inventory && inventory.length > 0) {
-        inventory.forEach(item => {
-            html += `<li>${item}</li>`; // Assuming item is a string
-        });
-    } else {
-        html += '<li class="text-muted">Inventory is empty.</li>';
-    }
-    html += '</ul>';
-    displayElement.innerHTML = html;
-}
+// --- Global Variables for SocketClient ---
+// Set current user ID globally for socketClient
+window.currentUserId = '{{ user_id }}';
+// Store player details passed from backend, parsing the JSON string explicitly
+// This needs to be available for updatePlayerLocationsDisplay in socketClient.mjs
+window.playerDetails = JSON.parse('{{ player_details | tojson | default("{}") | safe }}');
 
 
-function updateActionControls(actions) {
-    const actionControls = document.getElementById('actionControls');
-     if (!actionControls) {
-        // console.error("actionControls element not found"); // DEBUG REMOVED
-        return;
-    }
-    actionControls.innerHTML = ''; // Clear previous actions
-    if (actions && Array.isArray(actions)) {
-        actions.forEach(action => {
-            const button = document.createElement('button');
-            button.className = 'btn btn-primary mb-2 w-100'; // Make buttons full width
-            // TODO: Use a more descriptive property than 'name' if available
-            button.innerText = typeof action === 'object' ? action.name || JSON.stringify(action) : action; 
-            button.onclick = () => socketClient.performAction(action); // Ensure calling the method from socketClient
-            actionControls.appendChild(button);
-        });
-    } else {
-        // console.warn("No valid actions received to update controls."); // DEBUG REMOVED
-        actionControls.innerHTML = '<p class="text-muted">No actions available.</p>';
-    }
-}
-
-// --- Action Emission ---
-// The local performAction in play.html is no longer needed, 
-// as the global one in socketClient.mjs will handle the logic.
-// We will keep the UI update functions here.
-
-/*
-// This local performAction is being removed.
-function performAction(actionInputText) {
-    const rawInput = actionInputText; // Preserve raw for logging
-    const trimmedActionText = actionInputText ? actionInputText.trim() : ""; // Ensure trim only if not null/undefined
-
-    console.log(`[DEBUG] performAction START. Raw: "${rawInput}", Trimmed: "${trimmedActionText}"`);
-
-    if (!trimmedActionText) {
-        console.log("[DEBUG] performAction: Trimmed text is empty. Clearing input and exiting.");
-        customActionInput.value = '';
-        return;
-    }
-
-    // Explicitly log before and the result of startsWith
-    console.log(`[DEBUG] performAction: About to check startsWith on: "${trimmedActionText}"`);
-    if (trimmedActionText.length > 0) {
-        console.log(`[DEBUG] performAction: First char code: ${trimmedActionText.charCodeAt(0)}, First char: "${trimmedActionText[0]}"`);
-        console.log(`[DEBUG] performAction: Does first char === '/': ${trimmedActionText[0] === '/'}`);
-    }
-    const isSlashCommand = trimmedActionText.startsWith('/');
-    console.log(`[DEBUG] performAction: Value of isSlashCommand (from startsWith) = ${isSlashCommand}`);
-
-    if (isSlashCommand) {
-        console.log("Slash command DETECTED by performAction:", trimmedActionText);
-        const parts = trimmedActionText.substring(1).split(' ');
-        const command = parts[0].toLowerCase();
-        const args = parts.slice(1);
-
-        if (socketClient && socketClient.socket) {
-            if (typeof gameId === 'undefined') {
-                console.error("CRITICAL: gameId is undefined in performAction for slash command.");
-                customActionInput.value = '';
-                return;
-            }
-            socketClient.socket.emit('slash_command', {
-                game_id: gameId, 
-                user_id: window.currentUserId,
-                command: command,
-                args: args
-            });
-            console.log(`Emitted slash_command: ${command} with args: ${JSON.stringify(args)}`);
-        } else {
-            console.error("socketClient not available for slash_command emission.");
-        }
-    } else {
-        console.log("Regular action DETECTED by performAction:", trimmedActionText);
-        const gameTitleElement = document.getElementById('gameTitle');
-        if (!gameTitleElement) {
-             console.error("gameTitle element not found for regular action.");
-             customActionInput.value = '';
-             return;
-        }
-        const local_game_id = gameTitleElement.dataset.gameId; 
-        const local_user_id = gameTitleElement.dataset.userId;
-        
-        if (socketClient && socketClient.socket) {
-            socketClient.socket.emit('player_action', {
-                game_id: local_game_id,
-                user_id: local_user_id,
-                action: trimmedActionText
-            });
-            console.log("Emitted player_action:", trimmedActionText);
-        } else {
-             console.error("socketClient not available for player_action emission.");
-        }
-    }
-    
-    customActionInput.value = ''; 
-    console.log("[DEBUG] performAction END. Input cleared.");
-}
-*/
-
-// --- State Rendering ---
-
-// Removed renderCurrentScene function as it's integrated into updateGameLog
-
-// Optional: Function to render other state details if needed elsewhere
-// function renderOtherStateData(stateData) { ... }
+// All UI update functions (updateGameState, updateGameLog, etc.) and
+// the performAction logic are now centralized in socketClient.mjs.
+// The event listeners for 'game_state_update', 'game_state', and 'slash_command_response'
+// are also set up within socketClient.mjs's setupListenersAndRequestState method,
+// which is called internally when the socket connects.
 
 // --- Initial Setup ---
 const gameId = document.getElementById('gameTitle')?.dataset.gameId; // Get gameId early
 
 if (gameId) {
-    let initialStateRequested = false;
-
-    // Define the function to request initial state
-    const requestInitialState = () => {
-        // Check socketClient.socket directly
-        const userId = document.getElementById('gameTitle')?.dataset.userId; // Get user_id
-        if (!initialStateRequested && socketClient.socket && socketClient.connected && userId) {
-            // console.log(`Requesting initial state for game ${gameId} by user ${userId}`); // DEBUG REMOVED
-            socketClient.socket.emit('request_state', { game_id: gameId, user_id: userId }); // Add user_id
-            initialStateRequested = true;
-        } else if (!initialStateRequested) {
-             // console.log("Socket not ready/available when requestInitialState was called."); // DEBUG REMOVED
-        }
-    };
-
-    // Setup listeners after connection
-    const setupListenersAndRequestState = () => {
-        // console.log("Play page: Socket connected. Setting up listeners and requesting initial state."); // DEBUG REMOVED
-
-        if (!socketClient.socket) {
-             // console.error("Play page: setupListenersAndRequestState called but socketClient.socket is not available! Aborting setup."); // DEBUG REMOVED
-             return;
-        }
-        
-        // Join the room for this game (using the object's method)
-        socketClient.joinRoom(gameId); 
-
-        // --- Setup Listeners ---
-        // console.log("Play page: Setting up socket listeners."); // DEBUG REMOVED
-        socketClient.socket.off('game_state_update'); // Clear potential old listeners
-        socketClient.socket.off('game_state');
-
-        socketClient.socket.on('game_state_update', (data) => {
-            // console.log("Play page: Received game_state_update:", data); // DEBUG REMOVED
-            updateGameState(data);
-        });
-
-        socketClient.socket.on('game_state', (state) => {
-            // console.log("Play page: Received full game state:", state); // DEBUG REMOVED
-            updateGameState(state);
-        });
-
-        socketClient.socket.on('slash_command_response', (data) => {
-            // console.log("Play page: Received slash_command_response:", data); // DEBUG REMOVED
-            const visualizationArea = document.getElementById('gameStateVisualization');
-            if (!visualizationArea) {
-                // console.error("gameStateVisualization element not found, cannot display slash command response."); // DEBUG REMOVED
-                return;
-            }
-
-            const responseEntry = document.createElement('div');
-            responseEntry.classList.add('log-entry', 'log-entry-system'); // Use a distinct style
-
-            if (data.type === 'info' || data.type === 'debug') {
-                if (data.header) {
-                    const headerElement = document.createElement('strong');
-                    headerElement.textContent = data.header;
-                    responseEntry.appendChild(headerElement);
-                    responseEntry.appendChild(document.createElement('br'));
-                }
-                if (data.lines && Array.isArray(data.lines)) {
-                    data.lines.forEach(line => {
-                        const lineElement = document.createElement('div');
-                        lineElement.textContent = line;
-                        responseEntry.appendChild(lineElement);
-                    });
-                } else if (data.message) {
-                    responseEntry.appendChild(document.createTextNode(data.message));
-                }
-            } else if (data.type === 'error') {
-                responseEntry.classList.add('text-danger'); // Bootstrap class for error styling
-                responseEntry.textContent = `Error: ${data.message || 'Unknown error with slash command.'}`;
-            } else {
-                responseEntry.textContent = `Response: ${JSON.stringify(data)}`;
-            }
-            
-            visualizationArea.appendChild(responseEntry);
-            visualizationArea.scrollTop = visualizationArea.scrollHeight; // Scroll to bottom
-        });
-
-        // --- Request Initial State ---
-        requestInitialState(); // Call the request function now that listeners are set up
-    };
-
-    // Register the setup function to run when the socket connects
-    // Use the onConnectCallbacks array from the socketClient object
-    socketClient.onConnectCallbacks.push(setupListenersAndRequestState);
-
-    // Initiate the connection process for this game ID.
-    // console.log("Calling socketClient.connect(gameId) for play page."); // DEBUG REMOVED
-    socketClient.connect(gameId); // This will eventually trigger the callbacks in onConnectCallbacks
+    // The socketClient.connect method will handle everything:
+    // 1. Establishing the connection.
+    // 2. On successful connection, its internal 'connect' event handler calls
+    //    socketClient.setupListenersAndRequestState().
+    // 3. setupListenersAndRequestState() then:
+    //    a. Joins the game room.
+    //    b. Sets up all necessary event listeners ('game_state_update', 'game_state', etc.).
+    //       These listeners will call the centralized updateGameState in socketClient.mjs.
+    //    c. Requests the initial game state.
+    
+    // console.log("Calling socketClient.connect(gameId) from play.html."); // DEBUG REMOVED
+    socketClient.connect(gameId);
 
 } else {
-    // console.error("Game ID not found in DOM, cannot initialize socket connection."); // DEBUG REMOVED
+    console.error("Game ID not found in DOM, cannot initialize socket connection."); // Keep this error
 }
 
 // --- Custom Action Input Handler ---

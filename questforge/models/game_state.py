@@ -69,6 +69,7 @@ class GameState(db.Model):
             'current_branch': 'main',
             'campaign_complete': False,
             'turns_since_plot_progress': 0, # Added for narrative guidance
+            'historical_summary': [], # Added for historical game summary
             # Removed game_log and available_actions from here, rely on DB default
         }
         # Initialize DB columns directly if not relying solely on state_data
