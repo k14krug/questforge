@@ -6,8 +6,19 @@ from flask import Flask
 from .extensions import db, login_manager, bcrypt, migrate, init_socketio
 from .services.socket_service import SocketService
 
+from datetime import datetime
+
+def datetimeformat(value, format='%Y-%m-%d %H:%M'):
+    if value is None:
+        return ""
+    try:
+        return value.strftime(format)
+    except Exception:
+        return str(value)
+
 def create_app(config_name='default'):
     app = Flask(__name__)
+    app.jinja_env.filters['datetimeformat'] = datetimeformat
 
     # Load config
     app.config.from_object('config.Config')

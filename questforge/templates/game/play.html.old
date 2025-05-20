@@ -4,6 +4,7 @@
 {% block content %}
 <div class="container-fluid game-container">
     <div class="row">
+        <!-- Game State Visualization -->
         <div class="col-md-8">
             <div class="game-state-container">
                 <div class="game-state-header">
@@ -17,26 +18,28 @@
                     </div>
                 </div>
                 {# Combined Game Log and Narrative Area #}
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <h5>Game Log</h5> {# Changed header to Game Log #}
-                    <a href="{{ url_for('game.history', game_id=game.id) }}" class="btn btn-sm btn-outline-primary">View Full Log</a>
+                <h5>Game History</h5>
+                <div id="gameStateVisualization" class="game-state-visualization mt-2 game-log" style="min-height: 400px; overflow-y: auto;">
+                    <!-- Player commands and historical summaries will be rendered here -->
                 </div>
-                <div id="gameStateVisualization" class="game-state-visualization mt-2 game-log">
-                    </div>
             </div>
         </div>
 
+        <!-- Right Column: Actions & Info Tabs -->
         <div class="col-md-4">
             <div class="player-controls"> {# Keep sticky positioning wrapper #}
+                <!-- Always Visible Actions -->
                 <div class="card mb-3"> {# Added mb-3 for spacing #}
                     <div class="card-header">
                         <h5>Available Actions</h5>
                     </div>
                     <div class="card-body" id="actionControls">
+                        <!-- Dynamic action buttons will be inserted here -->
                         <p class="text-muted mb-0">Loading actions...</p>
                     </div>
                 </div>
 
+                <!-- Always Visible Custom Action -->
                 <div class="card mb-3"> {# Added mb-3 for spacing #}
                     <div class="card-header">
                         <h5>Custom Action</h5>
@@ -49,6 +52,7 @@
                     </div>
                 </div>
 
+                <!-- Tabbed Interface for Secondary Info -->
                 <ul class="nav nav-tabs" id="infoTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-tab-pane" type="button" role="tab" aria-controls="status-tab-pane" aria-selected="true">Status</button>
@@ -219,6 +223,7 @@
                         </div>
                     </div>
                 </div>
+                {# Removed original individual cards for Player Locations, Visited, Inventory, AI Model, Objective, Game Log #}
             </div>
         </div>
     </div>
@@ -227,39 +232,70 @@
 <style>
 .game-container {
     padding: 20px;
-    min-height: calc(100vh - 56px); /* Adjust 56px based on actual navbar height */
+    min-height: calc(100vh - 56px);
 }
 .game-state-visualization {
-    border: 1px solid var(--input-border, #dee2e6); /* Use theme variable */
+    border: 1px solid var(--input-border, #dee2e6);
     border-radius: 5px;
     padding: 15px;
-    height: calc(100vh - 150px); /* Example: Adjust based on header/footer/padding */
-    overflow-y: auto; /* Make this area scrollable */
-    background-color: var(--card-bg, #f8f9fa); /* Use theme variable */
-    color: var(--card-color, #212529); /* Use theme variable */
-    white-space: pre-wrap; /* Added for consistency with AI responses */
+    height: calc(100vh - 150px);
+    overflow-y: auto;
+    background-color: var(--card-bg, #f8f9fa);
+    color: var(--card-color, #212529);
 }
 .player-controls {
     position: sticky;
-    top: 20px; /* Adjust as needed based on navbar height */
-    max-height: calc(100vh - 40px); /* Prevent controls from exceeding viewport height */
-    overflow-y: auto; /* Allow controls column to scroll if needed */
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
 }
 .log-entry {
-    margin-bottom: 0.5rem; /* Add some spacing between log entries */
+    margin-bottom: 0.5rem;
     padding: 5px;
     border-radius: 3px;
+    word-break: break-word;
 }
 .log-entry-player {
-    background-color: rgba(0, 0, 0, 0.05); /* Subtle background for player */
+    background-color: rgba(0, 0, 0, 0.05);
+    font-weight: 500;
+}
+.log-player-identifier {
+    color: #333;
+    font-weight: bold;
+    background: #ffe082;
+    border-radius: 2px;
+    padding: 1px 6px;
+    margin-right: 4px;
+    font-size: 0.98em;
 }
 .log-entry-ai {
-    color: var(--primary-color, #007bff); /* Use theme color */
-    font-style: italic; /* Differentiate AI responses */
+    color: var(--primary-color, #007bff);
+    font-style: italic;
+    background: #e3f2fd;
 }
-/* Style for tabs */
+.log-entry-summary {
+    color: #1976d2;
+    background: #e3f2fd;
+    font-style: italic;
+    border-left: 4px solid #1976d2;
+    padding-left: 10px;
+    margin-bottom: 0.5rem;
+}
+#latestAIResponse {
+    background: #fffde7 !important;
+    border: 2px solid #ffe082 !important;
+    color: #333 !important;
+    font-size: 1.08em;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(255, 224, 130, 0.08);
+}
+.game-state-visualization hr {
+    border: none;
+    border-top: 2px dashed #bdbdbd;
+    margin: 16px 0;
+}
 #infoTabsContent {
-    border-top: none; /* Remove double border with nav-tabs */
+    border-top: none;
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }

@@ -13,7 +13,6 @@ const socketClient = {
   isConnecting: false,
   gameId: null,
   hasJoinedRoom: false,
-  // onConnectCallbacks: [], // Removed
   onDisconnectCallbacks: [],
   initialStateRequestedThisConnection: false, // New flag specific to a connection cycle
 
@@ -63,7 +62,9 @@ const socketClient = {
           }
           if (data.newly_completed_plot_point_message) {
               console.log("SocketClient: Alerting for newly_completed_plot_point_message:", data.newly_completed_plot_point_message);
-              alert(data.newly_completed_plot_point_message);
+              // Use a custom modal or message box instead of alert()
+              // For now, a simple console log as a placeholder for a custom UI
+              console.warn("ALERT (Implement custom UI):", data.newly_completed_plot_point_message);
           }
       });
 
@@ -286,9 +287,12 @@ const socketClient = {
         console.error('SocketIO error:', err);
         // Check if the error object has a message property and display it
         if (err && typeof err === 'object' && err.message) {
-          alert(`Error: ${err.message}`); // Display the error message to the user
+          // Use a custom modal or message box instead of alert()
+          // For now, a simple console log as a placeholder for a custom UI
+          console.warn(`Error: ${err.message}`); 
         } else if (typeof err === 'string') {
-          alert(`Error: ${err}`); // Handle cases where the error might just be a string
+          // Use a custom modal or message box instead of alert()
+          console.warn(`Error: ${err}`); 
         }
         // Optionally, add more sophisticated UI error display here later
       });
@@ -332,16 +336,11 @@ const socketClient = {
     }
   },
 
-  // onConnect method is no longer needed as we call setupListenersAndRequestState directly.
-  // onConnect: function(callback) { ... }, 
-
-  // Add onDisconnect method (keep if used elsewhere, or remove if not)
   onDisconnect: function(callback) {
      console.log("SocketClient: socketClient.onDisconnect method CALLED.");
      if (typeof callback === 'function') this.onDisconnectCallbacks.push(callback);
   },
 
-  // Add disconnect method
   disconnect: function() {
      console.log(`SocketClient: socketClient.disconnect() called. Current gameId: ${this.gameId}`);
      if (this.socket) {
@@ -353,234 +352,179 @@ const socketClient = {
      this.isConnecting = false;
      this.gameId = null;
      this.hasJoinedRoom = false; 
-     // this.onConnectCallbacks = []; // No longer used
-     this.onDisconnectCallbacks = []; // Keep for now
-     hasSetupListenersForCurrentConnection = false; // Reset this flag too
+     this.onDisconnectCallbacks = [];
+     hasSetupListenersForCurrentConnection = false;
      this.initialStateRequestedThisConnection = false;
      console.log(`SocketClient: State after disconnect: connected=${this.connected}, isConnecting=${this.isConnecting}`);
    }
 };
 
-// console.log("socketClient object created."); // DEBUG REMOVED
-
 // --- Game State Update Handlers ---
-// These functions are called by the event handlers inside socketClient.setupListenersAndRequestState
 
-// Revised function to update all relevant UI parts from state
-function updateGameState(state) {
-    console.log("--- updateGameState received state:", JSON.stringify(state, null, 2)); // Re-enable for debugging
+function updateGameState(packet) {
+    console.log("--- updateGameState received state:", JSON.stringify(packet, null, 2));
 
-    // 1. Update Action Controls
-    updateActionControls(state?.actions || []);
+    updateActionControls(packet?.actions || []);
+    updateGameLog(packet); // This function will now handle all log display
+    updatePlayerLocationsDisplay(packet?.state?.player_locations || null);
+    updateVisitedLocationsDisplay(packet?.state?.visited_locations || []);
+    updateInventoryDisplay(packet?.state?.inventory || null);
 
-    // 2. Update Game Log / Visualization Area
-    // Extract log and location safely
-    const logToShow = state?.log || [];
-    const locationToShow = state?.state?.location; // Access nested location
-    updateGameLog(logToShow, locationToShow); // Call the revised log function
-
-    // 3. Update Player Locations Display
-    // Create a player_locations object using the current user's location
-    const currentUserId = window.currentUserId;
-    const currentLocation = state?.state?.location;
-    let playerLocations = null;
-    
-    if (currentUserId && currentLocation) {
-        // Create a simple mapping of the current user to their location
-        playerLocations = {
-            [currentUserId]: currentLocation
-        };
-        console.log("Created playerLocations object:", playerLocations);
+    if (typeof packet?.total_cost !== 'undefined') {
+        updateTotalCostDisplay(packet.total_cost);
     }
-    updatePlayerLocationsDisplay(playerLocations);
-
-    // 4. Update Visited Locations Display
-    updateVisitedLocationsDisplay(state?.state?.visited_locations || []); // Corrected path to state.state.visited_locations
-
-    // 5. Update Inventory Display
-    // Log the full state.state object to see all available keys
-    console.log("Full state.state object:", state?.state);
-    
-    // Extract inventory from inventory_changes.items_added
-    let inventory = null;
-    if (state?.state?.inventory_changes?.items_added) {
-        inventory = state.state.inventory_changes.items_added;
-        console.log("Inventory data found at path: state.state.inventory_changes.items_added");
-    } else if (state?.state?.current_inventory) {
-        inventory = state.state.current_inventory;
-        console.log("Inventory data found at path: state.state.current_inventory");
-    } else if (state?.state?.inventory) {
-        inventory = state.state.inventory;
-        console.log("Inventory data found at path: state.state.inventory");
-    } else if (state?.inventory) {
-        inventory = state.inventory;
-        console.log("Inventory data found at path: state.inventory");
-    } else {
-        console.log("No inventory found in any expected path");
-    }
-    
-    console.log("Inventory data:", inventory);
-    updateInventoryDisplay(inventory); // Pass null/undefined if not found
-
-    // 6. Update Total Cost Display
-    if (typeof state?.total_cost !== 'undefined') {
-        updateTotalCostDisplay(state.total_cost);
-    }
-
-    // 7. Update Game Status (Example - if needed)
-    // const gameStatusDisplay = document.getElementById('gameStatusDisplay');
-    // if (gameStatusDisplay && state?.status) {
-    //     gameStatusDisplay.textContent = state.status;
-    // }
-
-    // 8. Update Plot Point Display (Already handled in event handlers, but could be centralized here)
-    // const plotProgressDisplay = document.getElementById('plot-progress-display');
-    // if (plotProgressDisplay) {
-    //     if (typeof state?.completed_plot_points_display_count === 'number' && typeof state?.total_plot_points_display === 'number') {
-    //         plotProgressDisplay.textContent = `Plot Points: ${state.completed_plot_points_display_count} / ${state.total_plot_points_display}`;
-    //     } else {
-    //         plotProgressDisplay.textContent = '';
-    //     }
-    // }
 }
 
-// --- UI Update Functions ---
+function updateGameLog(packet) {
+    const gameStateVisualization = document.getElementById('gameStateVisualization');
+    if (!gameStateVisualization) return;
 
-// Revised function to update the combined log/narrative display in gameStateVisualization
-function updateGameLog(log, currentLocation) {
-    const visualizationArea = document.getElementById('gameStateVisualization');
-    if (!visualizationArea) {
-        console.error("gameStateVisualization element not found"); // Keep error
+    gameStateVisualization.innerHTML = ''; // Clear existing content
+
+    // Ensure necessary data exists
+    if (!packet || (!packet.latest_ai_response && (!Array.isArray(packet.player_commands) || packet.player_commands.length === 0) && (!Array.isArray(packet.historical_summary) || packet.historical_summary.length === 0))) {
+        const noLogMessage = document.createElement('p');
+        noLogMessage.className = 'text-muted mb-0';
+        noLogMessage.textContent = 'No game log available yet.';
+        gameStateVisualization.appendChild(noLogMessage);
         return;
     }
-    visualizationArea.innerHTML = ''; // Clear previous content
 
-    // Add Current Location at the top
-    const locationElement = document.createElement('p');
-    locationElement.className = 'static-location fw-bold mb-3'; // Added styling classes
-    locationElement.innerText = `Current Location: ${currentLocation || "Unknown"}`;
-    visualizationArea.appendChild(locationElement);
+    const latestAiResponse = packet.latest_ai_response || '';
+    const historicalSummary = Array.isArray(packet.historical_summary) ? packet.historical_summary : [];
+    const playerCommands = Array.isArray(packet.player_commands) ? packet.player_commands : [];
+    const playerDisplayMap = packet.player_display_map || {};
 
-    // Add separator
-    visualizationArea.appendChild(document.createElement('hr'));
+    // 1. Add Latest AI Response (verbose)
+    if (latestAiResponse) {
+        const latestAiHeader = document.createElement('h6');
+        latestAiHeader.textContent = 'Latest AI Response';
+        latestAiHeader.className = 'mt-2 mb-1'; // Bootstrap margin classes
+        gameStateVisualization.appendChild(latestAiHeader);
 
-    // Add log entries
-    if (log && log.length > 0) {
-        console.log("Rendering log entries:", log.length, "entries");
-        log.forEach((item, index) => { // Added index for debugging
-            const logEntry = document.createElement('div');
-            logEntry.classList.add('log-entry');
-            let content = '';
-            let type = 'unknown';
+        const latestAiDiv = document.createElement('div');
+        latestAiDiv.className = 'log-entry log-entry-ai-latest'; // Use a specific class for latest
+        latestAiDiv.style.whiteSpace = 'pre-wrap'; // Preserve formatting
+        // Use CSS for background/padding/border-radius
+        latestAiDiv.textContent = latestAiResponse;
+        gameStateVisualization.appendChild(latestAiDiv);
+    }
 
-            if (typeof item === 'object' && item !== null && item.content) {
-                content = item.content;
-                type = item.type || 'unknown';
-                console.log(`Log entry ${index}: type=${type}, content=${content.substring(0, 30)}...`);
-            } else {
-                content = String(item); // Ensure it's a string
-                console.log(`Log entry ${index}: simple string content=${content.substring(0, 30)}...`);
+    // 2. Add Separator if there's both latest AI and historical log
+    if (latestAiResponse && (historicalSummary.length > 0 || playerCommands.length > 0)) {
+        const hr = document.createElement('hr');
+        gameStateVisualization.appendChild(hr);
+    }
+
+    // 3. Add Interaction Log Header
+    if (historicalSummary.length > 0 || playerCommands.length > 0) {
+        const historyHeader = document.createElement('h6');
+        historyHeader.textContent = 'Interaction Log';
+        historyHeader.className = 'mt-2 mb-1'; // Bootstrap margin classes
+        gameStateVisualization.appendChild(historyHeader);
+
+        // 4. Add Historical Summaries and Player Commands (interleaved, reverse chronological)
+        // Assuming playerCommands and historicalSummary have the same length and correspond to turns
+        const logLength = Math.min(playerCommands.length, historicalSummary.length); // Use min length just in case
+        for (let i = logLength - 1; i >= 0; i--) {
+            const cmd = playerCommands[i];
+            const summaryText = historicalSummary[i];
+
+            // Add Player Command
+            if (cmd && cmd.content) {
+                const playerId = cmd.user_id;
+                const playerName = playerDisplayMap[playerId] || 'Unknown Player';
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'log-entry log-entry-player';
+
+                const identifierSpan = document.createElement('span');
+                identifierSpan.className = 'log-player-identifier';
+                identifierSpan.textContent = playerName + ': ';
+                playerDiv.appendChild(identifierSpan);
+
+                const actionSpan = document.createElement('span');
+                actionSpan.textContent = cmd.content;
+                playerDiv.appendChild(actionSpan);
+
+                gameStateVisualization.appendChild(playerDiv);
             }
 
-            logEntry.innerText = content; // Use innerText to prevent potential HTML injection
-
-            if (type === "player") {
-                logEntry.classList.add('log-entry-player');
-            } else if (type === "ai") {
-                logEntry.classList.add('log-entry-ai');
-            } else if (type === "system") { // Add system message styling if needed
-                 logEntry.classList.add('log-entry-system', 'text-muted', 'fst-italic');
+            // Add AI Summary
+            if (summaryText) {
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'log-entry log-entry-summary'; // Specific class for summary
+                summaryDiv.textContent = summaryText;
+                gameStateVisualization.appendChild(summaryDiv);
             }
-            visualizationArea.appendChild(logEntry);
-        });
-    } else {
-        const noLogEntry = document.createElement('div');
-        noLogEntry.className = 'log-entry text-muted';
-        noLogEntry.innerText = 'No log entries yet.';
-        visualizationArea.appendChild(noLogEntry);
+        }
+    } else if (!latestAiResponse) { // If no latest AI response and no historical log
+        const noLogMessage = document.createElement('p');
+        noLogMessage.className = 'text-muted mb-0';
+        noLogMessage.textContent = 'No game log available yet.';
+        gameStateVisualization.appendChild(noLogMessage);
     }
 
     // Scroll to the bottom
-    visualizationArea.scrollTop = visualizationArea.scrollHeight;
+    gameStateVisualization.scrollTop = gameStateVisualization.scrollHeight;
 }
 
-// New function to append slash command responses to the game log
 function appendSlashCommandResponseToLog(data) {
-    const visualizationArea = document.getElementById('gameStateVisualization');
-    if (!visualizationArea) {
-        console.error("gameStateVisualization element not found for slash command response");
-        return;
-    }
+    const gameStateVisualization = document.getElementById('gameStateVisualization');
+    if (!gameStateVisualization) return;
 
     if (data && data.lines && data.lines.length > 0) {
         const headerEntry = document.createElement('div');
-        headerEntry.classList.add('log-entry', 'log-entry-system', 'fw-bold'); // System styling, bold header
-        headerEntry.innerText = data.header || `${data.command} response:`; // Use provided header or default
-        visualizationArea.appendChild(headerEntry);
+        headerEntry.classList.add('log-entry', 'log-entry-system', 'fw-bold');
+        headerEntry.innerText = data.header || `${data.command} response:`;
+        gameStateVisualization.appendChild(headerEntry);
 
         data.lines.forEach(line => {
             const lineEntry = document.createElement('div');
-            lineEntry.classList.add('log-entry', 'log-entry-system', 'ms-2'); // System styling, indented
+            lineEntry.classList.add('log-entry', 'log-entry-system', 'ms-2');
             lineEntry.innerText = line;
-            visualizationArea.appendChild(lineEntry);
+            gameStateVisualization.appendChild(lineEntry);
         });
-         visualizationArea.appendChild(document.createElement('hr')); // Add a separator after the response
-    } else if (data && data.message) { // Handle simple message responses
+        gameStateVisualization.appendChild(document.createElement('hr'));
+    } else if (data && data.message) {
         const messageEntry = document.createElement('div');
         messageEntry.classList.add('log-entry', 'log-entry-system');
         messageEntry.innerText = data.message;
-        visualizationArea.appendChild(messageEntry);
-        visualizationArea.appendChild(document.createElement('hr'));
-    } else {
-        console.warn("Received slash_command_response with no lines or message to display:", data);
+        gameStateVisualization.appendChild(messageEntry);
+        gameStateVisualization.appendChild(document.createElement('hr'));
     }
-    visualizationArea.scrollTop = visualizationArea.scrollHeight;
+    gameStateVisualization.scrollTop = gameStateVisualization.scrollHeight;
 }
 
-
-// New function to update the total cost display
 function updateTotalCostDisplay(cost) {
-    const costElement = document.getElementById('totalCostDisplay'); // Need to add this ID to the HTML element
+    const costElement = document.getElementById('totalCostDisplay');
     if (costElement) {
-        // Format cost to 4 decimal places
         costElement.textContent = `Cost: $${cost.toFixed(4)}`;
-    } else {
-        // console.warn("totalCostDisplay element not found."); // DEBUG REMOVED
     }
 }
 
 function updateActionControls(actions) {
     const actionControls = document.getElementById('actionControls');
-     if (!actionControls) {
-        // console.error("actionControls element not found"); // DEBUG REMOVED
-        return;
-    }
-    actionControls.innerHTML = ''; // Clear previous actions
+    if (!actionControls) return;
+
+    actionControls.innerHTML = '';
     if (actions && Array.isArray(actions)) {
         actions.forEach(action => {
             const button = document.createElement('button');
-            button.className = 'btn btn-primary mb-2 w-100'; // Make buttons full width
-            // TODO: Use a more descriptive property than 'name' if available
+            button.className = 'btn btn-primary mb-2 w-100';
             button.innerText = typeof action === 'object' ? action.name || JSON.stringify(action) : action;
-            button.onclick = () => socketClient.performAction(action); // Ensure calling the method
+            button.onclick = () => socketClient.performAction(action);
             actionControls.appendChild(button);
         });
     } else {
-        // console.warn("No valid actions received to update controls."); // DEBUG REMOVED
         actionControls.innerHTML = '<p class="text-muted">No actions available.</p>';
     }
 }
 
-// New function to update Player Locations display
 function updatePlayerLocationsDisplay(playerLocations) {
-    // console.log("--- updatePlayerLocationsDisplay received:", JSON.stringify(playerLocations, null, 2)); // DEBUG REMOVED
     const displayElement = document.getElementById('playerLocationsDisplay');
-    if (!displayElement) {
-        console.error("playerLocationsDisplay element not found"); // Keep error for debugging
-        return;
-    }
+    if (!displayElement) return;
+
     let html = '<ul class="list-unstyled mb-0">';
-    // Access playerDetails globally (assuming it's set by play.html)
     const playerDetails = window.playerDetails || {};
     if (playerLocations && Object.keys(playerLocations).length > 0) {
         for (const [userId, location] of Object.entries(playerLocations)) {
@@ -597,14 +541,10 @@ function updatePlayerLocationsDisplay(playerLocations) {
     displayElement.innerHTML = html;
 }
 
-// New function to update Visited Locations display
 function updateVisitedLocationsDisplay(visitedLocations) {
-    console.log("--- updateVisitedLocationsDisplay received:", JSON.stringify(visitedLocations, null, 2));
     const displayElement = document.getElementById('locationHistoryDisplay');
-    if (!displayElement) {
-        console.error("locationHistoryDisplay element not found"); // Keep error
-        return;
-    }
+    if (!displayElement) return;
+
     let html = '<ul class="list-unstyled mb-0">';
     if (visitedLocations && visitedLocations.length > 0) {
         visitedLocations.forEach(location => {
@@ -615,90 +555,58 @@ function updateVisitedLocationsDisplay(visitedLocations) {
     }
     html += '</ul>';
     displayElement.innerHTML = html;
-    console.log("Visited locations display updated with HTML:", html);
 }
 
-// New function to update Inventory display
 function updateInventoryDisplay(inventory) {
-    console.log("--- updateInventoryDisplay received:", JSON.stringify(inventory, null, 2)); // Re-enable for debugging
     const displayElement = document.getElementById('inventoryDisplay');
-    if (!displayElement) {
-        console.error("inventoryDisplay element not found"); // Keep error
-        return;
-    }
+    if (!displayElement) return;
+
     let html = '<ul class="list-unstyled mb-0">';
-    
-    // Handle different inventory data structures
-    if (inventory === null || inventory === undefined) { 
-        // Case 1: No inventory data
+    if (inventory === null || inventory === undefined) {
         html += '<li class="text-muted">Inventory data not available from server.</li>';
-    } else if (Array.isArray(inventory) && inventory.length > 0) { 
-        // Case 2: Array of items
+    } else if (Array.isArray(inventory) && inventory.length > 0) {
         inventory.forEach(item => {
             if (typeof item === 'object' && item !== null && item.name) {
-                html += `<li>${item.name}</li>`; // Object with name property
+                html += `<li>${item.name}</li>`;
             } else {
-                html += `<li>${item}</li>`; // String or other primitive
+                html += `<li>${item}</li>`;
             }
         });
     } else if (typeof inventory === 'object' && inventory !== null && Object.keys(inventory).length > 0) {
-        // Case 3: Object with key-value pairs (possibly a dictionary of items)
         for (const [key, value] of Object.entries(inventory)) {
             if (typeof value === 'object' && value !== null) {
-                // If value is an object, try to extract a name or description
                 const itemName = value.name || value.description || key;
                 html += `<li>${itemName}</li>`;
             } else {
-                // If value is a primitive, use the key as the item name
                 html += `<li>${key}</li>`;
             }
         }
     } else {
-        // Case 4: Empty inventory
         html += '<li class="text-muted">Inventory is empty.</li>';
     }
-    
     html += '</ul>';
     displayElement.innerHTML = html;
 }
 
-
-// --- Action Emission ---
-
-// This performAction will now be a method of socketClient and handle slash command differentiation
-// function performAction(actionInputText) { // Becomes a method
 socketClient.performAction = function(actionInputText) {
     const rawInput = actionInputText;
     const trimmedActionText = actionInputText ? actionInputText.trim() : "";
 
-    // console.log(`[socketClient.mjs] socketClient.performAction START. Raw: "${rawInput}", Trimmed: "${trimmedActionText}"`);
-
     if (!trimmedActionText) {
-        // console.log("[socketClient.mjs] socketClient.performAction: Trimmed text is empty. Exiting.");
         return;
     }
 
     const isSlashCommand = trimmedActionText.startsWith('/');
-    // console.log(`[socketClient.mjs] socketClient.performAction: isSlashCommand = ${isSlashCommand} (checked on "${trimmedActionText}")`);
 
     if (isSlashCommand) {
-        // console.log("[socketClient.mjs] Slash command DETECTED by socketClient.performAction:", trimmedActionText);
         const parts = trimmedActionText.substring(1).split(' ');
         const command = parts[0].toLowerCase();
         const args = parts.slice(1);
-        
-        // gameId needs to be accessible. Assuming it's set on socketClient or globally by play.html
-        // For safety, let's try to get it from the DOM if socketClient.gameId isn't reliable here.
+
         const gameIdForEmit = socketClient.gameId || document.getElementById('gameTitle')?.dataset.gameId;
         const userIdForEmit = window.currentUserId || document.getElementById('gameTitle')?.dataset.userId;
 
-
-        if (!gameIdForEmit) {
-            // console.error("[socketClient.mjs] CRITICAL: gameIdForEmit is undefined for slash command."); // DEBUG REMOVED
-            return; 
-        }
-        if (!userIdForEmit) {
-            // console.error("[socketClient.mjs] CRITICAL: userIdForEmit is undefined for slash command."); // DEBUG REMOVED
+        if (!gameIdForEmit || !userIdForEmit) {
             return;
         }
 
@@ -709,82 +617,52 @@ socketClient.performAction = function(actionInputText) {
                 command: command,
                 args: args
             });
-            // console.log(`[socketClient.mjs] Emitted slash_command: ${command} with args: ${JSON.stringify(args)}`);
-        } else {
-            // console.error("[socketClient.mjs] socketClient not available/connected for slash_command emission."); // DEBUG REMOVED
         }
     } else {
-        // console.log("[socketClient.mjs] Regular action DETECTED by socketClient.performAction:", trimmedActionText);
         const gameTitleElement = document.getElementById('gameTitle');
         if (!gameTitleElement) {
-             // console.error("[socketClient.mjs] gameTitle element not found for regular action."); // DEBUG REMOVED
              return;
         }
         const game_id = gameTitleElement.dataset.gameId;
         const user_id = gameTitleElement.dataset.userId;
-        
+
         if (socketClient.socket && socketClient.connected) {
             socketClient.socket.emit('player_action', {
                 game_id: game_id,
                 user_id: user_id,
                 action: trimmedActionText
             });
-            // console.log("[socketClient.mjs] Emitted player_action:", trimmedActionText);
-        } else {
-             // console.error("[socketClient.mjs] socketClient not available/connected for player_action emission."); // DEBUG REMOVED
         }
     }
-    // Responsibility of clearing the input field should ideally be with the direct event handler in play.html
-    // This method shouldn't assume it needs to clear it.
-    // console.log("[socketClient.mjs] socketClient.performAction END.");
-}; // End of performAction method
-
-// --- State Rendering ---
-
-// Removed renderCurrentScene function as it's integrated into updateGameLog
-
-// Optional: Function to render other state details if needed elsewhere
-// function renderOtherStateData(stateData) { ... }
-
-// --- Initial Setup ---
-// The functions requestInitialState and setupListenersAndRequestState are now methods of socketClient.
-// The main connection logic is now more self-contained within socketClient.
+};
 
 const gameId = document.getElementById('gameTitle')?.dataset.gameId; 
 
 if (gameId) {
     console.log("SocketClient: Initializing for gameId:", gameId);
-    // The connect call will handle setting up listeners via its internal 'connect' event handler,
-    // which now directly calls this.setupListenersAndRequestState.
     socketClient.connect(gameId); 
 } else {
     console.error("SocketClient: Game ID not found in DOM, cannot initialize socket connection.");
 }
 
-// --- Custom Action Input Handler ---
 const customActionInput = document.getElementById('customActionInput');
 const submitCustomActionButton = document.getElementById('submitCustomAction');
 
 if (customActionInput && submitCustomActionButton) {
-    // Handle button click
     submitCustomActionButton.addEventListener('click', () => {
         const actionText = customActionInput.value.trim();
         if (actionText) {
-            socketClient.performAction(actionText); // Ensure calling the method
-            customActionInput.value = ''; // Clear the input field
+            socketClient.performAction(actionText);
+            customActionInput.value = '';
         }
     });
 
-    // Handle Enter key press in the input field
     customActionInput.addEventListener('keypress', (event) => {
         if (event.key === 'Enter') {
-            event.preventDefault(); // Prevent default form submission if it were in a form
-            submitCustomActionButton.click(); // Trigger the button click handler
+            event.preventDefault();
+            submitCustomActionButton.click();
         }
     });
-} else {
-    // console.error("Custom action input elements not found."); // DEBUG REMOVED
 }
 
 export default socketClient;
-// console.log("socketClient exported."); // DEBUG REMOVED

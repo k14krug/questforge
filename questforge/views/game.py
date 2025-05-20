@@ -123,8 +123,10 @@ def play(game_id): # Renamed from play_game to play for consistency
 def history(game_id):
     """Game history view"""
     game = Game.query.get_or_404(game_id)
-    # Potentially load game states or other history data here
-    return render_template('game/history.html', game=game)
+    # Fetch the latest GameState for the game
+    game_state = game.game_states[-1] if game.game_states else None
+    game_log = game_state.game_log if game_state and game_state.game_log else []
+    return render_template('game/history.html', game=game, game_log=game_log)
 
 @game_bp.route('/create')
 @login_required

@@ -306,7 +306,7 @@ class SocketService:
                 emit('error', {'message': 'Missing required fields'}, room=game_id)
                 return
 
-            player_log = {"type": "player", "content": action} # Define player log early
+            player_log = {"type": "player", "user_id": user_id, "content": action} # Include user_id for mapping
             updated_state_info = None # Define updated_state_info early
             stage_one_ai_result_tuple = None # Renamed from ai_result for clarity
             narrative_from_stage1 = "Action not processed due to validation failure or AI error." # Default narrative
@@ -450,24 +450,35 @@ class SocketService:
                               game_state_service.active_games[game_id]['log'] = []
                          game_state_service.active_games[game_id]['log'].append(player_log)
                     current_app.logger.debug(f"Appended player log entry for game {game_id}")
-                    attributes.flag_modified(db_game_state, "game_log") # Flag game_log modification
+                    attributes.flag_modified(db_game_state, "game_log") # Flag game_log modification immediately
 
                     # 4. Process Stage 1 AI Result (if validation passed AND AI responded)
                     if stage_one_ai_result_tuple:
                         stage_one_ai_output, model_used, usage_data = stage_one_ai_result_tuple
-                        
-                        narrative_from_stage1 = stage_one_ai_output.get('narrative', 'Error: AI narrative missing.')
-                        general_state_changes_from_stage1 = stage_one_ai_output.get('state_changes', {})
-                        available_actions_from_stage1 = stage_one_ai_output.get('available_actions', [])
+
+                        # Ensure stage_one_ai_output is a dictionary before accessing keys
+                        if isinstance(stage_one_ai_output, dict):
+                            narrative_from_stage1 = stage_one_ai_output.get('narrative', 'Error: AI narrative missing.')
+                            general_state_changes_from_stage1 = stage_one_ai_output.get('state_changes', {})
+                            available_actions_from_stage1 = stage_one_ai_output.get('available_actions', [])
+                        else:
+                            # Handle unexpected AI output format
+                            current_app.logger.error(f"Stage 1 AI service returned unexpected output format for game {game_id}. Expected dict, got {type(stage_one_ai_output)}. Raw output: {stage_one_ai_output}")
+                            narrative_from_stage1 = 'Error: AI returned unexpected format.'
+                            general_state_changes_from_stage1 = {}
+                            available_actions_from_stage1 = []
+                            # Optionally, raise an error or emit a client error here if this is critical
+                            # raise ValueError("AI service (Stage 1) returned unexpected output format.")
 
                         # Add AI narrative to game_log
                         db_game_state.game_log.append({"type": "ai", "content": narrative_from_stage1})
                         if game_id in game_state_service.active_games: # Also update in-memory log
-                            if 'log' not in game_state_service.active_games[game_id] or not isinstance(game_state_service.active_games[game_id]['log'], list):
-                                game_state_service.active_games[game_id]['log'] = []
-                            game_state_service.active_games[game_id]['log'].append({"type": "ai", "content": narrative_from_stage1})
+                             if 'log' not in game_state_service.active_games[game_id] or not isinstance(game_state_service.active_games[game_id]['log'], list):
+                                  game_state_service.active_games[game_id]['log'] = []
+                             game_state_service.active_games[game_id]['log'].append({"type": "ai", "content": narrative_from_stage1})
                         current_app.logger.debug(f"Appended AI (Stage 1) narrative log entry for game {game_id}")
-                        
+                        attributes.flag_modified(db_game_state, "game_log") # Flag game_log modification
+
                         # Merge general_state_changes_from_stage1 into state_data
                         # This includes location, inventory_changes, npc_status, world_object_states, conclusion flags etc.
                         # It does NOT include plot point completions.
@@ -483,11 +494,11 @@ class SocketService:
                             if new_location_from_stage1 not in state_data['visited_locations']:
                                 state_data['visited_locations'].append(new_location_from_stage1)
                                 current_app.logger.debug(f"Added '{new_location_from_stage1}' to state_data['visited_locations']. Current: {state_data.get('visited_locations')}")
-                        
+
                         # Update available actions in db_game_state (will be part of the final emit)
                         db_game_state.available_actions = available_actions_from_stage1 # These are from Stage 1
                         attributes.flag_modified(db_game_state, "available_actions")
-                        
+
                         # Log API Usage for Stage 1
                         if usage_data:
                             try:
@@ -506,7 +517,7 @@ class SocketService:
                                 current_app.logger.error(f"Failed to create ApiUsageLog entry for game {game_id} (Stage 1 action): {log_e}", exc_info=True)
                         else:
                             current_app.logger.warning(f"No usage data returned from Stage 1 AI service for game {game_id} player action.")
-                        
+
                         # At this point, state_data contains updates from Stage 1.
                         
                         # --- Historical Summary Generation (New Step) ---
@@ -699,7 +710,7 @@ class SocketService:
                             # Check if any of the *newly completed* plot points were *required*
                             was_any_newly_completed_required = any(
                                 pp_obj.get('required') for newly_id in newly_completed_plot_points_this_turn_ids
-                                for pp_obj in major_plot_points_list if isinstance(pp_obj, dict) and pp_obj.get('id') == newly_id
+                                for pp_obj in major_plot_points_list if isinstance(pp_obj, dict) and pp.get('id') == newly_id
                             )
                             if was_any_newly_completed_required:
                                 state_data['turns_since_plot_progress'] = 0 # Reset counter
@@ -802,6 +813,33 @@ class SocketService:
                                         break # Show notification for the first one
                         # --- End Calculate Plot Point Display Counts ---
 
+                        # --- New: Extract latest_ai_response, player_commands, historical_summary for frontend ---
+                        game_log = db_game_state.game_log if isinstance(db_game_state.game_log, list) else []
+                        latest_ai_response = None
+                        player_commands = []
+                        for entry in game_log:
+                            if isinstance(entry, dict):
+                                if entry.get("type") == "ai":
+                                    latest_ai_response = entry.get("content")
+                                elif entry.get("type") == "player":
+                                    player_commands.append({
+                                        "user_id": entry.get("user_id"),
+                                        "content": entry.get("content")
+                                    })
+                        # If multiple AI entries, take the last one
+                        if any(e.get("type") == "ai" for e in game_log if isinstance(e, dict)):
+                            latest_ai_response = [e.get("content") for e in game_log if isinstance(e, dict) and e.get("type") == "ai"][-1]
+                        # Historical summary from state_data
+                        historical_summary = db_game_state.state_data.get("historical_summary", [])
+
+                        # --- Build player_display_map for mapping user_id to display name ---
+                        # Eager-load all GamePlayer associations with user for this game
+                        game_players = GamePlayer.query.filter_by(game_id=game_id).options(joinedload(GamePlayer.user)).all()
+                        player_display_map = {}
+                        for p in game_players:
+                            display_name = p.character_name if p.character_name else (p.user.username if p.user else f"Player {p.user_id}")
+                            player_display_map[str(p.user_id)] = display_name
+
                         broadcast_data = {
                             'game_id': game_id,
                             'user_id': user_id, # User who took the action
@@ -812,7 +850,12 @@ class SocketService:
                             'total_cost': float(new_total_cost),
                             'total_plot_points_display': total_plot_points_for_display,
                             'completed_plot_points_display_count': completed_plot_points_display_count,
-                            'newly_completed_plot_point_message': newly_completed_display_details_msg # Can be null
+                            'newly_completed_plot_point_message': newly_completed_display_details_msg, # Can be null
+                            # --- New fields for frontend ---
+                            'latest_ai_response': latest_ai_response,
+                            'player_commands': player_commands,
+                            'historical_summary': historical_summary,
+                            'player_display_map': player_display_map
                         }
                         
                         current_app.logger.debug(f"Final broadcast data prepared for game {game_id}: {json.dumps(broadcast_data)}")
@@ -938,6 +981,32 @@ class SocketService:
                         if isinstance(pp_init, dict) and pp_init.get('id') != first_required_pp_id_initial:
                             completed_plot_points_display_count_initial += 1
 
+                    # --- New: Extract latest_ai_response, player_commands, historical_summary for frontend initial state ---
+                    game_log = state_info.get('log', [])
+                    latest_ai_response = None
+                    player_commands = []
+                    for entry in game_log:
+                        if isinstance(entry, dict):
+                            if entry.get("type") == "ai":
+                                latest_ai_response = entry.get("content")
+                            elif entry.get("type") == "player":
+                                player_commands.append({
+                                    "user_id": entry.get("user_id"),
+                                    "content": entry.get("content")
+                                })
+                    # If multiple AI entries, take the last one
+                    if any(e.get("type") == "ai" for e in game_log if isinstance(e, dict)):
+                        latest_ai_response = [e.get("content") for e in game_log if isinstance(e, dict) and e.get("type") == "ai"][-1]
+                    # Historical summary from state_data
+                    historical_summary = state_info['state'].get("historical_summary", [])
+
+                    # --- Build player_display_map for mapping user_id to display name (initial state) ---
+                    game_players = GamePlayer.query.filter_by(game_id=game_id).options(joinedload(GamePlayer.user)).all()
+                    player_display_map = {}
+                    for p in game_players:
+                        display_name = p.character_name if p.character_name else (p.user.username if p.user else f"Player {p.user_id}")
+                        player_display_map[str(p.user_id)] = display_name
+
                     emit_data = {
                         'state': state_info['state'],
                         'version': state_info['version'],
@@ -945,7 +1014,12 @@ class SocketService:
                         'actions': state_info.get('actions', []),
                         'total_plot_points_display': total_plot_points_for_display_initial,
                         'completed_plot_points_display_count': completed_plot_points_display_count_initial,
-                        'newly_completed_plot_point_message': None # No new message on initial load
+                        'newly_completed_plot_point_message': None, # No new message on initial load
+                        # --- New fields for frontend ---
+                        'latest_ai_response': latest_ai_response,
+                        'player_commands': player_commands,
+                        'historical_summary': historical_summary,
+                        'player_display_map': player_display_map
                     }
                     current_app.logger.info(f"[socket_service] Emitting 'game_state' (v{emit_data.get('version')}) for game {game_id} to SID {request.sid}. Plot counts: {total_plot_points_for_display_initial} total, {completed_plot_points_display_count_initial} completed.")
                     current_app.logger.debug(f"[socket_service] Full 'game_state' data being emitted to SID {request.sid}: {json.dumps(emit_data)}")
@@ -1355,11 +1429,13 @@ class SocketService:
                         return
 
                     state_data = game_state_obj.state_data or {}
+                    # Split the JSON string into lines for the 'lines' parameter
+                    state_data_json_lines = json.dumps(state_data, indent=2).splitlines()
                     emit('slash_command_response', {
                         'command': command,
                         'type': 'info',
                         'header': 'Debug: Full GameState.state_data',
-                        'lines': [json.dumps(state_data, indent=2)]
+                        'lines': state_data_json_lines # Pass the list of lines
                     }, room=request.sid)
                 else:
                     emit('slash_command_response', {
@@ -1382,7 +1458,7 @@ class SocketService:
                 return
 
             if not current_user.is_authenticated or str(current_user.id) != str(user_id_from_client):
-                current_app.logger.warning(f"User {user_id_from_client} (client) vs {current_user.id} (server) mismatch or not authenticated for change_difficulty.")
+                current_app.logger.warning(f"User {current_user.id} (client) vs {current_user.id} (server) mismatch or not authenticated for change_difficulty.")
                 emit('difficulty_change_ack', {'status': 'error', 'message': 'Authentication error.'}, room=request.sid)
                 return
 

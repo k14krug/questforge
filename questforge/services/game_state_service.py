@@ -135,13 +135,13 @@ class GameStateService:
                  current_memory_state['actions'] = db_game_state.available_actions
                  current_app.logger.debug(f"Synced available_actions from DB to memory for game {game_id}")
 
-            # Return the potentially updated memory state
+            # Return state using the definitive data from the DB object
             return {
-                'version': current_memory_state['version'],
-                'state': current_memory_state['state'],
-                'log': current_memory_state['log'],
-                'actions': current_memory_state['actions'],
-                'player_locations': current_memory_state.get('player_locations', {}) # Include player_locations
+                'version': current_memory_state['version'], # Version is managed in memory
+                'state': db_game_state.state_data or {}, # Use state_data from DB
+                'log': db_game_state.game_log or [], # Use game_log from DB
+                'actions': db_game_state.available_actions or [], # Use actions from DB
+                'player_locations': current_memory_state.get('player_locations', {}) # Player locations are memory-only
             }
 
     def get_state_diff(self, game_id, from_version):
