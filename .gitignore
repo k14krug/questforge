@@ -31,3 +31,9 @@ migrations/
 # Package files
 *.egg
 *.egg-info
+
+ai_debug_palyoads/
+*.json
+ai_debug_payloads/ai_payload_campaign_1.json
+ai_debug_payloads/ai_payload_plotcheck_1.json
+ai_debug_payloads/ai_payload_response_1.json
