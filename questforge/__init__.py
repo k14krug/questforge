@@ -16,41 +16,44 @@ def datetimeformat(value, format='%Y-%m-%d %H:%M'):
     except Exception:
         return str(value)
 
-def create_app(config_name='default'):
+def create_app(config_name=None):
     app = Flask(__name__)
     app.jinja_env.filters['datetimeformat'] = datetimeformat
 
-    # Load config
-    app.config.from_object('config.Config')
+    # Determine config name from environment variable if not provided
+    if config_name is None:
+        config_name = os.getenv('APP_ENV', 'development')
+
+    # Load config based on config_name
+    from config import config_by_name
+    if config_name not in config_by_name:
+        raise ValueError(f"Invalid APP_ENV '{config_name}'. Must be one of: {list(config_by_name.keys())}")
+    app.config.from_object(config_by_name[config_name])
 
     # --- Standard Flask Logging Setup ---
     log_dir = os.path.join(app.instance_path, 'logs')
     os.makedirs(log_dir, exist_ok=True) # Ensure log directory exists
 
     # Define handlers
-    # Use RotatingFileHandler for the file logger
-    log_file_path = os.path.join(log_dir, 'questforge.log') # Use a more general log file name
-    # Rotate logs at 5MB, keep 3 backups
-    file_handler = RotatingFileHandler(log_file_path, maxBytes=5*1024*1024, backupCount=3) 
-    file_handler.setLevel(logging.DEBUG) # Log DEBUG and above to file
+    log_file_path = os.path.join(log_dir, 'questforge.log')
+    file_handler = RotatingFileHandler(log_file_path, maxBytes=5*1024*1024, backupCount=3)
+    file_handler.setLevel(getattr(logging, app.config.get('LOGLEVEL', 'INFO')))
     file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s [in %(pathname)s:%(lineno)d]' # Add path/line info
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s [in %(pathname)s:%(lineno)d]'
     ))
 
     console_handler = StreamHandler()
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(getattr(logging, app.config.get('LOGLEVEL', 'INFO')))
     console_handler.setFormatter(logging.Formatter(
         '%(asctime)s - CONSOLE - %(levelname)s - %(message)s [in %(pathname)s:%(lineno)d]'
     ))
 
-    # Remove default handlers and add ours to app.logger
     while app.logger.handlers:
         app.logger.removeHandler(app.logger.handlers[0])
     app.logger.addHandler(file_handler)
     app.logger.addHandler(console_handler)
 
-    # Set the app logger level to DEBUG to allow file handler to process debug messages
-    app.logger.setLevel(logging.DEBUG)
+    app.logger.setLevel(getattr(logging, app.config.get('LOGLEVEL', 'INFO')))
 
     app.logger.info('--- Standard Flask logging initialized ---')
     # --- End Standard Flask Logging Setup ---
@@ -60,7 +63,7 @@ def create_app(config_name='default'):
     bcrypt.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
-    socketio = init_socketio(app) # SocketIO initialized after logging
+    socketio = init_socketio(app)
 
     # Set login view
     login_manager.login_view = 'auth.login'
