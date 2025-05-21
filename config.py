@@ -42,7 +42,7 @@ class ProductionConfig(Config):
     SOCKETIO_LOGGING = False
     ENGINEIO_LOGGING = False
     SECRET_KEY = os.environ.get('SECRET_KEY')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('PROD_DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('PROD_DATABASE_URI')
 
 config_by_name = {
     'development': DevelopmentConfig,
