@@ -985,20 +985,32 @@ class SocketService:
                     game_log = state_info.get('log', [])
                     latest_ai_response = None
                     player_commands = []
-                    for entry in game_log:
-                        if isinstance(entry, dict):
-                            if entry.get("type") == "ai":
-                                latest_ai_response = entry.get("content")
-                            elif entry.get("type") == "player":
-                                player_commands.append({
-                                    "user_id": entry.get("user_id"),
-                                    "content": entry.get("content")
-                                })
-                    # If multiple AI entries, take the last one
-                    if any(e.get("type") == "ai" for e in game_log if isinstance(e, dict)):
-                        latest_ai_response = [e.get("content") for e in game_log if isinstance(e, dict) and e.get("type") == "ai"][-1]
-                    # Historical summary from state_data
                     historical_summary = state_info['state'].get("historical_summary", [])
+
+                    # Handle initial game_log that may be a list of strings (legacy) or dicts (new)
+                    if isinstance(game_log, list) and len(game_log) > 0:
+                        # If the first entry is a string, treat it as the initial AI response
+                        if isinstance(game_log[0], str):
+                            latest_ai_response = game_log[0]
+                        else:
+                            # Otherwise, use the previous logic (look for type == "ai")
+                            for entry in game_log:
+                                if isinstance(entry, dict):
+                                    if entry.get("type") == "ai":
+                                        latest_ai_response = entry.get("content")
+                                    elif entry.get("type") == "player":
+                                        player_commands.append({
+                                            "user_id": entry.get("user_id"),
+                                            "content": entry.get("content")
+                                        })
+                            # If multiple AI entries, take the last one
+                            if any(e.get("type") == "ai" for e in game_log if isinstance(e, dict)):
+                                latest_ai_response = [e.get("content") for e in game_log if isinstance(e, dict) and e.get("type") == "ai"][-1]
+                    # Defensive: ensure player_commands and historical_summary are lists
+                    if not isinstance(player_commands, list):
+                        player_commands = []
+                    if not isinstance(historical_summary, list):
+                        historical_summary = []
 
                     # --- Build player_display_map for mapping user_id to display name (initial state) ---
                     game_players = GamePlayer.query.filter_by(game_id=game_id).options(joinedload(GamePlayer.user)).all()
