@@ -16,7 +16,7 @@ instance/
 
 # Environment files
 .env
-.env.prod
+.env.production
 
 # VSCode
 .vscode/

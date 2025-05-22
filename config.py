@@ -38,7 +38,7 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     LOGLEVEL = 'INFO'
-    SOCKETIO_CORS_ORIGINS = os.environ.get('SOCKETIO_CORS_ORIGINS', 'https://your-production-domain.com')
+    SOCKETIO_CORS_ORIGINS = os.environ.get('SOCKETIO_CORS_ORIGINS', 'http://localhost,http://questforge.k2svr.com')
     SOCKETIO_LOGGING = False
     ENGINEIO_LOGGING = False
     SECRET_KEY = os.environ.get('SECRET_KEY')

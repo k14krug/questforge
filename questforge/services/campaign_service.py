@@ -249,7 +249,7 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
         # Set attributes *after* object creation
         initial_game_state.campaign_id = new_campaign.id
         initial_game_state.current_location = initial_state_dict.get('location')
-        initial_game_state.game_log = [initial_narrative]
+        initial_game_state.game_log = [{'type': 'ai', 'content': initial_narrative}]
         initial_game_state.available_actions = initial_actions
         db.session.add(initial_game_state)
         logger.info(f"Created initial GameState object for game {game_id}")
@@ -296,7 +296,7 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
         from .game_state_service import game_state_service
         game_state_service.join_game(game_id, 'system') # Ensure game entry exists
         game_state_service.active_games[game_id]['state'] = initial_state_dict
-        game_state_service.active_games[game_id]['log'] = [initial_narrative]
+        game_state_service.active_games[game_id]['log'] = [{'type': 'ai', 'content': initial_narrative}]
         game_state_service.active_games[game_id]['actions'] = initial_actions
         game_state_service.active_games[game_id]['version'] = 1 # Initial version
         logger.info(f"Initialized game state in memory for game {game_id}")
