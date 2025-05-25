@@ -297,14 +297,32 @@ class SocketService:
 
         @socketio.on('player_action')
         def handle_player_action(data):
-            """Process player actions through AI and update game state"""
+            """Handle a player action from the client."""
             game_id = data.get('game_id')
             user_id = data.get('user_id')
             action = data.get('action')
 
             if not all([game_id, user_id, action]):
-                emit('error', {'message': 'Missing required fields'}, room=game_id)
+                emit('error', {'message': 'Missing required fields'})
                 return
+
+            # Emit processing message to all clients in the room
+            with current_app.app_context():
+                # Fetch player's display name
+                player_association = GamePlayer.query.filter_by(
+                    game_id=game_id, 
+                    user_id=user_id
+                ).options(joinedload(GamePlayer.user)).first()
+                player_name = player_association.character_name if player_association and player_association.character_name else (
+                    player_association.user.username if player_association and player_association.user else f"Player {user_id}"
+                )
+
+                emit('player_action_processing', {
+                    'game_id': game_id,
+                    'user_id': user_id,
+                    'player_name': player_name,
+                    'message': f"Processing {player_name}'s action..."
+                }, room=game_id)
 
             player_log = {"type": "player", "user_id": user_id, "content": action} # Include user_id for mapping
             updated_state_info = None # Define updated_state_info early

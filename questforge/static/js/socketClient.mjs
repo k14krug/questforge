@@ -3,6 +3,23 @@
  * Handles real-time communication with game server
  */
 
+// Helper functions for processing feedback
+function displayProcessingMessage(message) {
+    const feedbackDiv = document.getElementById('gameFeedbackMessages');
+    if (feedbackDiv) {
+        feedbackDiv.textContent = message;
+        feedbackDiv.style.display = 'block';
+    }
+}
+
+function clearProcessingMessage() {
+    const feedbackDiv = document.getElementById('gameFeedbackMessages');
+    if (feedbackDiv) {
+        feedbackDiv.textContent = '';
+        feedbackDiv.style.display = 'none';
+    }
+}
+
 // console.log("Initializing socketClient (no class)..."); // DEBUG REMOVED
 
 let hasSetupListenersForCurrentConnection = false; // Flag to ensure setup runs once per connection
@@ -90,6 +107,13 @@ const socketClient = {
       });
 
       this.socket.on('game_concluded', (data) => { /* ... existing handler ... */ });
+
+      // New listener for player_action_processing
+      this.socket.on('player_action_processing', (data) => {
+          if (data && data.player_name) {
+              displayProcessingMessage(`Processing ${data.player_name}'s action...`);
+          }
+      });
       
       this.requestInitialState(); 
       this.setupDifficultyChangeListener(); // Call the new method
@@ -364,6 +388,15 @@ const socketClient = {
 function updateGameState(packet) {
     console.log("--- updateGameState received state:", JSON.stringify(packet, null, 2));
 
+    // Re-enable input and button after processing
+    const customActionInput = document.getElementById('customActionInput');
+    const submitCustomActionButton = document.getElementById('submitCustomAction');
+    if (customActionInput && submitCustomActionButton) {
+        customActionInput.disabled = false;
+        submitCustomActionButton.disabled = false;
+    }
+    clearProcessingMessage();
+
     updateActionControls(packet?.actions || []);
     updateGameLog(packet); // This function will now handle all log display
     updatePlayerLocationsDisplay(packet?.state?.player_locations || null);
@@ -595,6 +628,17 @@ socketClient.performAction = function(actionInputText) {
     if (!trimmedActionText) {
         return;
     }
+
+    // Disable input and button during processing
+    const customActionInput = document.getElementById('customActionInput');
+    const submitCustomActionButton = document.getElementById('submitCustomAction');
+    if (customActionInput && submitCustomActionButton) {
+        customActionInput.disabled = true;
+        submitCustomActionButton.disabled = true;
+    }
+
+    // Show local processing message
+    displayProcessingMessage("Processing your action...");
 
     const isSlashCommand = trimmedActionText.startsWith('/');
 
