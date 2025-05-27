@@ -306,24 +306,6 @@ class SocketService:
                 emit('error', {'message': 'Missing required fields'})
                 return
 
-            # Emit processing message to all clients in the room
-            with current_app.app_context():
-                # Fetch player's display name
-                player_association = GamePlayer.query.filter_by(
-                    game_id=game_id, 
-                    user_id=user_id
-                ).options(joinedload(GamePlayer.user)).first()
-                player_name = player_association.character_name if player_association and player_association.character_name else (
-                    player_association.user.username if player_association and player_association.user else f"Player {user_id}"
-                )
-
-                emit('player_action_processing', {
-                    'game_id': game_id,
-                    'user_id': user_id,
-                    'player_name': player_name,
-                    'message': f"Processing {player_name}'s action..."
-                }, room=game_id)
-
             player_log = {"type": "player", "user_id": user_id, "content": action} # Include user_id for mapping
             updated_state_info = None # Define updated_state_info early
             stage_one_ai_result_tuple = None # Renamed from ai_result for clarity
@@ -333,6 +315,15 @@ class SocketService:
             try:
                 # --- Perform ALL DB operations within a single transaction ---
                 with current_app.app_context():
+                    # Fetch player's display name (needed for processing message)
+                    player_association = GamePlayer.query.filter_by(
+                        game_id=game_id, 
+                        user_id=user_id
+                    ).options(joinedload(GamePlayer.user)).first()
+                    player_name = player_association.character_name if player_association and player_association.character_name else (
+                        player_association.user.username if player_association and player_association.user else f"Player {user_id}"
+                    )
+
                     # 1. Fetch GameState and related Campaign
                     db_game_state = db.session.query(GameState).options(
                         joinedload(GameState.game).joinedload(Game.campaign)
@@ -385,7 +376,7 @@ class SocketService:
 
                     # --- Inventory Validation ---
                     action_lower = action.lower()
-                    item_keywords = ["use ", "give ", "read ", "equip ", "combine "] # Note the space
+                    item_keywords = ["use ", "user ", "give ", "read ", "equip ", "combine "] # Added "user "
                     required_item = None
                     keyword_found = None
                     validation_passed = True # Assume validation passes unless proven otherwise
@@ -393,15 +384,17 @@ class SocketService:
                     for keyword in item_keywords:
                         if action_lower.startswith(keyword):
                             keyword_found = keyword
-                            # Final extraction fix v3: Capture the item name more intelligently
+                            # More precise item name extraction that stops at prepositions/usage context
                             parts = action_lower.split(keyword, 1)
                             if len(parts) > 1:
-                                # Take the remainder and split by common prepositions/articles
+                                # Take the remainder and clean it up
                                 item_part = parts[1].strip()
-                                # Split by common prepositions/articles, stopping at the first one found
-                                for preposition in ["on", "at", "in", "to", "with", "the", "a", "an"]:
-                                    item_part = item_part.split(preposition, 1)[0].strip() # Take the first part before any preposition
-                                # Assign the cleaned item_part to required_item
+                                # Remove any trailing punctuation
+                                item_part = item_part.rstrip('.,;!?')
+                                # Split at common prepositions/usage indicators to get just the item name
+                                for delimiter in [' to ', ' with ', ' on ', ' at ', ' in ', ' for ', ' from ']:
+                                    item_part = item_part.split(delimiter, 1)[0].strip()
+                                # Assign the cleaned item name to required_item
                                 required_item = item_part
                                 current_app.logger.debug(f"Keyword '{keyword.strip()}' found. Extracted required_item: '{required_item}'")
                             else:
@@ -412,42 +405,63 @@ class SocketService:
                     # Check if an item was successfully extracted
                     if required_item:
                         current_app.logger.info(f"Action '{action}' requires item: '{required_item}'")
-                        # Corrected key lookup: use 'current_inventory' based on logs
-                        inventory = db_game_state.state_data.get('current_inventory') 
-                        
-                        if not isinstance(inventory, list):
-                            current_app.logger.warning(f"Inventory validation failed for game {game_id}: 'current_inventory' key missing or not a list in state_data.")
-                            emit('error', {'message': f"You don't seem to have a '{required_item}'."}, room=game_id)
-                            validation_passed = False
-                        else:
-                            # Normalize inventory items to lowercase strings for comparison
+                        # Corrected key lookup: use 'inventory' (singular)
+                        inventory = db_game_state.state_data.get('inventory')
+                        world_objects = db_game_state.state_data.get('world_objects') or {} # Ensure it's a dict
+
+                        item_found_in_inventory = False
+                        item_found_in_scene = False
+
+                        if isinstance(inventory, list):
                             inventory_lower = [str(item).lower() for item in inventory if isinstance(item, str)]
                             required_item_lower = required_item.lower()
 
-                            # Check for exact match first
-                            exact_match_found = required_item_lower in inventory_lower
-
-                            if exact_match_found:
-                                current_app.logger.info(f"Inventory validation passed (exact match) for game {game_id}: Item '{required_item}' found in inventory.")
-                                # validation_passed remains True (set initially)
+                            # Check for exact or partial match in inventory
+                            if required_item_lower in inventory_lower:
+                                item_found_in_inventory = True
                             else:
-                                # No exact match found, now check for partial (startswith) match
-                                partial_match_found = False
                                 for item_in_inv_lower in inventory_lower:
                                     if item_in_inv_lower.startswith(required_item_lower):
-                                        current_app.logger.info(f"Inventory validation passed (partial match): Inventory item '{item_in_inv_lower}' starts with required '{required_item_lower}'. Allowing action.")
-                                        partial_match_found = True
-                                        validation_passed = True 
-                                        break # Allow action based on first partial match
-                                
-                                # Only set validation_passed to False if NEITHER exact NOR partial match was found
-                                if not partial_match_found: 
-                                    current_app.logger.warning(f"Inventory validation failed for game {game_id}: Item '{required_item}' not found (exact or partial match) in current_inventory {inventory}.")
-                                    emit('error', {'message': f"You don't have a '{required_item}'."}, room=game_id)
-                                    validation_passed = False
+                                        item_found_in_inventory = True
+                                        break
+                        
+                        if item_found_in_inventory:
+                            current_app.logger.info(f"Inventory validation passed: Item '{required_item}' found in player's inventory.")
+                            validation_passed = True
+                        else:
+                            # If not in inventory, check if it's an interactable world object in the current scene
+                            current_location = db_game_state.state_data.get('current_location')
+                            if isinstance(world_objects, dict):
+                                for obj_id, obj_data in world_objects.items():
+                                    if isinstance(obj_data, dict) and obj_data.get('location') == current_location:
+                                        obj_name_lower = obj_data.get('name', obj_id).lower()
+                                        if obj_name_lower == required_item_lower or obj_name_lower.startswith(required_item_lower):
+                                            # Check if the object is interactable/usable
+                                            if obj_data.get('interactable', False) or obj_data.get('usable', False):
+                                                item_found_in_scene = True
+                                                current_app.logger.info(f"Scene validation passed: Item '{required_item}' found as interactable object '{obj_name_lower}' in current scene.")
+                                                validation_passed = True
+                                                break
+                            
+                            if not item_found_in_scene:
+                                current_app.logger.warning(f"Item '{required_item}' not found in inventory or as interactable object in current scene.")
+                                emit('error', {
+                                    'message': f"You don't have a '{required_item}' or it's not interactable here.",
+                                    'action': action  # Include original action to help UI
+                                }, room=game_id)
+                                validation_passed = False
+                                # Do NOT emit player_action_processing here. The 'error' emit is sufficient.
 
-                    # 2. Call Stage 1 AI Service (only if validation passed)
+                    # Emit processing message ONLY if validation passed and we're proceeding to AI
                     if validation_passed:
+                        emit('player_action_processing', {
+                            'game_id': game_id,
+                            'user_id': user_id,
+                            'player_name': player_name,
+                            'message': f"Processing {player_name}'s action..."
+                        }, room=game_id)
+
+                        # 2. Call Stage 1 AI Service
                         stage_one_ai_result_tuple = ai_service.get_response( # This is now Stage 1
                             game_state=db_game_state,
                             player_action=action,
@@ -456,8 +470,8 @@ class SocketService:
                             current_difficulty=db_game_state.game.current_difficulty # Pass current difficulty
                         )
                         if not stage_one_ai_result_tuple:
-                            raise ValueError("AI service (Stage 1) failed to respond after inventory check (or no check needed).")
-                    # else: stage_one_ai_result_tuple remains None
+                            raise ValueError("AI service (Stage 1) failed to respond after item validation.")
+                    # else: stage_one_ai_result_tuple remains None, and no processing message was sent.
 
                     # 3. Add player action to log (ALWAYS happens)
                     if not isinstance(db_game_state.game_log, list):
@@ -471,7 +485,7 @@ class SocketService:
                     attributes.flag_modified(db_game_state, "game_log") # Flag game_log modification immediately
 
                     # 4. Process Stage 1 AI Result (if validation passed AND AI responded)
-                    if stage_one_ai_result_tuple:
+                    if stage_one_ai_result_tuple: # This block only runs if validation_passed was True
                         stage_one_ai_output, model_used, usage_data = stage_one_ai_result_tuple
 
                         # Ensure stage_one_ai_output is a dictionary before accessing keys

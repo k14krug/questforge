@@ -3,12 +3,28 @@
  * Handles real-time communication with game server
  */
 
-// Helper functions for processing feedback
+// Helper functions for feedback messages
 function displayProcessingMessage(message) {
     const feedbackDiv = document.getElementById('gameFeedbackMessages');
     if (feedbackDiv) {
         feedbackDiv.textContent = message;
+        feedbackDiv.className = 'alert alert-info';
         feedbackDiv.style.display = 'block';
+    }
+}
+
+function displayErrorMessage(message) {
+    const feedbackDiv = document.getElementById('gameFeedbackMessages');
+    if (feedbackDiv) {
+        feedbackDiv.textContent = message;
+        feedbackDiv.className = 'alert alert-danger';
+        feedbackDiv.style.display = 'block';
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            if (feedbackDiv.textContent === message) {
+                feedbackDiv.style.display = 'none';
+            }
+        }, 5000);
     }
 }
 
@@ -309,16 +325,20 @@ const socketClient = {
       });
       this.socket.on('error', (err) => {
         console.error('SocketIO error:', err);
-        // Check if the error object has a message property and display it
+        let errorMessage = 'An error occurred';
         if (err && typeof err === 'object' && err.message) {
-          // Use a custom modal or message box instead of alert()
-          // For now, a simple console log as a placeholder for a custom UI
-          console.warn(`Error: ${err.message}`); 
+            errorMessage = err.message;
         } else if (typeof err === 'string') {
-          // Use a custom modal or message box instead of alert()
-          console.warn(`Error: ${err}`); 
+            errorMessage = err;
         }
-        // Optionally, add more sophisticated UI error display here later
+        displayErrorMessage(errorMessage);
+        // Re-enable input and button on error
+        const customActionInput = document.getElementById('customActionInput');
+        const submitCustomActionButton = document.getElementById('submitCustomAction');
+        if (customActionInput && submitCustomActionButton) {
+            customActionInput.disabled = false;
+            submitCustomActionButton.disabled = false;
+        }
       });
 
     } catch (err) {

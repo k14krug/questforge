@@ -28,7 +28,8 @@ class DevelopmentConfig(Config):
     DEBUG = True
     TESTING = True
     LOGLEVEL = 'DEBUG'
-    SOCKETIO_CORS_ORIGINS = "*"  # Allow all origins for development
+    # Default to wildcard, but allow override via environment variable
+    SOCKETIO_CORS_ORIGINS = os.environ.get('SOCKETIO_CORS_ORIGINS', '*')
     SOCKETIO_LOGGING = True
     ENGINEIO_LOGGING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URI') 

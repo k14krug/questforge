@@ -106,6 +106,9 @@ class AIService:
             response = self.client.chat.completions.create(**payload)
             generated_content = response.choices[0].message.content
             app.logger.debug(f"--- AI Service: Received raw response ---\\n{generated_content}\\n------------------------------------------")
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
+            app.logger.info(f"AI call (generate_campaign) completed. Model: {model_used}, Usage Data: {usage_data}")
             parsed_data = json.loads(generated_content)
             required_top_level_keys = ['campaign_objective', 'generated_locations', 'generated_characters', 'generated_plot_points', 'initial_scene']
             missing_keys = [k for k in required_top_level_keys if k not in parsed_data]
@@ -231,6 +234,9 @@ class AIService:
             app.logger.info(f"OpenAI API call successful for initial scene (Game {game.id}).")
             generated_content = response.choices[0].message.content
             app.logger.debug(f"--- AI Service: Received raw initial scene response ---\\n{generated_content}\\n------------------------------------------")
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
+            app.logger.info(f"AI call (generate_initial_scene) completed. Model: {model_used}, Usage Data: {usage_data}")
             parsed_data = json.loads(generated_content)
             app.logger.info(f"Attempting to parse JSON for initial scene (Game {game.id})...")
             app.logger.info(f"JSON parsing successful for initial scene (Game {game.id}).")
@@ -241,14 +247,14 @@ class AIService:
                 app.logger.error("Initial scene response has incorrect types for 'narrative' or 'actions'.")
                 return None
             app.logger.info(f"--- AI Service: Parsed initial scene successfully for game {game.id} ---")
-            return {'narrative': parsed_data['narrative'], 'actions': parsed_data['actions']}
+            return {'narrative': parsed_data['narrative'], 'actions': parsed_data['actions']}, model_used, usage_data
         except json.JSONDecodeError as e:
             app.logger.error(f"Error decoding initial scene JSON response: {e}")
             app.logger.error(f"Raw content: {generated_content}")
-            return None
+            return None, None, None
         except Exception as e:
             app.logger.error(f"Error generating initial scene: {e}", exc_info=True)
-            return None
+            return None, None, None
 
     def get_response(self, game_state: GameState, player_action: str, is_stuck: bool = False, next_required_plot_point: Optional[str] = None, current_difficulty: Optional[str] = None) -> dict | None:
         from questforge.utils.ai_debug_logger import log_ai_debug_payload
@@ -279,10 +285,16 @@ class AIService:
             response = self.client.chat.completions.create(**payload)
             generated_content = response.choices[0].message.content
             app.logger.debug(f"--- AI Service: Received raw response ---\\n{generated_content}\\n------------------------------------------")
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
+            app.logger.info(f"AI call (get_response) completed. Model: {model_used}, Usage Data: {usage_data}")
             parsed_data = json.loads(generated_content)
 
             if not isinstance(parsed_data.get('content'), str):
                 app.logger.error("AI Stage 1 response 'content' (narrative) is missing or not a string.")
+                return None
+            if not isinstance(parsed_data.get('available_actions'), list):
+                app.logger.error("AI Stage 1 response 'available_actions' is missing or not a list.")
                 return None
             if not isinstance(parsed_data.get('available_actions'), list):
                 app.logger.error("AI Stage 1 response 'available_actions' is missing or not a list.")
@@ -306,14 +318,37 @@ class AIService:
                     app.logger.warning("AI did not provide 'location' in state_changes. Falling back to previous location.")
                 final_state_changes['location'] = previous_state_data.get('location', "Unknown Location")
 
-            new_inventory = ai_state_changes.get('inventory')
-            if isinstance(new_inventory, list) and all(isinstance(item, str) for item in new_inventory):
-                final_state_changes['inventory'] = new_inventory
-            else:
-                if 'inventory' in ai_state_changes:
-                    app.logger.warning(f"AI provided invalid inventory: '{new_inventory}'. Falling back to previous inventory.")
+            # Handle inventory changes (items_added, items_removed)
+            inventory_changes_from_ai = ai_state_changes.get('inventory_changes')
+            current_inventory = previous_state_data.get('inventory', []) # Get current inventory from previous state
+
+            if isinstance(inventory_changes_from_ai, dict):
+                items_added = inventory_changes_from_ai.get('items_added', [])
+                items_removed = inventory_changes_from_ai.get('items_removed', [])
+
+                if isinstance(items_added, list) and all(isinstance(item, dict) and 'name' in item and isinstance(item['name'], str) for item in items_added):
+                    # Add new items to inventory (only name for now, full object might be needed later)
+                    for item_to_add in items_added:
+                        if item_to_add['name'] not in current_inventory: # Avoid duplicates by name
+                            current_inventory.append(item_to_add['name'])
+                    app.logger.debug(f"Added items to inventory: {[item['name'] for item in items_added]}. Current inventory: {current_inventory}")
                 else:
-                    app.logger.warning("AI did not provide 'inventory' in state_changes. Falling back to previous inventory.")
+                    app.logger.warning(f"AI provided invalid 'items_added' format: '{items_added}'. Skipping additions.")
+
+                if isinstance(items_removed, list) and all(isinstance(item, str) for item in items_removed):
+                    # Remove items from inventory
+                    current_inventory = [item for item in current_inventory if item not in items_removed]
+                    app.logger.debug(f"Removed items from inventory: {items_removed}. Current inventory: {current_inventory}")
+                else:
+                    app.logger.warning(f"AI provided invalid 'items_removed' format: '{items_removed}'. Skipping removals.")
+                
+                final_state_changes['inventory'] = current_inventory # Update the inventory in final state changes
+            else:
+                # If AI didn't provide inventory_changes, or it was invalid, fall back to previous inventory
+                if 'inventory_changes' in ai_state_changes:
+                    app.logger.warning(f"AI provided invalid 'inventory_changes' (not a dict): '{inventory_changes_from_ai}'. Falling back to previous inventory.")
+                else:
+                    app.logger.debug("AI did not provide 'inventory_changes'. Using previous inventory.")
                 final_state_changes['inventory'] = previous_state_data.get('inventory', [])
 
             new_npc_states = ai_state_changes.get('npc_states')
@@ -405,6 +440,9 @@ class AIService:
             response = self.client.chat.completions.create(**payload)
             generated_name = response.choices[0].message.content.strip()
             app.logger.debug(f"--- AI Service: Received raw name response ---\\n{generated_name}\\n------------------------------------------")
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
+            app.logger.info(f"AI call (generate_character_name) completed. Model: {model_used}, Usage Data: {usage_data}")
             generated_name = generated_name.strip('"\'')
 
             if not generated_name:
@@ -484,13 +522,13 @@ class AIService:
             response = self.client.chat.completions.create(**payload)
             generated_hint = response.choices[0].message.content.strip()
             app.logger.debug(f"--- AI Service: Received raw hint response ---\\n{generated_hint}\\n------------------------------------------")
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
+            app.logger.info(f"AI call (get_ai_hint) completed. Model: {model_used}, Usage Data: {usage_data}")
 
             if not generated_hint:
                 app.logger.warning("AI generated an empty hint.")
                 return None
-
-            usage_data = response.usage if response.usage else None
-            model_used = response.model
 
             if game_state.game_id and usage_data:
                 cost = calculate_cost(model_used, {'prompt_tokens': usage_data.prompt_tokens, 'completion_tokens': usage_data.completion_tokens})
@@ -552,6 +590,9 @@ class AIService:
             response = self.client.chat.completions.create(**payload)
             generated_content = response.choices[0].message.content
             app.logger.debug(f"--- AI Service: Received raw plot check response ---\\n{generated_content}\\n------------------------------------------")
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
+            app.logger.info(f"AI call (check_atomic_plot_completion) completed. Model: {model_used}, Usage Data: {usage_data}")
 
             parsed_data = json.loads(generated_content)
 
@@ -651,14 +692,15 @@ class AIService:
             generated_summary = response.choices[0].message.content.strip()
             
             app.logger.debug(f"--- AI Service: Received raw summary response ---\\n{generated_summary}\\n------------------------------------------")
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
+            app.logger.info(f"AI call (generate_historical_summary) completed. Model: {model_used}, Usage Data: {usage_data}")
 
             if not generated_summary:
                 app.logger.warning("AI generated an empty historical summary.")
                 return None
 
             # Log API usage
-            usage_data = response.usage if response.usage else None
-            model_used = response.model
             if game_id and usage_data: # Ensure game_id is passed if logging is desired
                 cost = calculate_cost(model_used, {'prompt_tokens': usage_data.prompt_tokens, 'completion_tokens': usage_data.completion_tokens})
                 log_api_usage(
@@ -704,15 +746,41 @@ def call_openai_api(prompt: str, model: str = 'gpt-4o') -> Tuple[Dict[str, Any],
 
 
 def calculate_cost(model: str, usage: Dict[str, int]) -> Decimal:
-    pricing = current_app.config.get('OPENAI_PRICING', {})
+    app = current_app._get_current_object()
+    pricing_config = app.config.get('OPENAI_PRICING', {})
+    
+    pricing_info = None
+    
+    # 1. Try exact match first
+    if model in pricing_config:
+        pricing_info = pricing_config[model]
+        app.logger.debug(f"Found exact pricing key '{model}' for model '{model}'")
+    else:
+        # 2. Iteratively remove suffix components
+        model_parts = model.split('-')
+        for i in range(len(model_parts) - 1, 0, -1):
+            potential_key = '-'.join(model_parts[:i])
+            if potential_key in pricing_config:
+                pricing_info = pricing_config[potential_key]
+                app.logger.debug(f"Found partial pricing key '{potential_key}' for model '{model}'")
+                break # Use the first partial match found
+    
     prompt_tokens = usage.get('prompt_tokens', 0)
     completion_tokens = usage.get('completion_tokens', 0)
-    prompt_cost_per_million = pricing.get(model, {}).get('prompt', 0)
-    completion_cost_per_million = pricing.get(model, {}).get('completion', 0)
-    prompt_cost = (Decimal(prompt_tokens) / Decimal(1_000_000)) * Decimal(prompt_cost_per_million)
-    completion_cost = (Decimal(completion_tokens) / Decimal(1_000_000)) * Decimal(completion_cost_per_million)
-    total_cost = prompt_cost + completion_cost
-    return total_cost.quantize(Decimal('0.000001'))
+    
+    cost = Decimal('0.0')
+    if pricing_info:
+        prompt_cost_per_million = pricing_info.get('prompt', 0)
+        completion_cost_per_million = pricing_info.get('completion', 0)
+        
+        prompt_cost = (Decimal(prompt_tokens) / Decimal(1_000_000)) * Decimal(prompt_cost_per_million)
+        completion_cost = (Decimal(completion_tokens) / Decimal(1_000_000)) * Decimal(completion_cost_per_million)
+        cost = prompt_cost + completion_cost
+        app.logger.debug(f"Calculated cost for model '{model}': prompt_tokens={prompt_tokens}, completion_tokens={completion_tokens}, cost={cost}")
+    else:
+        app.logger.warning(f"No pricing info found for model '{model}'. Cost will be 0.")
+        
+    return cost.quantize(Decimal('0.000001'))
 
 
 def log_api_usage(model_name: str, prompt_tokens: int, completion_tokens: int, total_tokens: int, cost: Decimal, game_id: Optional[int] = None):
@@ -736,7 +804,12 @@ def log_api_usage(model_name: str, prompt_tokens: int, completion_tokens: int, t
         game_id=game_id
     )
     db.session.add(log_entry)
-    db.session.commit()
+    try:
+        db.session.commit()
+        current_app.logger.info(f"Successfully logged API usage for model {model_name} (Game ID: {game_id}). Cost: {cost}")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to commit API usage log for model {model_name} (Game ID: {game_id}): {e}", exc_info=True)
 
 
 ai_service = AIService()
