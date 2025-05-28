@@ -11,7 +11,7 @@ class Config:
     OPENAI_MODEL_MAIN = os.environ.get('OPENAI_MODEL_MAIN', 'gpt-4.1-mini')
     OPENAI_TEMPERATURE = float(os.environ.get('OPENAI_TEMPERATURE', 0.7))
     OPENAI_MAX_TOKENS = int(os.environ.get('OPENAI_MAX_TOKENS', 1024))
-    MAX_HISTORICAL_SUMMARIES = int(os.environ.get('MAX_HISTORICAL_SUMMARIES', 20))
+    MAX_HISTORICAL_SUMMARIES = int(os.environ.get('MAX_HISTORICAL_SUMMARIES', 100))
     OPENAI_PRICING = {
         'gpt-3.5-turbo': {'prompt': 0.0015, 'completion': 0.002},
         'gpt-4': {'prompt': 0.03, 'completion': 0.06},

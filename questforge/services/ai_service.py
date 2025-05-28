@@ -257,6 +257,24 @@ class AIService:
             return None, None, None
 
     def get_response(self, game_state: GameState, player_action: str, is_stuck: bool = False, next_required_plot_point: Optional[str] = None, current_difficulty: Optional[str] = None) -> dict | None:
+        """Get AI response for player action in current game state, handling enhanced NPC and object states.
+        
+        Args:
+            game_state: Current game state with enhanced NPC/object states
+            player_action: Player's action text
+            is_stuck: Whether player is stuck and needs guidance
+            next_required_plot_point: Next required plot point description
+            current_difficulty: Current game difficulty level
+            
+        Returns:
+            Dict containing:
+                - narrative: AI narrative response
+                - state_changes: Dict of state updates including:
+                    - npc_status: Updated NPC states with memory/interactions
+                    - world_object_states: Updated object states/conditions
+                - new_location: Optional new location
+                - available_actions: Updated actions
+        """
         from questforge.utils.ai_debug_logger import log_ai_debug_payload
         app = current_app._get_current_object()
         if not self.client:
@@ -351,45 +369,45 @@ class AIService:
                     app.logger.debug("AI did not provide 'inventory_changes'. Using previous inventory.")
                 final_state_changes['inventory'] = previous_state_data.get('inventory', [])
 
-            new_npc_states = ai_state_changes.get('npc_states')
-            if isinstance(new_npc_states, dict):
-                valid_npc_states = True
-                for npc_id, npc_data in new_npc_states.items():
+            new_npc_status = ai_state_changes.get('npc_status') # Changed from 'npc_states'
+            if isinstance(new_npc_status, dict):
+                valid_npc_status = True
+                for npc_id, npc_data in new_npc_status.items():
                     if not isinstance(npc_id, str) or not isinstance(npc_data, dict):
-                        valid_npc_states = False
+                        valid_npc_status = False
                         break
-                if valid_npc_states:
-                    final_state_changes['npc_states'] = new_npc_states
+                if valid_npc_status:
+                    final_state_changes['npc_status'] = new_npc_status # Changed from 'npc_states'
                 else:
-                    app.logger.warning(f"AI provided 'npc_states' with invalid structure: '{new_npc_states}'. Falling back.")
-                    final_state_changes['npc_states'] = previous_state_data.get('npc_states', {})
+                    app.logger.warning(f"AI provided 'npc_status' with invalid structure: '{new_npc_status}'. Falling back.")
+                    final_state_changes['npc_status'] = previous_state_data.get('npc_status', {}) # Changed from 'npc_states'
             else:
-                if 'npc_states' in ai_state_changes:
-                    app.logger.warning(f"AI provided invalid npc_states (not a dict): '{new_npc_states}'. Falling back.")
+                if 'npc_status' in ai_state_changes: # Changed from 'npc_states'
+                    app.logger.warning(f"AI provided invalid npc_status (not a dict): '{new_npc_status}'. Falling back.")
                 else:
-                    app.logger.debug("AI did not provide 'npc_states'. Using previous or default.")
-                final_state_changes['npc_states'] = previous_state_data.get('npc_states', {})
+                    app.logger.debug("AI did not provide 'npc_status'. Using previous or default.")
+                final_state_changes['npc_status'] = previous_state_data.get('npc_status', {}) # Changed from 'npc_states'
 
-            new_world_objects = ai_state_changes.get('world_objects')
-            if isinstance(new_world_objects, dict):
-                valid_world_objects = True
-                for obj_id, obj_data in new_world_objects.items():
+            new_world_object_states = ai_state_changes.get('world_object_states') # Changed from 'world_objects'
+            if isinstance(new_world_object_states, dict):
+                valid_world_object_states = True
+                for obj_id, obj_data in new_world_object_states.items():
                     if not isinstance(obj_id, str) or not isinstance(obj_data, dict):
-                        valid_world_objects = False
+                        valid_world_object_states = False
                         break
-                if valid_world_objects:
-                    final_state_changes['world_objects'] = new_world_objects
+                if valid_world_object_states:
+                    final_state_changes['world_object_states'] = new_world_object_states # Changed from 'world_objects'
                 else:
-                    app.logger.warning(f"AI provided 'world_objects' with invalid structure: '{new_world_objects}'. Falling back.")
-                    final_state_changes['world_objects'] = previous_state_data.get('world_objects', {})
+                    app.logger.warning(f"AI provided 'world_object_states' with invalid structure: '{new_world_object_states}'. Falling back.")
+                    final_state_changes['world_object_states'] = previous_state_data.get('world_object_states', {}) # Changed from 'world_objects'
             else:
-                if 'world_objects' in ai_state_changes:
-                    app.logger.warning(f"AI provided invalid world_objects (not a dict): '{new_world_objects}'. Falling back.")
+                if 'world_object_states' in ai_state_changes: # Changed from 'world_objects'
+                    app.logger.warning(f"AI provided invalid world_object_states (not a dict): '{new_world_object_states}'. Falling back.")
                 else:
-                    app.logger.debug("AI did not provide 'world_objects'. Using previous or default.")
-                final_state_changes['world_objects'] = previous_state_data.get('world_objects', {})
+                    app.logger.debug("AI did not provide 'world_object_states'. Using previous or default.")
+                final_state_changes['world_object_states'] = previous_state_data.get('world_object_states', {}) # Changed from 'world_objects'
 
-            standard_keys = {'location', 'inventory', 'npc_states', 'world_objects', 'achieved_plot_point_id'}
+            standard_keys = {'location', 'inventory', 'npc_status', 'world_object_states', 'achieved_plot_point_id'}
             for key, value in ai_state_changes.items():
                 if key not in standard_keys:
                     final_state_changes[key] = value
@@ -656,7 +674,8 @@ class AIService:
 
     def generate_historical_summary(self, player_action: str, stage_one_narrative: str, state_changes: Dict[str, Any], game_id: Optional[int] = None) -> Optional[str]:
         """
-        Generates a concise historical summary of a game turn using a secondary AI model.
+        Generates a detailed historical summary of a game turn using a secondary AI model.
+        The summary includes key actions, state changes, and notable events in 2-3 paragraphs.
         """
         from questforge.utils.ai_debug_logger import log_ai_debug_payload
         app = current_app._get_current_object()
@@ -679,14 +698,12 @@ class AIService:
             payload = {
                 "model": model_to_use,
                 "messages": [
-                    {"role": "system", "content": "You are an AI assistant that concisely summarizes game events. Output ONLY the summary string."},
+                    {"role": "system", "content": "You are an AI assistant that summarizes game events in rich detail. Output ONLY the summary text."},
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.5, # Slightly lower temperature for more factual summary
-                "max_tokens": 100 # Max tokens for a concise summary
+                "max_tokens": 300 # Increased tokens for detailed summaries
             }
-            # Assuming game_id is available if we want to log this payload specifically
-            # log_ai_debug_payload("Generate historical summary", payload, "summary", game_id if game_id else 0) # game_id might not be directly available here, consider passing if needed for logging
 
             response = self.client.chat.completions.create(**payload)
             generated_summary = response.choices[0].message.content.strip()
@@ -701,7 +718,7 @@ class AIService:
                 return None
 
             # Log API usage
-            if game_id and usage_data: # Ensure game_id is passed if logging is desired
+            if game_id and usage_data:
                 cost = calculate_cost(model_used, {'prompt_tokens': usage_data.prompt_tokens, 'completion_tokens': usage_data.completion_tokens})
                 log_api_usage(
                     model_name=model_used,

@@ -203,6 +203,35 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
         initial_narrative = initial_scene_data.get('description', 'The adventure begins...')
         initial_actions = initial_scene_data.get('goals', []) # Use initial goals as first actions
 
+        # Initialize enhanced NPC states if not present
+        if 'npc_status' not in initial_state_dict:
+            initial_state_dict['npc_status'] = {}
+            for npc in ai_response_data.get('generated_characters', []):
+                if isinstance(npc, dict) and npc.get('name'):
+                    initial_state_dict['npc_status'][npc['name']] = {
+                        'location': npc.get('location', 'unknown'),
+                        'disposition': npc.get('disposition', 'neutral'),
+                        'knowledge': npc.get('knowledge', []),
+                        'interaction_history': [],
+                        'current_goal': npc.get('goal', ''),
+                        'status': 'normal'
+                    }
+
+        # Initialize enhanced world object states if not present
+        if 'world_object_states' not in initial_state_dict:
+            initial_state_dict['world_object_states'] = {}
+            for obj in ai_response_data.get('generated_objects', []):
+                if isinstance(obj, dict) and obj.get('id'):
+                    initial_state_dict['world_object_states'][obj['id']] = {
+                        'name': obj.get('name', 'object'),
+                        'location': obj.get('location', 'unknown'),
+                        'condition': obj.get('condition', 'pristine'),
+                        'contents': obj.get('contents', []),
+                        'properties': obj.get('properties', []),
+                        'interactable': obj.get('interactable', True),
+                        'status': obj.get('status', 'normal')
+                    }
+
         # --- START: New logic for initial historical summary ---
         if initial_state_dict and initial_narrative: # Ensure we have data to summarize
             logger.info(f"Generating initial historical summary for game {game_id}...")

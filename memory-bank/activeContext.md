@@ -1,31 +1,62 @@
-# Active Context - QuestForge - Historical Game Summary
+# Active Context - QuestForge - NPC Memory & Object States Enhancement
 
-## Date: 2025-05-19
+## Date: 2025-05-27
 
 ## 1. Current Work Focus:
-**Conclusion Check Logic Refinement - COMPLETED**
-The primary focus was to refine the game's conclusion check logic in `questforge/services/campaign_service.py` to be less restrictive, particularly for string and list comparisons within `state_key_contains` and `location_visited` conditions.
+**Phase 2: Persistent NPC Memory & Complex Object States**
+Implementing richer NPC memory and world object states to support more dynamic gameplay.
 
-## 2. Key Implementation Steps Completed:
-*   **Modified `check_conclusion` in `questforge/services/campaign_service.py`:**
-    *   **`state_key_contains` condition:**
-        *   If `actual_value` (from `state_data`) is a list, the check now passes if any item in `actual_value` (converted to string) contains the `value_to_contain` (converted to string) as a case-insensitive substring.
-        *   If `actual_value` is a string, the check now passes if `actual_value` contains `value_to_contain` as a case-insensitive substring.
-    *   **`location_visited` condition:**
-        *   The check now passes if the `location_name_condition` (from the conclusion condition) is found as a case-insensitive substring within any of the location strings in `state_data['visited_locations']`.
-    *   Updated logging messages to indicate when fuzzy matching is applied.
+## 2. Key Implementation Steps:
+* **Analyzed current state structures**:
+  - NPCs: state_data['npc_status'] (basic location/status)
+  - Objects: state_data['world_objects'] (basic interactable flags)
 
-## 3. Previous Work (Historical Game Summary):
-*   **Historical Game Summary Feature Implementation - COMPLETED**
-    *   This feature provides the AI with a token-efficient history of game events.
-    *   Key files modified: `questforge/models/game_state.py`, `questforge/services/ai_service.py`, `questforge/utils/prompt_builder.py`, `questforge/services/socket_service.py`, `questforge/utils/context_manager.py`, `config.py`.
-    *   Addressed an issue where the initial game scene was not summarized by updating `questforge/services/campaign_service.py` (`generate_campaign_structure`).
+* **Designed enhanced state structures**:
+  - **NPCs**:
+    ```python
+    npc_status = {
+        "npc_name": {
+            "location": "current_location",
+            "disposition": "friendly/suspicious/hostile", 
+            "knowledge": ["fact1", "fact2"],
+            "interaction_history": [
+                {"turn": 5, "summary": "Player helped NPC"},
+                {"turn": 10, "summary": "Player lied to NPC"}
+            ],
+            "current_goal": "objective",
+            "status": "normal/injured/busy"
+        }
+    }
+    ```
+  - **World Objects**:
+    ```python
+    world_objects = {
+        "object_id": {
+            "name": "object_name",
+            "location": "current_location",
+            "condition": "pristine/damaged/broken",
+            "contents": ["item1", "item2"],
+            "properties": ["magical", "cursed"],
+            "interactable": True,
+            "status": "locked/unlocked"
+        }
+    }
+    ```
+
+## 3. Implementation Plan:
+1. Update `GameState` model documentation
+2. Modify `campaign_service.generate_campaign_structure()` to initialize enhanced states
+3. Update `ai_service.get_response()` to handle new state attributes
+4. Enhance `socket_service.handle_player_action()` state updates
+5. Add UI support in play.html template
 
 ## 4. Next Steps:
-*   Await new task or further instructions.
+* Update GameState model documentation
+* Modify campaign generation in campaign_service.py
+* Test initial state generation
 
 ## 5. Active Decisions & Considerations:
-*   The refined conclusion logic allows for more flexible matching, addressing cases like `"Escape Pod Bay"` needing to match `"Escape Pod Bay (outside blast doors)"`.
-*   The changes specifically target substring matching for strings and list elements, improving robustness for common use cases.
-*   The `state_key_equals` condition remains a strict equality check, which is appropriate for scenarios requiring exact matches.
-*   The historical summary feature is complete and aims to improve long-term narrative consistency.
+* Maintain backward compatibility with existing games
+* Keep state updates atomic
+* Balance detail vs performance impact
+* Ensure clear UI representation of new attributes

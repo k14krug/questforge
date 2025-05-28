@@ -4,6 +4,7 @@ import os
 import json
 from datetime import datetime
 from sqlalchemy.orm import joinedload
+from collections import OrderedDict
 from questforge.models.game import Game, GamePlayer # Correctly import GamePlayer
 from questforge.models.campaign import Campaign
 from questforge.models.game_state import GameState
@@ -11,6 +12,74 @@ from questforge.models.user import User # Needed for import validation
 from questforge.extensions import db
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+@admin_bp.route('/state-viewer')
+@admin_bp.route('/state-viewer/<int:game_id>')
+@login_required
+def state_viewer(game_id=None):
+    """Admin view for inspecting game state data including NPCs and world objects"""
+    # Get all active games for the dropdown
+    games = Game.query.order_by(Game.created_at.desc()).all()
+    
+    selected_game_id = request.args.get('game_id', game_id)
+    game_state = None
+    state_data = {}
+    world_object_states = OrderedDict()
+    npc_status = []
+    
+    if selected_game_id:
+        try:
+            selected_game_id = int(selected_game_id)
+            game_state = GameState.query.filter_by(game_id=selected_game_id).order_by(GameState.last_updated.desc()).first()
+            
+            if game_state:
+                state_data = game_state.state_data or {}
+                
+                # Format world objects
+                if 'world_object_states' in state_data:
+                    for obj_name, obj_data in state_data['world_object_states'].items():
+                        try:
+                            # Handle case where obj_data might be a JSON string
+                            if isinstance(obj_data, str):
+                                obj_data = json.loads(obj_data)
+                            
+                            if isinstance(obj_data, dict):
+                                formatted_items = [(k, v) for k, v in obj_data.items()]
+                                world_object_states[obj_name.replace('_', ' ').title()] = formatted_items
+                            else:
+                                current_app.logger.warning(f"Invalid world_object_states data for {obj_name}: expected dict, got {type(obj_data)}")
+                                world_object_states[obj_name.replace('_', ' ').title()] = [('error', 'Invalid data format')]
+                        except Exception as e:
+                            current_app.logger.error(f"Error processing world_object_states for {obj_name}: {str(e)}")
+                            world_object_states[obj_name.replace('_', ' ').title()] = [('error', 'Data processing failed')]
+                
+                # Format NPCs
+                if 'npc_status' in state_data:
+                    npc_status = [
+                        {
+                            'name': name,
+                            'location': details.get('location', 'unknown'),
+                            'current_goal': details.get('current_goal', ''),
+                            'status': details.get('status', 'normal'),
+                            'disposition': details.get('disposition', 'neutral'),
+                            'knowledge': details.get('knowledge', []),
+                            'interaction_history': details.get('interaction_history', [])
+                        }
+                        for name, details in state_data['npc_status'].items()
+                    ]
+            else:
+                flash(f'No game state found for game ID {selected_game_id}', 'warning')
+        except ValueError:
+            flash('Invalid game ID format', 'danger')
+    
+    return render_template(
+        'admin/state_viewer.html',
+        games=games,
+        selected_game_id=selected_game_id,
+        game_state_data=state_data,
+        world_object_states=world_object_states,
+        npc_status=npc_status
+    )
 
 @admin_bp.route('/', methods=['GET', 'POST'])
 @login_required

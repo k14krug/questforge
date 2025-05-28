@@ -167,12 +167,18 @@ def build_campaign_prompt(template: Template, template_overrides: Optional[Dict[
 def build_response_prompt(context: str, player_action: str, is_stuck: bool = False, next_required_plot_point: Optional[str] = None, current_difficulty: Optional[str] = None) -> str:
     """
     Generates a prompt for the AI to respond to a player's action, given the game context.
+    Handles enhanced NPC memory and object state tracking.
 
     Args:
-        context: A string containing the relevant game context (campaign info, current state, current objective).
+        context: A string containing the relevant game context including:
+            - NPC memory/knowledge
+            - Object states/conditions
+            - Player inventory/location
+            - Current objectives
         player_action: The action taken by the player as a string.
         is_stuck: Boolean indicating if the player might be stuck.
         next_required_plot_point: Optional string describing the next required plot point (used for hints).
+        current_difficulty: Current game difficulty level ('easy', 'normal', 'hard')
 
     Returns:
         A string containing the formatted prompt for the AI.
@@ -189,7 +195,9 @@ def build_response_prompt(context: str, player_action: str, is_stuck: bool = Fal
         "---",
         "Consider the following aspects while generating the response:",
         "1. **Narrative Consistency & Logic:** Ensure the response is consistent with the overall game state (location, inventory, character status, completed plot points, players present). Deny actions that are illogical (e.g., using an item not possessed). If an action attempts to bypass or ignore a clear objective from the 'Current Objective/Focus' without strong narrative justification, your response should explain *why* it's difficult or impossible at this time. Maintain narrative consistency with any defined plot points from the game context.",
-        "2. **Narrative Description:** Provide a vivid and engaging description of the outcome. **Use the players' names when describing their actions or interactions.**",
+        "2. **NPC Memory & Knowledge:** NPCs should remember past interactions with players. Reference previous conversations and events when appropriate. Maintain consistent NPC personalities and knowledge based on their established backgrounds and prior interactions.",
+        "3. **Object State Tracking:** Maintain accurate states for all world objects. Objects should reflect their usage history (e.g., a lever stays pulled after being pulled). Ensure object states align with the narrative description.",
+        "4. **Narrative Description:** Provide a vivid and engaging description of the outcome. **Use the players' names when describing their actions or interactions.** Consider historical context when describing NPC reactions and object behaviors.",
     ]
 
     # Add difficulty-based instructions for handling unreasonable actions
@@ -214,10 +222,11 @@ def build_response_prompt(context: str, player_action: str, is_stuck: bool = Fal
         "5. **Detailed State Changes:** Clearly outline ALL relevant changes to the general game state resulting from the action. Be thorough and specific. Examples of state keys to update if relevant:",
         "   - `location`: (string) The player's new location. **This is mandatory.**",
         "   - `inventory_changes`: (object, optional) e.g., `{\"items_added\": [{\"name\": \"key\", \"description\": \"A small brass key\"}], \"items_removed\": [\"ration\"]}`. Include item descriptions if new.",
-        "   - `npc_status`: (object, optional) For EACH NPC affected or present: `{\"NPC Name\": {\"status\": \"hostile\"/\"friendly\"/\"neutral\"/\"unconscious\"/\"gone\", \"location\": \"current_location_if_moved_or_still_present\", \"relationship_to_player_X\": \"allied\"/\"suspicious\"}}`. Update status, location if they move, and relationships if they change.",
-        "   - `world_object_states`: (object, optional) e.g., `{\"lever_A\": \"pulled\", \"ancient_door\": \"sealed\", \"computer_terminal\": {\"status\": \"online\", \"accessed_files\": [\"log_001\"]}}`.",
+        "   - `npc_status`: (object, optional) For EACH NPC affected or present: `{\"NPC Name\": {\"status\": \"hostile\"/\"friendly\"/\"neutral\"/\"unconscious\"/\"gone\", \"location\": \"current_location_if_moved_or_still_present\", \"relationship_to_player_X\": \"allied\"/\"suspicious\", \"memory\": {\"last_interaction\": \"description of last interaction\", \"knowledge\": [\"facts known about player\"]}}`. Update status, location, relationships, and memory/knowledge if they change.",
+        "   - `world_object_states`: (object, optional) e.g., `{\"lever_A\": \"pulled\", \"ancient_door\": \"sealed\", \"computer_terminal\": {\"status\": \"online\", \"accessed_files\": [\"log_001\"]}}`. Objects should maintain their state between turns unless explicitly changed.",
         "   - `environmental_conditions`: (object, optional) e.g., `{\"weather\": \"stormy\", \"time_of_day\": \"night\", \"light_level\": \"dim\"}`.",
         "   - `player_character_status`: (object, optional) e.g., `{\"Player1_ID\": {\"condition\": \"injured\", \"mana\": 50}, \"Player2_ID\": {\"carrying_npc_id\": \"npc_elara\"}}`.",
+        "   - `npc_memory_updates`: (object, optional) For tracking NPC knowledge/memory changes: `{\"NPC Name\": {\"learned\": [\"new facts\"], \"forgot\": [\"old facts\"]}}`",
         "   - **Critical Event Flags for Conclusion:** Review the 'Conclusion Conditions' list provided in the Game Context. If the player's *single, current action directly results* in satisfying one of these conditions (e.g., the narrative describes a successful escape and a condition is `{'type': 'state_key_equals', 'key': 'escaped', 'value': true}`), YOU MUST include the corresponding key and value (e.g., `'escaped': true`) in your `state_changes` object. This is essential for the game to recognize the conclusion.",
         "   If an action is denied or has no significant effect, state changes might be minimal (e.g., only location if it didn't change, or an empty object for other categories).",
         "6. **Available Actions:** List relevant actions the player can take *after* this event, reflecting the new situation. These should be logical next steps based on the narrative and updated state.",
@@ -363,7 +372,7 @@ def build_hint_prompt(context: str, campaign_objective: Optional[str] = None, ne
 
 def build_summary_prompt(player_action: str, stage_one_narrative: str, state_changes: Dict[str, Any]) -> str:
     """
-    Builds a prompt for the AI to summarize a game turn.
+    Builds a prompt for the AI to summarize a game turn with rich detail.
 
     Args:
         player_action: The action taken by the player.
@@ -374,10 +383,16 @@ def build_summary_prompt(player_action: str, stage_one_narrative: str, state_cha
         A string containing the prompt for the summarization AI.
     """
     prompt_lines = [
-        "You are an AI assistant tasked with summarizing game events concisely.",
-        "Based on the player's action, the resulting narrative, and any state changes, provide a single, concise sentence that captures the most significant outcome or event of this turn.",
-        "Focus on what materially changed or what key information was revealed.",
-        "Output ONLY the summary sentence itself, with no extra text, labels, or quotation marks.",
+        "You are an AI assistant tasked with summarizing game events in rich detail.",
+        "Based on the player's action, the resulting narrative, and state changes, provide a detailed summary of this turn.",
+        "Your summary should be concise yet informative (1-3 paragraphs as needed) and include:",
+        "1. Key player actions and their immediate consequences",
+        "2. Significant changes to the game state (locations, items, NPCs, world objects)",
+        "3. Notable plot progression or character interactions",
+        "4. Any important revelations or discoveries",
+        "Structure your summary to be direct and factual - avoid flowery language while still being engaging.",
+        "Use only as much detail as necessary to convey the essential information.",
+        "Output ONLY the summary text itself, with no extra labels or quotation marks.",
         "---",
         "PLAYER ACTION:",
         f"\"{player_action}\"",
@@ -396,6 +411,6 @@ def build_summary_prompt(player_action: str, stage_one_narrative: str, state_cha
     
     prompt_lines.extend([
         "---",
-        "CONCISE SUMMARY SENTENCE:"
+        "DETAILED TURN SUMMARY:"
     ])
     return "\n".join(prompt_lines)

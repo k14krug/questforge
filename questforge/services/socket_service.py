@@ -407,7 +407,7 @@ class SocketService:
                         current_app.logger.info(f"Action '{action}' requires item: '{required_item}'")
                         # Corrected key lookup: use 'inventory' (singular)
                         inventory = db_game_state.state_data.get('inventory')
-                        world_objects = db_game_state.state_data.get('world_objects') or {} # Ensure it's a dict
+                        world_object_states = db_game_state.state_data.get('world_object_states') or {} # Ensure it's a dict
 
                         item_found_in_inventory = False
                         item_found_in_scene = False
@@ -431,8 +431,8 @@ class SocketService:
                         else:
                             # If not in inventory, check if it's an interactable world object in the current scene
                             current_location = db_game_state.state_data.get('current_location')
-                            if isinstance(world_objects, dict):
-                                for obj_id, obj_data in world_objects.items():
+                            if isinstance(world_object_states, dict):
+                                for obj_id, obj_data in world_object_states.items():
                                     if isinstance(obj_data, dict) and obj_data.get('location') == current_location:
                                         obj_name_lower = obj_data.get('name', obj_id).lower()
                                         if obj_name_lower == required_item_lower or obj_name_lower.startswith(required_item_lower):

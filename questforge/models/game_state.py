@@ -10,13 +10,27 @@ import sqlalchemy as sa
 # Removed JSONEncodedDict class definition
 
 class GameState(db.Model):
-    """Tracks live campaign state according to questforge-spec.md v1.2
+    """Tracks live campaign state according to questforge-spec.md v1.3
     Attributes:
         state_data (JSON): Main state storage containing:
-            - current_location (str)
-            - completed_objectives (list)
-            - discovered_locations (list)  
-            - encountered_characters (list)
+            - current_location (str): Current player location
+            - completed_objectives (list): Completed main objectives
+            - discovered_locations (list): Locations discovered  
+            - npc_status (dict): Enhanced NPC states with:
+                - location (str)
+                - disposition (str): friendly/suspicious/hostile
+                - knowledge (list): Facts known by NPC
+                - interaction_history (list): Past interactions
+                - current_goal (str): NPC's current objective
+                - status (str): NPC condition
+            - world_object_states (dict): Enhanced object states with:
+                - name (str)
+                - location (str)
+                - condition (str): pristine/damaged/broken
+                - contents (list): Items contained
+                - properties (list): Special traits
+                - interactable (bool)
+                - status (str): locked/unlocked/active
             - completed_plot_points (list)
             - player_decisions (list)
             - current_branch (str)
@@ -70,6 +84,7 @@ class GameState(db.Model):
             'campaign_complete': False,
             'turns_since_plot_progress': 0, # Added for narrative guidance
             'historical_summary': [], # Added for historical game summary
+            'world_object_states': {}, # Added for world object state tracking
             # Removed game_log and available_actions from here, rely on DB default
         }
         # Initialize DB columns directly if not relying solely on state_data
