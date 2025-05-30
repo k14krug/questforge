@@ -15,7 +15,7 @@ class Template(db.Model):
     description = db.Column(db.Text) # Optional: General description
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, ForeignKey('users.id'))
-    category = db.Column(db.String(50)) # Optional: For organization
+    category = db.Column(db.Text) # Optional: For organization
 
     # High-level Guidance Fields (New)
     genre = db.Column(db.String(50), nullable=False) # Required: e.g., Fantasy, Sci-Fi

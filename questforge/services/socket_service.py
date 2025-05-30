@@ -1,6 +1,7 @@
 from flask import current_app, request # Added request import
 from flask_socketio import join_room, leave_room, emit
 from flask_login import current_user
+from .inventory_service import InventoryService
 from sqlalchemy.orm import joinedload, attributes # Import joinedload and attributes
 from sqlalchemy import func # Import func for sum aggregation
 import json # Import json for logging state_data
@@ -21,6 +22,64 @@ class SocketService:
     def register_handlers():
         """Register all Socket.IO event handlers"""
         
+        @socketio.on('get_inventory')
+        def handle_get_inventory(data):
+            """Handle request for a player's inventory"""
+            game_id = data.get('game_id')
+            player_id = data.get('player_id')
+            
+            if not game_id or not player_id:
+                emit('error', {'message': 'Missing game_id or player_id'})
+                return
+
+            with current_app.app_context():
+                game_state = db.session.get(GameState, game_id)
+                if not game_state:
+                    emit('error', {'message': 'Game state not found'})
+                    return
+
+                inventory = InventoryService.get_player_inventory(game_state, player_id)
+                shared_items = InventoryService.get_shared_items(game_state, player_id)
+                
+                emit('inventory_response', {
+                    'player_id': player_id,
+                    'inventory': inventory,
+                    'shared_items': shared_items
+                })
+
+        @socketio.on('transfer_item')
+        def handle_transfer_item(data):
+            """Handle item transfer between players"""
+            game_id = data.get('game_id')
+            from_player = data.get('from_player')
+            to_player = data.get('to_player')
+            item_name = data.get('item_name')
+            
+            if not all([game_id, from_player, to_player, item_name]):
+                emit('error', {'message': 'Missing required fields'})
+                return
+
+            with current_app.app_context():
+                game_state = db.session.get(GameState, game_id)
+                if not game_state:
+                    emit('error', {'message': 'Game state not found'})
+                    return
+
+                success = InventoryService.transfer_item(game_state, from_player, to_player, item_name)
+                if success:
+                    # Broadcast inventory updates to both players
+                    emit('inventory_update', {
+                        'player_id': from_player,
+                        'inventory': InventoryService.get_player_inventory(game_state, from_player)
+                    }, room=game_id)
+                    
+                    emit('inventory_update', {
+                        'player_id': to_player,
+                        'inventory': InventoryService.get_player_inventory(game_state, to_player)
+                    }, room=game_id)
+                else:
+                    emit('error', {'message': 'Item transfer failed'}, room=request.sid)
+
         @socketio.on('connect')
         def handle_connect():
             emit('connection_response', {'status': 'connected'})
@@ -335,7 +394,9 @@ class SocketService:
                         raise ValueError(f"Campaign data not found for game_id {game_id}")
 
                     campaign = db_game_state.game.campaign
-                    state_data = db_game_state.state_data or {}
+                    # Ensure db_game_state.state_data is always a mutable dictionary
+                    db_game_state.state_data = db_game_state.state_data or {}
+                    state_data = db_game_state.state_data
 
                     # --- Narrative Guidance Logic (ID-Based) ---
                     STUCK_THRESHOLD = 3
@@ -406,7 +467,7 @@ class SocketService:
                     if required_item:
                         current_app.logger.info(f"Action '{action}' requires item: '{required_item}'")
                         # Corrected key lookup: use 'inventory' (singular)
-                        inventory = db_game_state.state_data.get('inventory')
+                        inventory = db_game_state.state_data.get('inventories', {}).get('shared', [])
                         world_object_states = db_game_state.state_data.get('world_object_states') or {} # Ensure it's a dict
 
                         item_found_in_inventory = False
@@ -511,12 +572,39 @@ class SocketService:
                         current_app.logger.debug(f"Appended AI (Stage 1) narrative log entry for game {game_id}")
                         attributes.flag_modified(db_game_state, "game_log") # Flag game_log modification
 
-                        # Merge general_state_changes_from_stage1 into state_data
-                        # This includes location, inventory_changes, npc_status, world_object_states, conclusion flags etc.
-                        # It does NOT include plot point completions.
+                        # Extract and process inventory_changes separately using InventoryService
+                        inventory_changes_from_stage1 = general_state_changes_from_stage1.pop('inventory_changes', None)
+                        if inventory_changes_from_stage1 and isinstance(inventory_changes_from_stage1, dict):
+                            items_added = inventory_changes_from_stage1.get('items_added', [])
+                            items_removed = inventory_changes_from_stage1.get('items_removed', [])
+
+                            for item_obj in items_added:
+                                # InventoryService.add_item expects item_name (string) and optionally is_shared.
+                                # Extract the name from the item object. Assume not shared for now.
+                                item_name = item_obj.get('name')
+                                if item_name:
+                                    # Assuming items added via AI are shareable for now, based on user feedback.
+                                    # In a more complex system, AI might specify this.
+                                    InventoryService.add_item(db_game_state, user_id, item_name, is_shared=True)
+                                    current_app.logger.debug(f"Added item '{item_name}' to player {user_id}'s inventory (marked as shareable).")
+                                else:
+                                    current_app.logger.warning(f"Skipping item addition: Item object missing 'name' key: {item_obj}")
+                            
+                            for item_name in items_removed:
+                                # InventoryService.remove_item expects item name (string).
+                                InventoryService.remove_item(db_game_state, user_id, item_name)
+                                current_app.logger.debug(f"Removed item '{item_name}' from player {user_id}'s inventory.")
+                            
+                            # Flag state_data as modified because InventoryService modifies it in place
+                            attributes.flag_modified(db_game_state, "state_data")
+                            current_app.logger.debug(f"Processed inventory_changes from Stage 1 AI. state_data now reflects inventory updates.")
+
+                        # Merge remaining general_state_changes_from_stage1 into state_data
+                        # This includes location, npc_status, world_object_states, conclusion flags etc.
+                        # 'inventory_changes' has already been popped.
                         if general_state_changes_from_stage1:
                             state_data.update(general_state_changes_from_stage1)
-                            current_app.logger.debug(f"Merged Stage 1 AI's general_state_changes into state_data. Current state_data: {json.dumps(state_data)}")
+                            current_app.logger.debug(f"Merged remaining Stage 1 AI's general_state_changes into state_data. Current state_data: {json.dumps(state_data)}")
 
                         # Update visited_locations based on AI's reported new location from Stage 1
                         new_location_from_stage1 = general_state_changes_from_stage1.get('location')
@@ -887,7 +975,9 @@ class SocketService:
                             'latest_ai_response': latest_ai_response,
                             'player_commands': player_commands,
                             'historical_summary': historical_summary,
-                            'player_display_map': player_display_map
+                            'player_display_map': player_display_map,
+                            # --- Ensure inventory is explicitly included (the full 'inventories' object) ---
+                            'inventory': db_game_state.state_data.get('inventories', {})
                         }
                         
                         current_app.logger.debug(f"Final broadcast data prepared for game {game_id}: {json.dumps(broadcast_data)}")
@@ -1063,7 +1153,9 @@ class SocketService:
                         'latest_ai_response': latest_ai_response,
                         'player_commands': player_commands,
                         'historical_summary': historical_summary,
-                        'player_display_map': player_display_map
+                        'player_display_map': player_display_map,
+                        # --- Ensure inventory is explicitly included (the full 'inventories' object) ---
+                        'inventory': state_info['state'].get('inventories', {})
                     }
                     current_app.logger.info(f"[socket_service] Emitting 'game_state' (v{emit_data.get('version')}) for game {game_id} to SID {request.sid}. Plot counts: {total_plot_points_for_display_initial} total, {completed_plot_points_display_count_initial} completed.")
                     current_app.logger.debug(f"[socket_service] Full 'game_state' data being emitted to SID {request.sid}: {json.dumps(emit_data)}")

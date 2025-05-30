@@ -74,10 +74,23 @@
                             <div>
                                 <h6>Inventory</h6>
                                 <div id="inventoryDisplay">
-                                    {% if game_state and game_state.state_data and 'inventory' in game_state.state_data %}
-                                        {% if game_state.state_data.inventory %}
+                                    {% if game_state and game_state.state_data and 'inventories' in game_state.state_data %}
+                                        {% set all_items = [] %}
+                                        {% for inventory in game_state.state_data.inventories.values() %}
+                                            {% if inventory %}
+                                                {% for item in inventory %}
+                                                    {% if item is string %}
+                                                        {% set _ = all_items.append(item) %}
+                                                    {% elif item is mapping and item.name %}
+                                                        {% set _ = all_items.append(item.name) %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if all_items %}
                                             <ul class="list-unstyled mb-0">
-                                                {% for item in game_state.state_data.inventory %}
+                                                {% for item in all_items %}
                                                     <li>{{ item | e }}</li>
                                                 {% endfor %}
                                             </ul>

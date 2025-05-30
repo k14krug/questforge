@@ -338,7 +338,7 @@ class AIService:
 
             # Handle inventory changes (items_added, items_removed)
             inventory_changes_from_ai = ai_state_changes.get('inventory_changes')
-            current_inventory = previous_state_data.get('inventory', []) # Get current inventory from previous state
+            current_inventory = previous_state_data.get('inventories', {}).get('shared', []) # Get current inventory from new structure
 
             if isinstance(inventory_changes_from_ai, dict):
                 items_added = inventory_changes_from_ai.get('items_added', [])
@@ -360,14 +360,15 @@ class AIService:
                 else:
                     app.logger.warning(f"AI provided invalid 'items_removed' format: '{items_removed}'. Skipping removals.")
                 
-                final_state_changes['inventory'] = current_inventory # Update the inventory in final state changes
+                # Removed: final_state_changes['inventory'] = current_inventory # This was the legacy inventory key
             else:
-                # If AI didn't provide inventory_changes, or it was invalid, fall back to previous inventory
+                # If AI didn't provide inventory_changes, or it was invalid, ensure no legacy 'inventory' key is added.
                 if 'inventory_changes' in ai_state_changes:
-                    app.logger.warning(f"AI provided invalid 'inventory_changes' (not a dict): '{inventory_changes_from_ai}'. Falling back to previous inventory.")
+                    app.logger.warning(f"AI provided invalid 'inventory_changes' (not a dict): '{inventory_changes_from_ai}'. Not updating inventory via AI.")
                 else:
-                    app.logger.debug("AI did not provide 'inventory_changes'. Using previous inventory.")
-                final_state_changes['inventory'] = previous_state_data.get('inventory', [])
+                    app.logger.debug("AI did not provide 'inventory_changes'. No inventory updates from AI for this turn.")
+                # Ensure the legacy 'inventory' key is NOT added to final_state_changes
+                # The 'inventories' object is managed by InventoryService and passed separately.
 
             new_npc_status = ai_state_changes.get('npc_status') # Changed from 'npc_states'
             if isinstance(new_npc_status, dict):
@@ -481,6 +482,10 @@ class AIService:
 
         next_required_plot_point_desc = None
         state_data = game_state.state_data or {}
+        if 'inventory' in state_data:
+            app.logger.error("Legacy inventory format detected - rejecting request")
+            return None
+            
         completed_plot_points_data = state_data.get('completed_plot_points', [])
         if not isinstance(completed_plot_points_data, list):
             completed_plot_points_data = []

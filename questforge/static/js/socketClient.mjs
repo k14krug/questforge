@@ -421,7 +421,7 @@ function updateGameState(packet) {
     updateGameLog(packet); // This function will now handle all log display
     updatePlayerLocationsDisplay(packet?.state?.player_locations || null);
     updateVisitedLocationsDisplay(packet?.state?.visited_locations || []);
-    updateInventoryDisplay(packet?.state?.inventory || null);
+    updateInventoryDisplay(packet?.inventory || null);
 
     if (typeof packet?.total_cost !== 'undefined') {
         updateTotalCostDisplay(packet.total_cost);
@@ -610,36 +610,54 @@ function updateVisitedLocationsDisplay(visitedLocations) {
     displayElement.innerHTML = html;
 }
 
-function updateInventoryDisplay(inventory) {
-    const displayElement = document.getElementById('inventoryDisplay');
-    if (!displayElement) return;
+    function updateInventoryDisplay(inventoryData) {
+        const displayElement = document.getElementById('inventoryDisplay');
+        if (!displayElement) return;
 
-    let html = '<ul class="list-unstyled mb-0">';
-    if (inventory === null || inventory === undefined) {
-        html += '<li class="text-muted">Inventory data not available from server.</li>';
-    } else if (Array.isArray(inventory) && inventory.length > 0) {
-        inventory.forEach(item => {
-            if (typeof item === 'object' && item !== null && item.name) {
-                html += `<li>${item.name}</li>`;
-            } else {
-                html += `<li>${item}</li>`;
+        let html = '<ul class="list-unstyled mb-0">';
+        let allItems = [];
+
+        // inventoryData is expected to be the 'inventories' object itself (e.g., {player_id: [...], shared: [...]})
+        if (inventoryData && typeof inventoryData === 'object') {
+            // Iterate through all sub-inventories (player-specific and shared)
+            for (const key in inventoryData) {
+                if (Object.hasOwnProperty.call(inventoryData, key)) {
+                    const subInventory = inventoryData[key];
+                    if (Array.isArray(subInventory)) {
+                        allItems = allItems.concat(subInventory);
+                    }
+                }
             }
-        });
-    } else if (typeof inventory === 'object' && inventory !== null && Object.keys(inventory).length > 0) {
-        for (const [key, value] of Object.entries(inventory)) {
-            if (typeof value === 'object' && value !== null) {
-                const itemName = value.name || value.description || key;
-                html += `<li>${itemName}</li>`;
-            } else {
-                html += `<li>${key}</li>`;
-            }
+        } 
+        // Fallback for legacy array structure (if inventoryData itself is an array)
+        else if (Array.isArray(inventoryData)) {
+            allItems = inventoryData;
         }
-    } else {
-        html += '<li class="text-muted">Inventory is empty.</li>';
+
+        if (allItems.length > 0) {
+            const playerDisplayMap = window.playerDetails || {}; // Use window.playerDetails for player names
+            allItems.forEach(item => {
+                if (typeof item === 'object' && item !== null && item.name) {
+                    let itemText = item.name;
+                    if (item.owner_id) {
+                        const ownerName = playerDisplayMap[item.owner_id]?.character_name || playerDisplayMap[item.owner_id]?.username || `Player ${item.owner_id}`;
+                        itemText += ` (Owner: ${ownerName})`;
+                    }
+                    if (item.is_shared === true) { // Explicitly check for true boolean
+                        itemText += ` (Shareable)`;
+                    }
+                    html += `<li>${itemText}</li>`;
+                } else {
+                    html += `<li>${item}</li>`;
+                }
+            });
+        } else {
+            html += '<li class="text-muted">Inventory is empty.</li>';
+        }
+        
+        html += '</ul>';
+        displayElement.innerHTML = html;
     }
-    html += '</ul>';
-    displayElement.innerHTML = html;
-}
 
 socketClient.performAction = function(actionInputText) {
     const rawInput = actionInputText;
