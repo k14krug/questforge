@@ -405,8 +405,18 @@ const socketClient = {
 
 // --- Game State Update Handlers ---
 
+function clearSlashCommandOutput() {
+    const gameStateVisualization = document.getElementById('gameStateVisualization');
+    if (!gameStateVisualization) return;
+    const slashCommandOutputs = gameStateVisualization.querySelectorAll('.slash-command-output');
+    slashCommandOutputs.forEach(el => el.remove());
+}
+
 function updateGameState(packet) {
     console.log("--- updateGameState received state:", JSON.stringify(packet, null, 2));
+
+    // Clear any existing slash command output before updating the game state
+    clearSlashCommandOutput();
 
     // Re-enable input and button after processing
     const customActionInput = document.getElementById('customActionInput');
@@ -429,17 +439,17 @@ function updateGameState(packet) {
 }
 
 function updateGameLog(packet) {
-    const gameStateVisualization = document.getElementById('gameStateVisualization');
-    if (!gameStateVisualization) return;
+    const mainGameLogContent = document.getElementById('mainGameLogContent');
+    if (!mainGameLogContent) return;
 
-    gameStateVisualization.innerHTML = ''; // Clear existing content
+    mainGameLogContent.innerHTML = ''; // Clear existing content
 
     // Ensure necessary data exists
     if (!packet || (!packet.latest_ai_response && (!Array.isArray(packet.player_commands) || packet.player_commands.length === 0) && (!Array.isArray(packet.historical_summary) || packet.historical_summary.length === 0))) {
         const noLogMessage = document.createElement('p');
         noLogMessage.className = 'text-muted mb-0';
         noLogMessage.textContent = 'No game log available yet.';
-        gameStateVisualization.appendChild(noLogMessage);
+        mainGameLogContent.appendChild(noLogMessage);
         return;
     }
 
@@ -453,20 +463,20 @@ function updateGameLog(packet) {
         const latestAiHeader = document.createElement('h6');
         latestAiHeader.textContent = 'Latest AI Response';
         latestAiHeader.className = 'mt-2 mb-1'; // Bootstrap margin classes
-        gameStateVisualization.appendChild(latestAiHeader);
+        mainGameLogContent.appendChild(latestAiHeader);
 
         const latestAiDiv = document.createElement('div');
         latestAiDiv.className = 'log-entry log-entry-ai-latest'; // Use a specific class for latest
         latestAiDiv.style.whiteSpace = 'pre-wrap'; // Preserve formatting
         // Use CSS for background/padding/border-radius
         latestAiDiv.textContent = latestAiResponse;
-        gameStateVisualization.appendChild(latestAiDiv);
+        mainGameLogContent.appendChild(latestAiDiv);
     }
 
     // 2. Add Separator if there's both latest AI and historical log
     if (latestAiResponse && (historicalSummary.length > 0 || playerCommands.length > 0)) {
         const hr = document.createElement('hr');
-        gameStateVisualization.appendChild(hr);
+        mainGameLogContent.appendChild(hr);
     }
 
     // 3. Add Interaction Log Header
@@ -474,7 +484,7 @@ function updateGameLog(packet) {
         const historyHeader = document.createElement('h6');
         historyHeader.textContent = 'Interaction Log';
         historyHeader.className = 'mt-2 mb-1'; // Bootstrap margin classes
-        gameStateVisualization.appendChild(historyHeader);
+        mainGameLogContent.appendChild(historyHeader);
 
         // 4. Add Historical Summaries and Player Commands (interleaved, reverse chronological)
         // Assuming playerCommands and historicalSummary have the same length and correspond to turns
@@ -499,7 +509,7 @@ function updateGameLog(packet) {
                 actionSpan.textContent = cmd.content;
                 playerDiv.appendChild(actionSpan);
 
-                gameStateVisualization.appendChild(playerDiv);
+                mainGameLogContent.appendChild(playerDiv);
             }
 
             // Add AI Summary
@@ -507,14 +517,14 @@ function updateGameLog(packet) {
                 const summaryDiv = document.createElement('div');
                 summaryDiv.className = 'log-entry log-entry-summary'; // Specific class for summary
                 summaryDiv.textContent = summaryText;
-                gameStateVisualization.appendChild(summaryDiv);
+                mainGameLogContent.appendChild(summaryDiv);
             }
         }
     } else if (!latestAiResponse) { // If no latest AI response and no historical log
         const noLogMessage = document.createElement('p');
         noLogMessage.className = 'text-muted mb-0';
         noLogMessage.textContent = 'No game log available yet.';
-        gameStateVisualization.appendChild(noLogMessage);
+        mainGameLogContent.appendChild(noLogMessage);
     }
 
     // Scroll to the bottom
@@ -527,24 +537,36 @@ function appendSlashCommandResponseToLog(data) {
 
     if (data && data.lines && data.lines.length > 0) {
         const headerEntry = document.createElement('div');
-        headerEntry.classList.add('log-entry', 'log-entry-system', 'fw-bold');
+        headerEntry.classList.add('log-entry', 'log-entry-system', 'fw-bold', 'slash-command-output'); // Add new class
         headerEntry.innerText = data.header || `${data.command} response:`;
-        gameStateVisualization.appendChild(headerEntry);
+        gameStateVisualization.prepend(headerEntry); // Use prepend
 
         data.lines.forEach(line => {
             const lineEntry = document.createElement('div');
-            lineEntry.classList.add('log-entry', 'log-entry-system', 'ms-2');
+            lineEntry.classList.add('log-entry', 'log-entry-system', 'ms-2', 'slash-command-output');
             lineEntry.innerText = line;
-            gameStateVisualization.appendChild(lineEntry);
+            gameStateVisualization.prepend(lineEntry);
         });
-        gameStateVisualization.appendChild(document.createElement('hr'));
+        const hr1 = document.createElement('hr');
+        hr1.classList.add('slash-command-output'); // Add new class
+        gameStateVisualization.prepend(hr1);
     } else if (data && data.message) {
         const messageEntry = document.createElement('div');
-        messageEntry.classList.add('log-entry', 'log-entry-system');
+        messageEntry.classList.add('log-entry', 'log-entry-system', 'slash-command-output');
         messageEntry.innerText = data.message;
-        gameStateVisualization.appendChild(messageEntry);
-        gameStateVisualization.appendChild(document.createElement('hr'));
+        gameStateVisualization.prepend(messageEntry);
+        const hr2 = document.createElement('hr');
+        hr2.classList.add('slash-command-output'); // Add new class
+        gameStateVisualization.prepend(hr2);
     }
+    // Re-enable input and button after processing slash command
+    const customActionInput = document.getElementById('customActionInput');
+    const submitCustomActionButton = document.getElementById('submitCustomAction');
+    if (customActionInput && submitCustomActionButton) {
+        customActionInput.disabled = false;
+        submitCustomActionButton.disabled = false;
+    }
+    clearProcessingMessage(); // Clear processing message after displaying slash command response
     gameStateVisualization.scrollTop = 0;
 }
 
@@ -674,9 +696,6 @@ socketClient.performAction = function(actionInputText) {
         customActionInput.disabled = true;
         submitCustomActionButton.disabled = true;
     }
-
-    // Show local processing message
-    displayProcessingMessage("Processing your action...");
 
     const isSlashCommand = trimmedActionText.startsWith('/');
 

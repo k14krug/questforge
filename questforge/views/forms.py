@@ -114,3 +114,27 @@ class TemplateForm(FlaskForm):
                 raise ValidationError('Invalid JSON format for questions.')
             except Exception as e: # Catch other potential errors during validation
                  raise ValidationError(f'Error validating questions JSON: {e}')
+
+class CampaignEditForm(FlaskForm):
+    key_characters = TextAreaField('Key Characters', validators=[DataRequired()])
+    key_locations = TextAreaField('Key Locations', validators=[DataRequired()])
+    major_plot_points = TextAreaField('Major Plot Points', validators=[DataRequired()])
+    submit = SubmitField('Update Campaign')
+
+    def validate_key_characters(self, field):
+        self._validate_json_field(field, 'Key Characters')
+
+    def validate_key_locations(self, field):
+        self._validate_json_field(field, 'Key Locations')
+
+    def validate_major_plot_points(self, field):
+        self._validate_json_field(field, 'Major Plot Points')
+
+    def _validate_json_field(self, field, field_name):
+        if field.data:
+            try:
+                json.loads(field.data)
+            except json.JSONDecodeError:
+                raise ValidationError(f'Invalid JSON format for {field_name}.')
+            except Exception as e:
+                raise ValidationError(f'Error validating {field_name} JSON: {e}')

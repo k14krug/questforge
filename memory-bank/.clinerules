@@ -37,8 +37,13 @@ This file captures key patterns, decisions, and project-specific knowledge for t
         - `ai_service.generate_historical_summary()`: Called by `socket_service.handle_player_action()` after the Stage 1 AI response. Uses `OPENAI_MODEL_MAIN` and `prompt_builder.build_summary_prompt()` to create a single-sentence summary of the turn's player action, narrative result, and associated state changes.
         - `context_manager.build_context()`: Prepends the `historical_summary` (if available and not empty) as a numbered list to the context provided to the main game AI (`OPENAI_MODEL_LOGIC`), placing it before the "Recent Events (Game Log)" section.
     - **Impact**: Aims to give the AI a broader understanding of the game's progression beyond the immediate last few turns, potentially leading to more contextually aware and consistent narrative generation.
-- **AI Model Context Window**:
-    - `gpt-4.1` (and its variants like `gpt-4.1-mini-2025-04-14`): Has a maximum context window of **128,000 tokens**. This means the combined total of prompt and completion tokens can be up to 128k. Current usage (500-3,200 tokens) is less than 3% of this limit.
+- **Puzzle Mechanic (New Feature)**:
+    - **Core Idea**: Introduce interactive challenges that must be solved to advance story progression, leveraging existing game state (NPCs, world objects, inventory).
+    - **AI Model for Resolution**: `GPT 4.1 mini` will be used for puzzle validation (`ai_service.check_puzzle_solution`) due to its speed and suitability for focused, structured checks.
+    - **AI Constraints**: Puzzle `solution_criteria` must be explicit. The AI will be strictly instructed to *not* invent solutions or bypass puzzles, and will return a `confidence_score` for system-side validation.
+    - **Integration with Plot Points**: Puzzles will directly gate plot points, extending the "Multi-Stage Plot Point Completion Strategy (v2)" with a new "Puzzle Resolution" stage.
+    - **Configuration**: Puzzle types, difficulties, hint frequency, and failure consequences will be configurable in `Template.default_rules['puzzles']` and overrideable in `Game.template_overrides['puzzles']`.
+    - **Admin Authoring Tool**: Deferred to a future consideration.
 
 ## Development Workflow & Conventions
 
@@ -50,6 +55,7 @@ This file captures key patterns, decisions, and project-specific knowledge for t
 - **Database Migrations**: All schema changes are managed through Flask-Migrate.
 - **Logging**: Structured logging with rotation is used throughout the application.
 - **Explicit Difficulty Prompting (Initial Campaign Generation)**: The "difficulty" setting selected during game creation (from `Template` or `Game.template_overrides`) is translated into explicit instructions within the AI campaign generation prompt (`prompt_builder.build_campaign_prompt`). This aims to make the initial difficulty level impactful by guiding the AI on aspects like resource availability, challenge complexity, NPC behavior, and plot point clarity for the generated campaign. (Effectiveness to be validated through testing). This is distinct from the Dynamic Gameplay Difficulty Adjustment.
+- **Feature Flags**: New major features (like the Puzzle Mechanic) will be guarded by configuration flags (e.g., `ENABLE_PUZZLES` in `config.py`) to allow for controlled, phased deployment and minimize impact on existing functionality.
 
 ## Tooling & Configuration
 

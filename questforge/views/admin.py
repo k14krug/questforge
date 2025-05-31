@@ -10,6 +10,7 @@ from questforge.models.campaign import Campaign
 from questforge.models.game_state import GameState
 from questforge.models.user import User # Needed for import validation
 from questforge.extensions import db
+from questforge.views.forms import CampaignEditForm # Import the new form
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -80,6 +81,38 @@ def state_viewer(game_id=None):
         world_object_states=world_object_states,
         npc_status=npc_status
     )
+
+@admin_bp.route('/campaigns')
+@login_required
+def campaign_list():
+    campaigns = Campaign.query.join(Game).order_by(Game.created_at.desc()).all()
+    return render_template('admin/campaign_list.html', campaigns=campaigns)
+
+@admin_bp.route('/campaigns/<int:campaign_id>/edit', methods=['GET', 'POST'])
+@login_required
+def campaign_edit(campaign_id):
+    campaign = Campaign.query.get_or_404(campaign_id)
+    form = CampaignEditForm()
+
+    if form.validate_on_submit():
+        try:
+            campaign.key_characters = json.loads(form.key_characters.data)
+            campaign.key_locations = json.loads(form.key_locations.data)
+            campaign.major_plot_points = json.loads(form.major_plot_points.data)
+            db.session.commit()
+            flash('Campaign updated successfully!', 'success')
+            return redirect(url_for('admin.campaign_list'))
+        except json.JSONDecodeError as e:
+            flash(f'Invalid JSON format: {e}', 'danger')
+        except Exception as e:
+            flash(f'An error occurred: {e}', 'danger')
+    elif request.method == 'GET':
+        form.key_characters.data = json.dumps(campaign.key_characters, indent=4)
+        form.key_locations.data = json.dumps(campaign.key_locations, indent=4)
+        form.major_plot_points.data = json.dumps(campaign.major_plot_points, indent=4)
+
+    return render_template('admin/campaign_editor.html', form=form, campaign=campaign)
+
 
 @admin_bp.route('/', methods=['GET', 'POST'])
 @login_required

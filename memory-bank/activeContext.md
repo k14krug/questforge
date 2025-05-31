@@ -1,62 +1,22 @@
-# Active Context - QuestForge - NPC Memory & Object States Enhancement
+# Active Context - QuestForge - Puzzle Mechanic Feature Development
 
-## Date: 2025-05-27
+## Date: 2025-05-31 (Updated)
 
 ## 1. Current Work Focus:
-**Phase 2: Persistent NPC Memory & Complex Object States**
-Implementing richer NPC memory and world object states to support more dynamic gameplay.
+**Phase 1: Core Data Model & AI Generation for Puzzle Mechanic**
+Implementing the foundational data structures for puzzles within templates and games, and enabling the AI to generate puzzle definitions as part of the campaign.
 
 ## 2. Key Implementation Steps:
-* **Analyzed current state structures**:
-  - NPCs: state_data['npc_status'] (basic location/status)
-  - Objects: state_data['world_objects'] (basic interactable flags)
+*   **Puzzle Mechanic Feature Development:**
+    *   Refer to the detailed plan: [plan_puzzle_mechanics_feature.md](./plan_puzzle_mechanics_feature.md)
+    *   This is the sole active development focus.
 
-* **Designed enhanced state structures**:
-  - **NPCs**:
-    ```python
-    npc_status = {
-        "npc_name": {
-            "location": "current_location",
-            "disposition": "friendly/suspicious/hostile", 
-            "knowledge": ["fact1", "fact2"],
-            "interaction_history": [
-                {"turn": 5, "summary": "Player helped NPC"},
-                {"turn": 10, "summary": "Player lied to NPC"}
-            ],
-            "current_goal": "objective",
-            "status": "normal/injured/busy"
-        }
-    }
-    ```
-  - **World Objects**:
-    ```python
-    world_objects = {
-        "object_id": {
-            "name": "object_name",
-            "location": "current_location",
-            "condition": "pristine/damaged/broken",
-            "contents": ["item1", "item2"],
-            "properties": ["magical", "cursed"],
-            "interactable": True,
-            "status": "locked/unlocked"
-        }
-    }
-    ```
+## 3. Next Steps:
+*   Begin implementation of **Phase 1: Core Data Model & AI Generation (Backend Only)** as outlined in `plan_puzzle_mechanics_feature.md`.
 
-## 3. Implementation Plan:
-1. Update `GameState` model documentation
-2. Modify `campaign_service.generate_campaign_structure()` to initialize enhanced states
-3. Update `ai_service.get_response()` to handle new state attributes
-4. Enhance `socket_service.handle_player_action()` state updates
-5. Add UI support in play.html template
-
-## 4. Next Steps:
-* Update GameState model documentation
-* Modify campaign generation in campaign_service.py
-* Test initial state generation
-
-## 5. Active Decisions & Considerations:
-* Maintain backward compatibility with existing games
-* Keep state updates atomic
-* Balance detail vs performance impact
-* Ensure clear UI representation of new attributes
+## 4. Active Decisions & Considerations:
+*   **Feature Flag:** All new puzzle-related code will be guarded by `ENABLE_PUZZLES = False` in `config.py` to ensure no impact on existing functionality during development.
+*   **AI Model for Puzzle Resolution:** GPT 4.1 mini will be used for `ai_service.check_puzzle_solution` to minimize latency.
+*   **Backward Compatibility:** Ensure existing games and templates function without issues.
+*   **Phased Testing:** Rigorous testing will be conducted at the end of each phase.
+*   **Admin Authoring Tool:** Deferred to a future consideration.

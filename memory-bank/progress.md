@@ -46,17 +46,22 @@
     *   Integrated with existing game state management
     *   Verified proper database transactions and state persistence
 
-[Previous completed features sections remain unchanged...]
+**Feature: NPC Memory & Object States Enhancement (Completed)**
+*   **Objective:** Implement richer NPC memory and world object states to support more dynamic gameplay.
+*   **Implementation:** Enhanced `GameState.state_data` structures for `npc_status` and `world_objects`, including properties like disposition, knowledge, interaction history for NPCs, and condition, contents, properties, status for world objects. Backend services (`campaign_service`, `ai_service`, `socket_service`) updated to handle these new attributes.
+*   **Verification:** Confirmed that new state attributes are correctly initialized, updated by AI, and persisted.
 
-## Remaining Work (Phased Approach from Spec)
+## Remaining Work
 
-[All remaining work sections remain unchanged...]
+*   **Puzzle Mechanic Feature:**
+    *   **Objective:** Introduce puzzles as a core mechanic that must be solved to advance the story, leveraging existing world elements, and ensuring the AI cannot bypass them.
+    *   **Detailed Plan:** Refer to [plan_puzzle_mechanics_feature.md](./plan_puzzle_mechanics_feature.md) for the comprehensive phased implementation plan.
+    *   **Current Phase:** Phase 1: Core Data Model & AI Generation (Backend Only).
 
 ## Known Issues & Potential Enhancements (Post-MVP)
 
-[All known issues sections remain unchanged...]
+*   **Admin Authoring Tool for Puzzles:** Deferred to a future consideration.
 
 ## Documentation Status
 *   `questforge-spec.md` is the primary specification.
-*   Memory Bank documents (`projectbrief.md`, `activeContext.md`, `progress.md`, process docs, `.clinerules`) are aligned with the spec.
-*   Historical summary enhancement documented in `activeContext.md`
+*   Memory Bank documents (`projectbrief.md`, `activeContext.md`, `progress.md`, process docs, `.clinerules`, `plan_puzzle_mechanics_feature.md`) are aligned with the spec.
