@@ -518,7 +518,7 @@ function updateGameLog(packet) {
     }
 
     // Scroll to the bottom
-    gameStateVisualization.scrollTop = gameStateVisualization.scrollHeight;
+    gameStateVisualization.scrollTop = 0;
 }
 
 function appendSlashCommandResponseToLog(data) {
@@ -545,7 +545,7 @@ function appendSlashCommandResponseToLog(data) {
         gameStateVisualization.appendChild(messageEntry);
         gameStateVisualization.appendChild(document.createElement('hr'));
     }
-    gameStateVisualization.scrollTop = gameStateVisualization.scrollHeight;
+    gameStateVisualization.scrollTop = 0;
 }
 
 function updateTotalCostDisplay(cost) {
