@@ -177,6 +177,17 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
             return False
         logger.info(f"AI Response structure validation passed (using placeholder validation) for game {game_id}.")
 
+        # Request images for generated NPCs
+        npc_list = ai_response_data.get('generated_characters', [])
+        for npc in npc_list:
+            if isinstance(npc, dict) and npc.get('description') and 'image_url' not in npc:
+                try:
+                    img_url = ai_service.generate_character_image(npc['description'])
+                    if img_url:
+                        npc['image_url'] = img_url
+                except Exception as img_e:
+                    logger.error(f"Failed to generate image for NPC {npc.get('name')}: {img_e}")
+
         # 3. Create and save Campaign structure
         logger.info(f"Mapping AI response to Campaign model for game {game_id}")
         # Map AI response to Campaign model fields based on the *expected* new structure
@@ -187,7 +198,7 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
             campaign_data=ai_response_data.get('campaign_summary', {}), # Or a more structured summary
             objectives=ai_response_data.get('campaign_objective', []),
             key_locations=ai_response_data.get('generated_locations', []),
-            key_characters=ai_response_data.get('generated_characters', []),
+            key_characters=npc_list,
             major_plot_points=ai_response_data.get('generated_plot_points', []),
             conclusion_conditions=ai_response_data.get('conclusion_conditions', {}),
             possible_branches=ai_response_data.get('possible_branches', {}) # If AI generates branches
@@ -214,7 +225,8 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
                         'knowledge': npc.get('knowledge', []),
                         'interaction_history': [],
                         'current_goal': npc.get('goal', ''),
-                        'status': 'normal'
+                        'status': 'normal',
+                        'image_url': npc.get('image_url')
                     }
 
         # Initialize enhanced world object states if not present

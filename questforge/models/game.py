@@ -10,6 +10,7 @@ class GamePlayer(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     character_description = db.Column(db.Text, nullable=True) # Added field for player character description
     character_name = db.Column(db.String(100), nullable=True) # Optional player-provided or AI-generated name
+    image_url = db.Column(db.String(255), nullable=True)  # Optional URL for character portrait
     is_ready = db.Column(db.Boolean, default=False, nullable=False)
     join_date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 

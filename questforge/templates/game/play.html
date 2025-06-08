@@ -144,6 +144,9 @@
                                                 {% for npc_name, npc_details in campaign.key_characters.items() %}
                                                     <dt>{{ npc_name | e }}</dt>
                                                     <dd>
+                                                        {% if npc_details.image_url %}
+                                                            <img src="{{ npc_details.image_url }}" class="img-thumbnail mb-1 me-2" style="width:50px;height:50px;">
+                                                        {% endif %}
                                                         {% if npc_details is mapping and 'description' in npc_details %}
                                                             <p class="mb-1"><em>{{ npc_details.description | e }}</em></p>
                                                         {% elif npc_details is string %}
@@ -173,6 +176,9 @@
                                                 {% for npc in campaign.key_characters %}
                                                     <dt>{{ npc.name | e if npc.name else "Unnamed Character" }}</dt>
                                                     <dd>
+                                                        {% if npc.image_url %}
+                                                            <img src="{{ npc.image_url }}" class="img-thumbnail mb-1 me-2" style="width:50px;height:50px;">
+                                                        {% endif %}
                                                         {% if npc.description %}
                                                             <p class="mb-1"><em>{{ npc.description | e }}</em></p>
                                                         {% endif %}

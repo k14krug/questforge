@@ -14,7 +14,10 @@
                         {% for assoc in player_associations %}
                         <li class="list-group-item" data-user-id="{{ assoc.user_id }}">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span>
+                                <span class="d-flex align-items-center">
+                                    {% if assoc.image_url %}
+                                    <img src="{{ assoc.image_url }}" class="img-thumbnail me-2 player-thumb" style="width:50px;height:50px;">
+                                    {% endif %}
                                     <strong>{{ assoc.user.username }}</strong>
                                     <span class="ready-status ms-2">
                                         {% if assoc.is_ready %}✅ Ready{% else %}❌ Not Ready{% endif %}
@@ -256,7 +259,8 @@
 
                     playerItem.innerHTML = `
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span>
+                            <span class="d-flex align-items-center">
+                                ${player.image_url ? `<img src="${player.image_url}" class="img-thumbnail me-2 player-thumb" style="width:50px;height:50px;">` : ''}
                                 <strong>${player.username}</strong>
                                 <span class="ready-status ms-2">${player.is_ready ? '✅ Ready' : '❌ Not Ready'}</span>
                             </span>
@@ -304,6 +308,23 @@
                     saveStatus.textContent = 'Saved!';
                     // Clear "Saved!" message after a few seconds
                     setTimeout(() => { saveStatus.textContent = ''; }, 3000);
+                }
+            }
+        });
+        socket.on('player_image_generated', (data) => {
+            if (data && data.user_id && data.image_url) {
+                const playerItem = playerList.querySelector(`li[data-user-id="${data.user_id}"]`);
+                if (playerItem) {
+                    let img = playerItem.querySelector('img.player-thumb');
+                    if (!img) {
+                        img = document.createElement('img');
+                        img.className = 'img-thumbnail me-2 player-thumb';
+                        img.style.width = '50px';
+                        img.style.height = '50px';
+                        const span = playerItem.querySelector('div span');
+                        if (span) span.prepend(img);
+                    }
+                    img.src = data.image_url;
                 }
             }
         });

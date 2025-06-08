@@ -249,11 +249,12 @@ const socketClient = {
             playerItem.className = 'list-group-item d-flex justify-content-between align-items-center';
             playerItem.dataset.userId = player.user_id;
             playerItem.innerHTML = `
-              <span>
+              <span class="d-flex align-items-center">
+                ${player.image_url ? `<img src="${player.image_url}" class="img-thumbnail me-2 player-thumb" style="width:50px;height:50px;">` : ''}
                 ${player.username}
                 <span class="ready-status ms-2">${player.is_ready ? '✅' : '❌'}</span>
               </span>
-              ${player.user_id == window.currentUserId && !player.is_ready ? 
+              ${player.user_id == window.currentUserId && !player.is_ready ?
                 '<button class="btn btn-sm btn-success ready-button">Ready Up</button>' : ''}
             `;
             playerList.appendChild(playerItem);
@@ -268,12 +269,15 @@ const socketClient = {
           // console.log(`Received player_joined event for game ${self.gameId}:`, data); // DEBUG REMOVED
           const playerList = document.getElementById('player-list'); 
           if (playerList && data && data.username && data.user_id) {
-             if (!playerList.querySelector(`li[data-user-id="${data.user_id}"]`)) {
+            if (!playerList.querySelector(`li[data-user-id="${data.user_id}"]`)) {
                  const playerItem = document.createElement('li');
                  playerItem.className = 'list-group-item d-flex justify-content-between align-items-center';
                  playerItem.dataset.userId = data.user_id;
                  playerItem.innerHTML = `
-                     <span> ${data.username} <span class="ready-status ms-2">${data.is_ready ? '✅' : '❌'}</span> </span>
+                     <span class="d-flex align-items-center">
+                        ${data.image_url ? `<img src="${data.image_url}" class="img-thumbnail me-2 player-thumb" style="width:50px;height:50px;">` : ''}
+                        ${data.username} <span class="ready-status ms-2">${data.is_ready ? '✅' : '❌'}</span>
+                     </span>
                      ${data.user_id == window.currentUserId && !data.is_ready ? '<button class="btn btn-sm btn-success ready-button">Ready Up</button>' : ''}
                  `;
                  playerList.appendChild(playerItem);
@@ -300,6 +304,30 @@ const socketClient = {
           window.dispatchEvent(event);
           // Also call checkAllPlayersReady directly if needed in lobby context
           if (typeof checkAllPlayersReady === 'function') checkAllPlayersReady();
+        }
+      });
+
+      this.socket.on('player_image_generated', function(data) {
+        if (data && data.user_id && data.image_url) {
+          const playerList = document.getElementById('player-list');
+          if (playerList) {
+            const playerItem = playerList.querySelector(`li[data-user-id="${data.user_id}"]`);
+            if (playerItem) {
+              let img = playerItem.querySelector('img.player-thumb');
+              if (!img) {
+                img = document.createElement('img');
+                img.className = 'img-thumbnail me-2 player-thumb';
+                img.style.width = '50px';
+                img.style.height = '50px';
+                const span = playerItem.querySelector('span');
+                if (span) span.prepend(img);
+              }
+              img.src = data.image_url;
+            }
+          }
+          if (window.playerDetails && window.playerDetails[data.user_id]) {
+            window.playerDetails[data.user_id].image_url = data.image_url;
+          }
         }
       });
 
@@ -605,7 +633,8 @@ function updatePlayerLocationsDisplay(playerLocations) {
         for (const [userId, location] of Object.entries(playerLocations)) {
             const details = playerDetails[userId];
             const displayName = details?.character_name || details?.username || `User ${userId}`;
-            html += `<li>${displayName}: ${location || 'Unknown'}</li>`;
+            const imgTag = details?.image_url ? `<img src="${details.image_url}" class="img-thumbnail me-1 player-thumb" style="width:32px;height:32px;">` : '';
+            html += `<li class="d-flex align-items-center">${imgTag}${displayName}: ${location || 'Unknown'}</li>`;
         }
     } else if (playerLocations === null) {
         html += '<li class="text-muted">Player location data not available from server.</li>';
