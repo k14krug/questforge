@@ -51,6 +51,10 @@
 *   **Implementation:** Enhanced `GameState.state_data` structures for `npc_status` and `world_objects`, including properties like disposition, knowledge, interaction history for NPCs, and condition, contents, properties, status for world objects. Backend services (`campaign_service`, `ai_service`, `socket_service`) updated to handle these new attributes.
 *   **Verification:** Confirmed that new state attributes are correctly initialized, updated by AI, and persisted.
 
+**Feature: Character Portraits (Completed)**
+*   **Objective:** Provide visual thumbnails for both player characters and key NPCs.
+*   **Implementation:** Added an `image_url` field to `GamePlayer`, generated NPC images during campaign creation, produced player portraits when users ready up, and displayed these thumbnails in the lobby and gameplay UI via updated templates and SocketIO events.
+
 ## Remaining Work
 
 *   **Puzzle Mechanic Feature:**
