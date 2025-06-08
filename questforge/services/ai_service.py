@@ -489,6 +489,21 @@ class AIService:
             app.logger.error(f"Error calling OpenAI API or processing name response: {e}", exc_info=True)
             return None
 
+    def generate_character_image(self, description: str) -> str | None:
+        """Generate a character portrait image from a text description."""
+        app = current_app._get_current_object()
+        if not self.client:
+            app.logger.error("OpenAI client not initialized. Cannot generate image.")
+            return None
+        try:
+            response = self.client.images.generate(prompt=description, n=1, size="512x512")
+            url = response.data[0].url if response.data else None
+            app.logger.info(f"Generated image for description '{description[:30]}...' -> {url}")
+            return url
+        except Exception as e:
+            app.logger.error(f"Error generating character image: {e}", exc_info=True)
+            return None
+
     def get_ai_hint(self, game_state: GameState, campaign: Campaign) -> Optional[Tuple[str, str, Optional[Dict[str, int]]]]:
         from questforge.utils.ai_debug_logger import log_ai_debug_payload
         app = current_app._get_current_object()

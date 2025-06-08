@@ -101,7 +101,8 @@ def play(game_id): # Renamed from play_game to play for consistency
             player_details[assoc.user_id] = {
                 'username': assoc.user.username,
                 'character_name': assoc.character_name, # Add character_name (could be None)
-                'character_description': assoc.character_description # Add description (could be None)
+                'character_description': assoc.character_description, # Add description (could be None)
+                'image_url': assoc.image_url
             }
         else:
              # Log a warning if a user couldn't be loaded for an association

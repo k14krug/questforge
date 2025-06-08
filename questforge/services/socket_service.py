@@ -187,8 +187,11 @@ class SocketService:
                 # Prepare player list data *inside* the context
                 player_list_data = [{
                     'user_id': p.user_id,
-                    'username': p.user.username, # Access username while session is active & user is loaded
-                    'is_ready': p.is_ready
+                    'username': p.user.username,
+                    'is_ready': p.is_ready,
+                    'character_name': p.character_name,
+                    'character_description': p.character_description,
+                    'image_url': p.image_url
                 } for p in game_players]
 
                 # Always emit player_list to ensure joining client gets the current state
@@ -247,9 +250,20 @@ class SocketService:
 
                 if not association.is_ready:
                     association.is_ready = True
+                    image_generated = False
                     try:
                         db.session.commit()
                         current_app.logger.info(f"User {user_id} marked as ready for game {game_id}")
+                        if association.character_description and not association.image_url:
+                            img_url = ai_service.generate_character_image(association.character_description)
+                            if img_url:
+                                association.image_url = img_url
+                                db.session.commit()
+                                image_generated = True
+                                emit('player_image_generated', {
+                                    'user_id': user_id,
+                                    'image_url': img_url
+                                }, room=game_id)
                         # Broadcast the status update (emit can be outside context)
                         current_app.logger.info(f"Emitting 'player_status_update' for user {user_id}, is_ready=True, to room {game_id}")
                         emit('player_status_update', {
