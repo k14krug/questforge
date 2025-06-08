@@ -61,7 +61,38 @@ class Template(db.Model):
         self.player_character_guidance = player_character_guidance
         self.difficulty = difficulty
         self.estimated_length = estimated_length
-        self.default_rules = default_rules # Added default_rules assignment
+        
+        # Initialize default_rules with a base structure, including puzzles
+        if default_rules is None:
+            self.default_rules = {
+                "puzzles": {
+                    "enabled_types": ["Logic/Riddle", "Inventory/Environmental", "Social/Dialogue", "Procedural/Sequence", "Meta/Story-Dependent"],
+                    "difficulty_settings": {
+                        "Easy": {"hint_frequency": "high", "failure_consequences": "minor"},
+                        "Normal": {"hint_frequency": "medium", "failure_consequences": "moderate"},
+                        "Hard": {"hint_frequency": "low", "failure_consequences": "significant"}
+                    },
+                    "global_puzzle_difficulty": "Normal", # Default difficulty for puzzles
+                    "hint_frequency": "medium", # Default hint frequency
+                    "failure_consequences": "moderate" # Default failure consequences
+                }
+            }
+        else:
+            self.default_rules = default_rules
+            # Ensure 'puzzles' key exists if default_rules was provided externally
+            if "puzzles" not in self.default_rules:
+                self.default_rules["puzzles"] = {
+                    "enabled_types": ["Logic/Riddle", "Inventory/Environmental", "Social/Dialogue", "Procedural/Sequence", "Meta/Story-Dependent"],
+                    "difficulty_settings": {
+                        "Easy": {"hint_frequency": "high", "failure_consequences": "minor"},
+                        "Normal": {"hint_frequency": "medium", "failure_consequences": "moderate"},
+                        "Hard": {"hint_frequency": "low", "failure_consequences": "significant"}
+                    },
+                    "global_puzzle_difficulty": "Normal",
+                    "hint_frequency": "medium",
+                    "failure_consequences": "moderate"
+                }
+
         self.version = version
         self.ai_service_endpoint = ai_service_endpoint
         # Handle potential extra arguments if needed, or remove **kwargs if strict matching is desired

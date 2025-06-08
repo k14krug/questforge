@@ -86,6 +86,7 @@ class GameState(db.Model):
             'historical_summary': [], # Added for historical game summary
             'world_object_states': {}, # Added for world object state tracking
             'player_inventories': {}, # Added for player-specific inventories
+            'active_puzzles': [], # New: Stores active puzzle instances and their state
             # Removed game_log and available_actions from here, rely on DB default
         }
         # Initialize DB columns directly if not relying solely on state_data

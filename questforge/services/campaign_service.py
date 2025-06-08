@@ -101,16 +101,81 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
                 logger.error(f"Raw content from AI that caused error: {ai_result.get('raw_content')}")
             return False # Campaign generation failed
         
-        # If no error, then it should be the 3-tuple, so unpack it
+        # If no error, then it should be the 4-tuple, so unpack it
         try:
-            ai_response_data, model_used, usage_data = ai_result
-        except ValueError as e: # Catch if it's still not a 3-tuple for some reason (e.g. ai_service changes its error return)
-            logger.error(f"Failed to unpack ai_result for game {game_id}. Expected 3 values, got: {type(ai_result)}. Error: {e}", exc_info=True)
+            ai_response_data, generated_puzzles, model_used, usage_data = ai_result
+        except ValueError as e: # Catch if it's still not a 4-tuple for some reason
+            logger.error(f"Failed to unpack ai_result for game {game_id}. Expected 4 values, got: {type(ai_result)}. Error: {e}", exc_info=True)
             logger.debug(f"Content of ai_result that failed unpacking: {ai_result}")
             return False
 
         logger.info(f"Received campaign data from AI ({model_used}) for game {game_id}")
         # logger.debug(f"AI Response Data: {ai_response_data}") # Optional detailed logging
+
+        # --- Post-process generated_puzzles to ensure 'trigger' field exists ---
+        # This is a safeguard in case the AI doesn't reliably generate the 'trigger' field.
+        processed_puzzles = []
+        all_locations = {loc.get('name', '').lower() for loc in ai_response_data.get('generated_locations', []) if isinstance(loc, dict)}
+        all_objects = {obj.get('name', '').lower() for obj in ai_response_data.get('generated_objects', []) if isinstance(obj, dict)} # Assuming generated_objects might exist
+        all_plot_points = {pp.get('id'): pp.get('description', '').lower() for pp in ai_response_data.get('generated_plot_points', []) if isinstance(pp, dict)}
+
+        for puzzle in generated_puzzles:
+            if not isinstance(puzzle, dict):
+                processed_puzzles.append(puzzle)
+                continue
+
+            if not isinstance(puzzle.get('trigger'), dict) or not puzzle.get('trigger', {}).get('type') or not puzzle.get('trigger', {}).get('value'):
+                logger.warning(f"Puzzle '{puzzle.get('puzzle_id')}' missing or malformed 'trigger' field. Attempting to infer.")
+                inferred_trigger = None
+                
+                # Attempt to infer from plot_point_id
+                plot_point_id = puzzle.get('plot_point_id')
+                if plot_point_id and plot_point_id in all_plot_points:
+                    pp_desc = all_plot_points[plot_point_id]
+                    # Look for location keywords in plot point description
+                    for loc_name in all_locations:
+                        if loc_name in pp_desc:
+                            inferred_trigger = {"type": "location", "value": loc_name.title()} # Title case for consistency
+                            logger.info(f"Inferred trigger for puzzle '{puzzle.get('puzzle_id')}' from plot point location: {inferred_trigger}")
+                            break
+                    if not inferred_trigger:
+                        # Look for object keywords in plot point description (more generic)
+                        puzzle_desc_lower = puzzle.get('description', '').lower()
+                        if 'gnome' in pp_desc or 'gnome' in puzzle_desc_lower: # Specific for garden_riddle_001
+                            inferred_trigger = {"type": "object", "value": "garden gnome"}
+                            logger.info(f"Inferred trigger for puzzle '{puzzle.get('puzzle_id')}' from specific object keyword: {inferred_trigger}")
+                        elif 'statue' in pp_desc or 'statue' in puzzle_desc_lower:
+                            inferred_trigger = {"type": "object", "value": "statue"}
+                            logger.info(f"Inferred trigger for puzzle '{puzzle.get('puzzle_id')}' from specific object keyword: {inferred_trigger}")
+                        # Add more object inference rules as needed
+
+                # If still no trigger, try to infer from puzzle description itself
+                if not inferred_trigger:
+                    puzzle_desc_lower = puzzle.get('description', '').lower()
+                    for loc_name in all_locations:
+                        if loc_name in puzzle_desc_lower:
+                            inferred_trigger = {"type": "location", "value": loc_name.title()}
+                            logger.info(f"Inferred trigger for puzzle '{puzzle.get('puzzle_id')}' from puzzle description location: {inferred_trigger}")
+                            break
+                
+                # Fallback: If no specific trigger can be inferred, use a generic location trigger
+                if not inferred_trigger:
+                    # This is a last resort and might not be ideal for gameplay
+                    # Consider using the initial scene location or a generic "world" location
+                    initial_location = ai_response_data.get('initial_scene', {}).get('state', {}).get('location')
+                    if initial_location:
+                        inferred_trigger = {"type": "location", "value": initial_location}
+                        logger.warning(f"Generic location trigger inferred for puzzle '{puzzle.get('puzzle_id')}': {inferred_trigger}")
+                    else:
+                        inferred_trigger = {"type": "location", "value": "unknown"} # Absolute fallback
+                        logger.error(f"Could not infer any specific trigger for puzzle '{puzzle.get('puzzle_id')}'. Using generic fallback: {inferred_trigger}")
+
+                puzzle['trigger'] = inferred_trigger
+            
+            processed_puzzles.append(puzzle)
+        generated_puzzles = processed_puzzles # Update the variable with processed puzzles
+        logger.info(f"Finished post-processing puzzles. Total puzzles with triggers: {len(generated_puzzles)}")
+        # --- End post-processing ---
 
         # Log API Usage
         if usage_data:
@@ -190,7 +255,8 @@ def generate_campaign_structure(game: Game, template: Template, player_details: 
             key_characters=ai_response_data.get('generated_characters', []),
             major_plot_points=ai_response_data.get('generated_plot_points', []),
             conclusion_conditions=ai_response_data.get('conclusion_conditions', {}),
-            possible_branches=ai_response_data.get('possible_branches', {}) # If AI generates branches
+            possible_branches=ai_response_data.get('possible_branches', {}), # If AI generates branches
+            generated_puzzles=generated_puzzles # Pass the extracted puzzles
         )
         db.session.add(new_campaign)
         db.session.flush() # Flush to get the new_campaign.id for GameState

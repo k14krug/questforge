@@ -16,6 +16,7 @@ class Campaign(db.Model):
     key_characters = db.Column(db.JSON, nullable=False)
     major_plot_points = db.Column(db.JSON, nullable=False)
     possible_branches = db.Column(db.JSON, nullable=False)
+    generated_puzzles = db.Column(db.JSON, nullable=True) # New: Stores AI-generated puzzle definitions
     
     game = db.relationship('Game', back_populates='campaign')
     template = db.relationship('Template', backref='campaign_structures')
@@ -23,7 +24,7 @@ class Campaign(db.Model):
     
     def __init__(self, game_id, template_id, campaign_data, objectives, 
                  conclusion_conditions, key_locations, key_characters,
-                 major_plot_points, possible_branches):
+                 major_plot_points, possible_branches, generated_puzzles=None): # Added generated_puzzles
         self.game_id = game_id
         self.template_id = template_id
         self.campaign_data = campaign_data
@@ -33,6 +34,7 @@ class Campaign(db.Model):
         self.key_characters = key_characters
         self.major_plot_points = major_plot_points
         self.possible_branches = possible_branches
+        self.generated_puzzles = generated_puzzles # Assign generated_puzzles
         
     def __repr__(self):
         return f'<Campaign {self.id}>'

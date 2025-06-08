@@ -80,7 +80,7 @@ def create_app(config_name=None):
     from .views.main import main_bp
     from .views.campaign_api import campaign_api_bp
     from .views.game import game_bp
-    from .views.template import template_bp
+    from .views.template import template_bp, log_template_routes
     from .views.admin import admin_bp
 
     app.register_blueprint(auth_bp)
@@ -89,6 +89,9 @@ def create_app(config_name=None):
     app.register_blueprint(game_bp)
     app.register_blueprint(template_bp)
     app.register_blueprint(admin_bp)
+
+    # Log registered template routes
+    #log_template_routes(app)
 
     # Register socket handlers
     SocketService.register_handlers()

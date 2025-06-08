@@ -130,6 +130,24 @@ const socketClient = {
               displayProcessingMessage(`Processing ${data.player_name}'s action...`);
           }
       });
+
+      // New listener for puzzle_solved
+      this.socket.on('puzzle_solved', (data) => {
+          console.log("SocketClient: 'puzzle_solved' event received:", data);
+          if (data && data.narrative) {
+              displayProcessingMessage(data.narrative); // Display the success narrative
+          }
+          // updateGameState will be called by game_state_update shortly after
+      });
+
+      // New listener for puzzle_feedback (e.g., failed attempt)
+      this.socket.on('puzzle_feedback', (data) => {
+          console.log("SocketClient: 'puzzle_feedback' event received:", data);
+          if (data && data.narrative) {
+              displayErrorMessage(data.narrative); // Display the feedback narrative
+          }
+          // updateGameState will be called by game_state_update shortly after
+      });
       
       this.requestInitialState(); 
       this.setupDifficultyChangeListener(); // Call the new method
@@ -432,6 +450,7 @@ function updateGameState(packet) {
     updatePlayerLocationsDisplay(packet?.state?.player_locations || null);
     updateVisitedLocationsDisplay(packet?.state?.visited_locations || []);
     updateInventoryDisplay(packet?.inventory || null);
+    updatePuzzleDisplay(packet?.state?.active_puzzles || []); // New: Update puzzle display
 
     if (typeof packet?.total_cost !== 'undefined') {
         updateTotalCostDisplay(packet.total_cost);
@@ -635,10 +654,10 @@ function updateVisitedLocationsDisplay(visitedLocations) {
     function updateInventoryDisplay(inventoryData) {
         const displayElement = document.getElementById('inventoryDisplay');
         if (!displayElement) return;
-
+    
         let html = '<ul class="list-unstyled mb-0">';
         let allItems = [];
-
+    
         // inventoryData is expected to be the 'inventories' object itself (e.g., {player_id: [...], shared: [...]})
         if (inventoryData && typeof inventoryData === 'object') {
             // Iterate through all sub-inventories (player-specific and shared)
@@ -655,7 +674,7 @@ function updateVisitedLocationsDisplay(visitedLocations) {
         else if (Array.isArray(inventoryData)) {
             allItems = inventoryData;
         }
-
+    
         if (allItems.length > 0) {
             const playerDisplayMap = window.playerDetails || {}; // Use window.playerDetails for player names
             allItems.forEach(item => {
@@ -679,6 +698,59 @@ function updateVisitedLocationsDisplay(visitedLocations) {
         
         html += '</ul>';
         displayElement.innerHTML = html;
+    }
+    
+    function updatePuzzleDisplay(activePuzzles) {
+        const puzzleDisplayDiv = document.getElementById('puzzleDisplay');
+        const puzzleStatusBadge = document.getElementById('puzzleStatusBadge');
+        const activePuzzleContentDiv = document.getElementById('activePuzzleContent');
+    
+        if (!puzzleDisplayDiv || !puzzleStatusBadge || !activePuzzleContentDiv) {
+            console.warn("Puzzle UI elements not found. Cannot update puzzle display.");
+            return;
+        }
+    
+        if (activePuzzles && activePuzzles.length > 0) {
+            puzzleDisplayDiv.style.display = 'block';
+            let contentHtml = '';
+            let statusText = 'Active';
+            let statusClass = 'bg-warning text-dark'; // Default for active
+    
+            // For now, let's assume we display the first active puzzle
+            const puzzle = activePuzzles[0]; 
+    
+            contentHtml += `<p><strong>Objective:</strong> ${puzzle.description || 'N/A'}</p>`;
+            contentHtml += `<p><strong>Status:</strong> <span class="puzzle-status-text">${puzzle.status || 'Unknown'}</span></p>`;
+            if (typeof puzzle.attempts !== 'undefined') {
+                contentHtml += `<p><strong>Attempts:</strong> ${puzzle.attempts}</p>`;
+            }
+            if (puzzle.clues && puzzle.clues.length > 0) {
+                contentHtml += `<p><strong>Clues:</strong></p><ul class="list-unstyled">`;
+                puzzle.clues.forEach(clue => {
+                    contentHtml += `<li>${clue}</li>`;
+                });
+                contentHtml += `</ul>`;
+            }
+    
+            // Update status badge based on puzzle status
+            if (puzzle.status === 'solved') {
+                statusText = 'Solved';
+                statusClass = 'bg-success';
+            } else if (puzzle.status === 'failed' || puzzle.status === 'skipped') {
+                statusText = 'Bypassed'; // Or 'Failed'
+                statusClass = 'bg-danger';
+            }
+    
+            puzzleStatusBadge.textContent = statusText;
+            puzzleStatusBadge.className = `badge ${statusClass}`;
+            activePuzzleContentDiv.innerHTML = contentHtml;
+    
+        } else {
+            puzzleDisplayDiv.style.display = 'none';
+            activePuzzleContentDiv.innerHTML = '<p class="text-muted mb-0">No active puzzles.</p>';
+            puzzleStatusBadge.textContent = '';
+            puzzleStatusBadge.className = 'badge bg-secondary';
+        }
     }
 
 socketClient.performAction = function(actionInputText) {

@@ -142,6 +142,25 @@ def build_context(game_state: GameState, next_required_plot_point: Optional[str]
     if game_state.completed_plot_points:
          context_lines.append(f"Completed Plot Points: {json.dumps(game_state.completed_plot_points)}")
 
+    # --- Active Puzzles Section ---
+    active_puzzles = current_state_dict.get('active_puzzles')
+    if active_puzzles and isinstance(active_puzzles, list) and len(active_puzzles) > 0:
+        context_lines.append("\n--- Active Puzzles ---")
+        for i, puzzle in enumerate(active_puzzles):
+            if isinstance(puzzle, dict):
+                puzzle_id = puzzle.get('puzzle_id', f"Puzzle {i+1}")
+                description = puzzle.get('description', 'No description')
+                status = puzzle.get('status', 'active') # Default status
+                attempts = puzzle.get('attempts', 0)
+                context_lines.append(f"- ID: {puzzle_id}")
+                context_lines.append(f"  Objective: {description}")
+                context_lines.append(f"  Status: {status.capitalize()}")
+                context_lines.append(f"  Attempts: {attempts}")
+                if puzzle.get('clues') and isinstance(puzzle['clues'], list):
+                    context_lines.append(f"  Clues: {'; '.join(puzzle['clues'])}")
+            else:
+                context_lines.append(f"- Invalid puzzle format: {str(puzzle)}")
+
     # X. Historical Summary (New Section)
     # current_state_dict is game_state.state_data
     historical_summary = current_state_dict.get('historical_summary')

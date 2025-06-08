@@ -115,11 +115,32 @@ def build_campaign_prompt(template: Template, template_overrides: Optional[Dict[
              prompt_lines.pop() # Remove "PLAYER CHARACTERS:" header
              prompt_lines.pop() # Remove "---" separator
 
-    # Add Task Description section
+    # Merge default_rules and template_overrides for puzzle configuration
+    merged_puzzle_config = template.default_rules.get('puzzles', {})
+    if template_overrides and 'puzzles' in template_overrides:
+        # Merge top-level keys, then merge nested difficulty_settings
+        for key, value in template_overrides['puzzles'].items():
+            if key == 'difficulty_settings' and isinstance(value, dict) and isinstance(merged_puzzle_config.get('difficulty_settings'), dict):
+                merged_puzzle_config['difficulty_settings'].update(value)
+            else:
+                merged_puzzle_config[key] = value
+    
+    logger.debug(f"Merged Puzzle Config: {merged_puzzle_config}")
+
+    # Add Puzzle Configuration section if puzzles are enabled
+    if merged_puzzle_config.get('enabled_types') and len(merged_puzzle_config['enabled_types']) > 0:
+        prompt_lines.append("---")
+        prompt_lines.append("PUZZLE CONFIGURATION:")
+        prompt_lines.append(f"  - Enabled Types: {json.dumps(merged_puzzle_config.get('enabled_types', []))}")
+        prompt_lines.append(f"  - Global Difficulty: {merged_puzzle_config.get('global_puzzle_difficulty', 'Normal')}")
+        prompt_lines.append(f"  - Hint Frequency: {merged_puzzle_config.get('hint_frequency', 'medium')}")
+        prompt_lines.append(f"  - Failure Consequences: {merged_puzzle_config.get('failure_consequences', 'moderate')}")
+        prompt_lines.append(f"  - Difficulty Settings: {json.dumps(merged_puzzle_config.get('difficulty_settings', {}))}")
+
     prompt_lines.extend([
         "---",
         "YOUR TASK:",
-        "Based primarily on the Template Guidance, Template Overrides, Creator Customizations, and Player Characters (if provided) above, generate a complete campaign structure. Be creative and fill in the details, ensuring the generated components align cohesively with all provided inputs.",
+        "Based primarily on the Template Guidance, Template Overrides, Creator Customizations, Player Characters (if provided), and PUZZLE CONFIGURATION (if provided) above, generate a complete campaign structure. Be creative and fill in the details, ensuring the generated components align cohesively with all provided inputs.",
         "Generate the following components:",
         "1.  **campaign_objective:** A clear, concise overall objective for the players, directly derived from the `Core Conflict/Goal` field in the TEMPLATE GUIDANCE section above.",
         "2.  **generated_locations:** A JSON list of 3-5 key location objects. Inspired by `World Description` and `Scene Suggestions`, fitting `Theme` and `Desired Tone`, relevant to `campaign_objective`, and incorporating any locations from `Creator Customizations`. Each object: 'name', 'description'.",
@@ -145,6 +166,26 @@ def build_campaign_prompt(template: Template, template_overrides: Optional[Dict[
         "8.  **possible_branches (Optional):** JSON object outlining 1-2 potential major narrative branches.",
         "9.  **special_rules (Optional):** JSON object or string outlining special rules, incorporating rules from `Creator Customizations`.",
         "10. **exclusions (Optional):** JSON list of strings outlining exclusions, incorporating exclusions from `Creator Customizations`.",
+        "11. **generated_puzzles (Optional):** A JSON list of 0-2 puzzle objects. Generate puzzles only if the `puzzles.enabled_types` list in the `PUZZLE CONFIGURATION` section is not empty. Each puzzle **MUST be thematically and logically relevant** to the `campaign_objective` and, if gating a plot point, **MUST directly relate to the specific `description` of the `generated_plot_points` it gates.**",
+        "    - Each item MUST be a JSON object with the following keys:",
+        "        - `puzzle_id` (string, unique, simple, e.g., \"puzzle_001\", \"riddle_door\").",
+        "        - `type` (string, one of: " + json.dumps(merged_puzzle_config.get('enabled_types', [])) + "). Choose from the enabled types.",
+        "        - `description` (string, clearly stating the puzzle's objective for the player. **This description MUST be thematically linked to the plot point it gates, if applicable.**).",
+        "        - `solution_criteria` (string, a concise, explicit description of what constitutes a successful solution, for AI validation. **This criteria MUST be logically tied to the plot point it gates, if applicable.**).",
+        "        - `plot_point_id` (string, optional, the ID of a `generated_plot_points` that this puzzle gates. If present, the plot point cannot be completed until this puzzle is solved).",
+        "        - `initial_state_changes` (JSON object, optional, state changes that occur when the puzzle becomes active, e.g., `{\"world_object_states\": {\"ancient_door\": {\"status\": \"locked\"}}}`).",
+        "        - `completion_state_changes` (JSON object, optional, state changes upon successful puzzle completion, e.g., `{\"world_object_states\": {\"ancient_door\": {\"status\": \"unlocked\"}}}`).",
+        "        - `clues` (JSON list of strings, 1-3 subtle hints for the player. **Clues should relate to both the puzzle and the gated plot point.**).",
+        "        - `failure_consequences` (string, optional, narrative consequences for failing the puzzle, aligned with `puzzles.difficulty_settings` from `PUZZLE CONFIGURATION`).",
+        "        - `skip_option` (boolean, optional, default `false`. If `true`, the puzzle can be skipped).",
+        "        - `skip_consequences` (string, optional, narrative consequences for skipping the puzzle, if `skip_option` is `true`).",
+        "        - `trigger` (JSON object, **REQUIRED**): Defines how the puzzle is encountered and activated. Must have 'type' and 'value'.",
+        "            - `type` (string, one of: \"location\", \"object\").",
+        "            - `value` (string): The name of the location or object that triggers the puzzle.",
+        "    - **Example of a Thematically Linked Puzzle with Trigger:**",
+        "        - **Plot Point:** `{\"id\": \"pp_find_hidden_key\", \"description\": \"Player finds the hidden key to the study.\", \"required\": true}`",
+        "        - **Puzzle Gating `pp_find_hidden_key`:** `{\"puzzle_id\": \"study_desk_riddle\", \"type\": \"Logic/Riddle\", \"description\": \"A riddle is etched into the study desk, hinting at the key's location.\", \"solution_criteria\": \"Player states the answer 'shadow' which reveals a hidden compartment containing the key.\", \"plot_point_id\": \"pp_find_hidden_key\", \"clues\": [\"The answer is always with you, but has no substance.\", \"Look where light cannot reach.\"], \"completion_state_changes\": {\"inventory_changes\": {\"items_added\": [{\"name\": \"study key\", \"description\": \"A small, ornate key.\"}]}}, \"trigger\": {\"type\": \"object\", \"value\": \"study desk\"}}`",
+        "    - Example List: `[{\"puzzle_id\": \"riddle_gate\", \"type\": \"Logic/Riddle\", \"description\": \"A stone gate blocks your path, inscribed with a cryptic riddle.\", \"solution_criteria\": \"Player states the answer 'shadow'.\", \"plot_point_id\": \"pp_reach_temple\", \"clues\": [\"I have cities, but no houses...\"], \"failure_consequences\": \"A burst of arcane energy harms the player.\", \"trigger\": {\"type\": \"location\", \"value\": \"Temple Entrance\"}}, ...]`",
         "---",
         "OUTPUT FORMAT:",
         "Provide the entire response as a single, valid JSON object containing the keys corresponding to the numbered items above (e.g., `campaign_objective`, `generated_locations`, etc.). Ensure all nested values are valid JSON.",
@@ -306,6 +347,59 @@ def build_plot_completion_check_prompt(
         "{\"plot_point_id\": \"pp_example_001\", \"completed\": true, \"confidence_score\": 0.85}",
         "---",
         "Generate the JSON response now for plot point \"{plot_point_id}\":"
+    ]
+    return "\n".join(prompt_lines)
+
+
+def build_puzzle_solution_check_prompt(
+    puzzle_id: str,
+    puzzle_description: str,
+    solution_criteria: str,
+    current_game_state_data: Dict[str, Any],
+    player_action: str
+) -> str:
+    """
+    Builds the prompt for the AI to check if a specific puzzle was solved.
+
+    Args:
+        puzzle_id: The ID of the puzzle to check.
+        puzzle_description: The description of the puzzle.
+        solution_criteria: The explicit criteria for solving the puzzle.
+        current_game_state_data: The full current GameState.state_data dictionary.
+        player_action: The player's original action from the current turn.
+
+    Returns:
+        A string containing the prompt for the AI.
+    """
+    prompt_lines = [
+        "You are an analytical AI assistant evaluating game events with high precision.",
+        "Your task is to determine if a specific puzzle has been solved based on the provided information. Scrutinize all provided context.",
+        "---",
+        "PUZZLE TO EVALUATE:",
+        f"  Puzzle ID: {puzzle_id}",
+        f"  Description: \"{puzzle_description}\"",
+        f"  Solution Criteria: \"{solution_criteria}\"",
+        "---",
+        "CONTEXT FOR EVALUATION:",
+        f"  1. Player's Action This Turn: \"{player_action}\"",
+        "  2. Full Current Game State Data (this reflects changes from the player's action and Stage 1 AI):",
+        f"     {json.dumps(current_game_state_data, indent=2)}",
+        "     - This is the **primary source of truth** for objective conditions. The narrative should align with state changes.",
+        "---",
+        "INSTRUCTION:",
+        f"Carefully consider the puzzle for ID \"{puzzle_id}\" (Description: \"{puzzle_description}\").",
+        f"Evaluate if this puzzle was **directly and unambiguously** solved **THIS TURN** based on the player's action and, most importantly, the **Full Current Game State Data**.",
+        "The `Solution Criteria` is the definitive guide for what constitutes a solved state. Do not infer completion if the state data does not explicitly support the `Solution Criteria`, even if the narrative is suggestive. The state data is paramount.",
+        "---",
+        "Your response MUST be a single, valid JSON object with NO additional text before or after it. The JSON object must contain exactly these three keys:",
+        "1. `puzzle_id`: The string ID of the puzzle you evaluated (which MUST be \"{puzzle_id}\").",
+        "2. `solved`: A boolean value (`true` or `false`). Set to `true` ONLY if all conditions of the `Solution Criteria` are met according to the provided context, especially the game state data.",
+        "3. `confidence_score`: A floating-point number between 0.0 (no confidence) and 1.0 (absolute confidence) representing your certainty in the `solved` status. Be conservative with high confidence unless completion is undeniable from the state and action.",
+        "---",
+        "Example of a valid JSON response (DO NOT include this example in your actual response):",
+        "{\"puzzle_id\": \"puzzle_example_001\", \"solved\": true, \"confidence_score\": 0.9}",
+        "---",
+        "Generate the JSON response now for puzzle \"{puzzle_id}\":"
     ]
     return "\n".join(prompt_lines)
 

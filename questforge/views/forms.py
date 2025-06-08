@@ -94,6 +94,72 @@ class TemplateForm(FlaskForm):
                                        ('Long', 'Long (6+ sessions)')
                                    ])
 
+    # Puzzle Configuration
+    enable_puzzles = BooleanField('Enable Puzzles', default=False)
+    puzzle_types = SelectField('Puzzle Types',
+        choices=[
+            ('r', 'Riddles'),
+            ('i', 'Inventory Puzzles'),
+            ('d', 'Deduction Puzzles'),
+            ('l', 'Logic Puzzles'),
+            ('e', 'Environmental Puzzles'),
+            ('p', 'Physical Challenges'),
+            ('h', 'Hidden Objects'),
+            ('c', 'Code Breaking')
+        ],
+        render_kw={"class": "form-select", "multiple": "multiple"}
+    )
+
+    def validate_puzzle_types(self, field):
+        """Custom validation to handle puzzle types input"""
+        # If no data is submitted for a multiple select, it might be an empty list or None
+        if not field.data:
+            field.data = [] # Ensure it's an empty list if nothing is selected
+            return
+            
+        # Ensure field.data is a list of strings for processing
+        if isinstance(field.data, str):
+            # If a single string is passed (e.g., from a non-multiple select or a single value)
+            input_data = [field.data]
+        else:
+            # Assume it's an iterable (list, tuple, etc.)
+            input_data = [str(x) for x in field.data]
+        
+        # Get valid first letters from choices
+        valid_choices = [str(choice[0]) for choice in self.puzzle_types.choices]
+        
+        # Check all provided types are valid
+        invalid_types = [t for t in input_data if t not in valid_choices]
+        if invalid_types:
+            raise ValidationError(f'Invalid puzzle types: {", ".join(invalid_types)}')
+            
+        # Remove duplicates and update field data
+        field.data = list(set(input_data))
+    puzzle_difficulty = SelectField('Puzzle Difficulty',
+        choices=[
+            ('easy', 'Easy'),
+            ('medium', 'Medium'),
+            ('hard', 'Hard')
+        ],
+        default='medium'
+    )
+    puzzle_frequency = SelectField('Puzzle Frequency',
+        choices=[
+            ('rare', 'Rare (1-2 per campaign)'),
+            ('moderate', 'Moderate (3-5 per campaign)'), 
+            ('frequent', 'Frequent (6+ per campaign)')
+        ],
+        default='moderate'
+    )
+    hint_frequency = SelectField('Hint Frequency',
+        choices=[
+            ('rare', 'Rare (few hints)'),
+            ('moderate', 'Moderate (balanced hints)'),
+            ('frequent', 'Frequent (many hints)')
+        ],
+        default='moderate'
+    )
+
     # Kept Fields
     ai_service_endpoint = StringField('AI Service Endpoint (Optional)')
     

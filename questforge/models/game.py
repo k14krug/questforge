@@ -43,11 +43,22 @@ class Game(db.Model):
     def players(self):
         return [assoc.user for assoc in self.player_associations]
 
-    def __init__(self, name, template_id, created_by, difficulty='Normal'):
+    def __init__(self, name, template_id, created_by, difficulty='Normal', template_overrides=None): # Added template_overrides
         self.name = name
         self.template_id = template_id
         self.created_by = created_by
         self.current_difficulty = difficulty
+        
+        # Initialize template_overrides with a base structure, including puzzles
+        if template_overrides is None:
+            self.template_overrides = {
+                "puzzles": {} # Empty puzzles object to be populated by overrides
+            }
+        else:
+            self.template_overrides = template_overrides
+            # Ensure 'puzzles' key exists if template_overrides was provided externally
+            if "puzzles" not in self.template_overrides:
+                self.template_overrides["puzzles"] = {}
         
     def __repr__(self):
         return f'<Game {self.name}>'

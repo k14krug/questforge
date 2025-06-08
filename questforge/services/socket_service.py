@@ -1,23 +1,66 @@
-from flask import current_app, request # Added request import
+from flask import current_app, request
 from flask_socketio import join_room, leave_room, emit
 from flask_login import current_user
 from .inventory_service import InventoryService
-from sqlalchemy.orm import joinedload, attributes # Import joinedload and attributes
-from sqlalchemy import func # Import func for sum aggregation
-import json # Import json for logging state_data
+from sqlalchemy.orm import joinedload, attributes
+from sqlalchemy import func
+import json
 from ..extensions import db
 from ..extensions.socketio import get_socketio
-from ..models import Game, User, GamePlayer, GameState, Template, ApiUsageLog, Campaign # Added Campaign
-from decimal import Decimal # For cost calculation
-from questforge.utils.context_manager import build_context # Import build_context
+from ..models import Game, User, GamePlayer, GameState, Template, ApiUsageLog, Campaign
+from decimal import Decimal
+from questforge.utils.context_manager import build_context
 
 socketio = get_socketio()
-from .game_state_service import game_state_service # Import the instance
-from .ai_service import ai_service, calculate_cost, log_api_usage # Import the singleton INSTANCE and helper functions
-# Import the specific function needed, not a non-existent instance
+from .game_state_service import game_state_service
+from .ai_service import ai_service, calculate_cost, log_api_usage
 from .campaign_service import generate_campaign_structure
 
 class SocketService:
+    @staticmethod
+    def activate_puzzle(game_id, puzzle_id):
+        """Activate a puzzle in the game state by adding it to active_puzzles"""
+        with current_app.app_context():
+            game_state = db.session.query(GameState).filter_by(game_id=game_id).first()
+            if not game_state:
+                current_app.logger.error(f"GameState not found for game {game_id}")
+                return False
+
+            # Get campaign to find the puzzle definition
+            campaign = db.session.query(Campaign).filter_by(game_id=game_id).first()
+            if not campaign or not campaign.campaign_data:
+                current_app.logger.error(f"Campaign or campaign_data not found for game {game_id}")
+                return False
+
+            # Find the puzzle in campaign's generated_puzzles
+            puzzle_def = next(
+                (p for p in campaign.campaign_data.get('generated_puzzles', []) 
+                 if isinstance(p, dict) and p.get('puzzle_id') == puzzle_id),
+                None
+            )
+            
+            if not puzzle_def:
+                current_app.logger.error(f"Puzzle {puzzle_id} not found in campaign data for game {game_id}")
+                return False
+
+            # Initialize state_data if needed
+            state_data = game_state.state_data or {}
+            if 'active_puzzles' not in state_data or not isinstance(state_data['active_puzzles'], list):
+                state_data['active_puzzles'] = []
+
+            # Check if puzzle is already active
+            if any(p.get('puzzle_id') == puzzle_id for p in state_data['active_puzzles']):
+                current_app.logger.info(f"Puzzle {puzzle_id} is already active in game {game_id}")
+                return True
+
+            # Add puzzle to active puzzles
+            state_data['active_puzzles'].append(puzzle_def)
+            game_state.state_data = state_data
+            attributes.flag_modified(game_state, 'state_data')
+            # Do NOT commit here. The commit will happen in handle_player_action or other main transaction.
+            current_app.logger.info(f"Successfully activated puzzle {puzzle_id} in game {game_id} (pending commit).")
+            return True
+
     @staticmethod
     def register_handlers():
         """Register all Socket.IO event handlers"""
@@ -187,7 +230,7 @@ class SocketService:
         def handle_player_ready(data):
             """Handle player clicking the ready button."""
             game_id = data.get('game_id')
-            user_id = data.get('user_id')  # Get from data rather than current_user
+            user_id = data.get('user_id')  # Get from handle_player_actiondata rather than current_user
             
             if not game_id or not user_id:
                 emit('error', {'message': 'Missing game_id or user_id'})
@@ -228,7 +271,7 @@ class SocketService:
 
             print(f"Handling start_game event for game {game_id} triggered by user {user_id}")
 
-            if not game_id or not user_id:
+            if not all([game_id, user_id]):
                 emit('error', {'message': 'Missing game_id or user_id'}, room=request.sid) # Emit to specific user
                 return
 
@@ -388,15 +431,189 @@ class SocketService:
                         joinedload(GameState.game).joinedload(Game.campaign)
                     ).filter_by(game_id=game_id).first()
 
+                    # --- PUZZLE MECHANIC: Dynamic Activation & Check ---
                     if not db_game_state:
                         raise ValueError(f"GameState record not found for game_id {game_id}")
                     if not db_game_state.game or not db_game_state.game.campaign:
                         raise ValueError(f"Campaign data not found for game_id {game_id}")
 
+                    state_data = db_game_state.state_data or {}
+                    
+                    # --- PUZZLE MECHANIC: Location/Object-Based Activation ---
                     campaign = db_game_state.game.campaign
-                    # Ensure db_game_state.state_data is always a mutable dictionary
-                    db_game_state.state_data = db_game_state.state_data or {}
-                    state_data = db_game_state.state_data
+                    generated_puzzles = campaign.generated_puzzles if isinstance(campaign.generated_puzzles, list) else []
+                    
+                    current_app.logger.debug(f"DEBUG: campaign.generated_puzzles: {json.dumps(generated_puzzles, indent=2)}")
+
+                    # Get current active and completed puzzles for filtering
+                    active_puzzle_ids = {p.get('puzzle_id') for p in state_data.get('active_puzzles', []) if isinstance(p, dict)}
+                    completed_puzzle_ids = {p.get('puzzle_id') for p in state_data.get('completed_puzzles', []) if isinstance(p, dict)}
+                    current_app.logger.debug(f"DEBUG: active_puzzle_ids: {active_puzzle_ids}")
+                    current_app.logger.debug(f"DEBUG: completed_puzzle_ids: {completed_puzzle_ids}")
+
+                    puzzles_to_consider_for_activation = []
+                    for p in generated_puzzles:
+                        puzzle_id = p.get('puzzle_id')
+                        is_dict = isinstance(p, dict)
+                        not_active = puzzle_id not in active_puzzle_ids
+                        not_completed = puzzle_id not in completed_puzzle_ids
+                        has_trigger_dict = isinstance(p.get('trigger'), dict)
+                        has_trigger_type = p.get('trigger', {}).get('type') is not None
+                        has_trigger_value = p.get('trigger', {}).get('value') is not None
+
+                        current_app.logger.debug(f"DEBUG: Evaluating puzzle '{puzzle_id}': is_dict={is_dict}, not_active={not_active}, not_completed={not_completed}, has_trigger_dict={has_trigger_dict}, has_trigger_type={has_trigger_type}, has_trigger_value={has_trigger_value}. Trigger: {p.get('trigger')}")
+
+                        if is_dict and not_active and not_completed and has_trigger_dict and has_trigger_type and has_trigger_value:
+                            puzzles_to_consider_for_activation.append(p)
+                        else:
+                            current_app.logger.debug(f"DEBUG: Puzzle '{puzzle_id}' excluded. Reasons: "
+                                f"is_dict={is_dict}, not_active={not_active}, not_completed={not_completed}, "
+                                f"has_trigger_dict={has_trigger_dict}, has_trigger_type={has_trigger_type}, has_trigger_value={has_trigger_value}")
+
+                    current_app.logger.debug(f"DEBUG: Found {len(puzzles_to_consider_for_activation)} puzzles to consider for activation based on triggers.")
+
+                    activated_puzzles_this_turn = []
+                    
+                    # 1. Location-Based Activation
+                    # Check if location changed in Stage 1 AI response (after it's merged into state_data)
+                    # We need to capture the *new* location from the AI's state_changes
+                    # This logic needs to run *after* the AI response is processed and merged into state_data.
+                    # For now, we'll assume state_data.get('location') is the current location after AI processing.
+                    current_location_lower = state_data.get('location', '').lower()
+                    
+                    if current_location_lower:
+                        current_app.logger.debug(f"Current location for game {game_id}: '{current_location_lower}'")
+                        for puzzle_def in puzzles_to_consider_for_activation:
+                            current_app.logger.debug(f"- Checking puzzle '{puzzle_def.get('puzzle_id')}' for location trigger.")
+                            trigger = puzzle_def.get('trigger')
+                            if trigger.get('type') == 'location' and trigger.get('value', '').lower() == current_location_lower:
+                                if SocketService.activate_puzzle(game_id, puzzle_def.get('puzzle_id')):
+                                    activated_puzzles_this_turn.append(puzzle_def)
+                                    current_app.logger.info(f"Location-triggered puzzle '{puzzle_def.get('puzzle_id')}' activated by entering '{current_location_lower}'.")
+                                    # Add system message to game log
+                                    db_game_state.game_log.append({"type": "system", "content": f"A new challenge has appeared! You've encountered a puzzle: \"{puzzle_def.get('description')}\""})
+                                    attributes.flag_modified(db_game_state, "game_log")
+                                else:
+                                    current_app.logger.debug(f"- Puzzle '{puzzle_def.get('puzzle_id')}' already active or completed, skipping activation.")
+                            else:
+                                current_app.logger.debug(f"- Puzzle '{puzzle_def.get('puzzle_id')}' does not match current location trigger: {trigger.get('value', '')} vs {current_location_lower}")
+                                    
+                    # 2. Object-Based Activation
+                    action_lower = action.lower()
+                    object_interaction_verbs = ["examine ", "inspect ", "look at ", "open ", "search ", "interact with "]
+                    interacted_object_name = None
+
+                    for verb in object_interaction_verbs:
+                        if action_lower.startswith(verb):
+                            interacted_object_name = action_lower.replace(verb, '', 1).strip()
+                            # Remove any trailing punctuation or common prepositions
+                            interacted_object_name = interacted_object_name.split(' to ')[0].split(' with ')[0].split(' on ')[0].split(' in ')[0].split(' for ')[0].split(' from ')[0].rstrip('.,;!?')
+                            break
+                    
+                    if interacted_object_name:
+                        current_app.logger.debug(f"Player action suggests interaction with object: '{interacted_object_name}'")
+                        for puzzle_def in puzzles_to_consider_for_activation:
+                            current_app.logger.debug(f"- Checking puzzle '{puzzle_def.get('puzzle_id')}' for object trigger.")
+                            trigger = puzzle_def.get('trigger')
+                            if trigger.get('type') == 'object' and trigger.get('value', '').lower() == interacted_object_name:
+                                if SocketService.activate_puzzle(game_id, puzzle_def.get('puzzle_id')):
+                                    activated_puzzles_this_turn.append(puzzle_def)
+                                    current_app.logger.info(f"Object-triggered puzzle '{puzzle_def.get('puzzle_id')}' activated by interacting with '{interacted_object_name}'.")
+                                    # Add system message to game log
+                                    db_game_state.game_log.append({"type": "system", "content": f"As you interact with the {interacted_object_name}, a new challenge emerges: \"{puzzle_def.get('description')}\""})
+                                    attributes.flag_modified(db_game_state, "game_log")
+                                else:
+                                    current_app.logger.debug(f"- Puzzle '{puzzle_def.get('puzzle_id')}' already active or completed, skipping activation.")
+                            else:
+                                current_app.logger.debug(f"- Puzzle '{puzzle_def.get('puzzle_id')}' does not match current object trigger: {trigger.get('value', '')} vs {interacted_object_name}")
+
+                    # 3. Get current active puzzles (may have just been updated by new activation logic)
+                    active_puzzles = state_data.get('active_puzzles', [])
+                    if not isinstance(active_puzzles, list):
+                        active_puzzles = []
+                        current_app.logger.debug(f"No current active puzzles for game {game_id}, initializing as empty list.")                            
+                    
+                    # Check each active puzzle against the player's action for solution
+                    puzzle_results = []
+                    for puzzle in active_puzzles:
+                        if not isinstance(puzzle, dict):
+                            continue
+                            
+                        puzzle_result = ai_service.check_puzzle_solution(
+                            puzzle_definition=puzzle,
+                            current_game_state_data=state_data,
+                            player_action=action,
+                            game_id=game_id
+                        )
+                        
+                        if puzzle_result and 'error' not in puzzle_result:
+                            puzzle_results.append(puzzle_result)
+                        else:
+                            current_app.logger.error(f"Puzzle solution check failed for puzzle {puzzle.get('puzzle_id')}: {puzzle_result}")
+
+                    # Process puzzle results
+                    any_puzzle_solved = False
+                    for result in puzzle_results:
+                        puzzle_id = result.get('puzzle_id')
+                        is_solved = result.get('solved', False)
+                        confidence = result.get('confidence_score', 0.0)
+                        
+                        if is_solved and confidence >= 0.7:  # Use same threshold as plot points
+                            any_puzzle_solved = True
+                            # Mark puzzle as completed
+                            if 'completed_puzzles' not in state_data or not isinstance(state_data['completed_puzzles'], list):
+                                state_data['completed_puzzles'] = []
+                            state_data['completed_puzzles'].append({
+                                'puzzle_id': puzzle_id,
+                                'solved_at_turn': len(state_data.get('game_log', [])) + 1
+                            })
+                            
+                            # Remove from active puzzles
+                            state_data['active_puzzles'] = [p for p in state_data.get('active_puzzles', []) 
+                                                          if isinstance(p, dict) and p.get('puzzle_id') != puzzle_id]
+                            
+                            # Apply completion state changes
+                            puzzle_def = next((p for p in active_puzzles if isinstance(p, dict) and p.get('puzzle_id') == puzzle_id), None)
+                            if puzzle_def and isinstance(puzzle_def.get('completion_state_changes'), dict):
+                                state_data.update(puzzle_def['completion_state_changes'])
+                            
+                            # Emit puzzle solved event
+                            emit('puzzle_solved', {
+                                'puzzle_id': puzzle_id,
+                                'narrative': result.get('narrative', 'Puzzle solved!'),
+                                'state_changes': puzzle_def.get('completion_state_changes', {})
+                            }, room=game_id)
+                            
+                            current_app.logger.info(f"Puzzle {puzzle_id} solved with confidence {confidence}")
+                        else:
+                            # Apply failure consequences if puzzle was attempted but not solved
+                            puzzle_def = next((p for p in active_puzzles if isinstance(p, dict) and p.get('puzzle_id') == puzzle_id), None)
+                            if puzzle_def and isinstance(puzzle_def.get('failure_consequences'), dict):
+                                state_data.update(puzzle_def['failure_consequences'])
+                            
+                            # Emit puzzle feedback event
+                            emit('puzzle_feedback', {
+                                'puzzle_id': puzzle_id,
+                                'narrative': result.get('narrative', 'Puzzle not solved yet.'),
+                                'state_changes': puzzle_def.get('failure_consequences', {})
+                            }, room=game_id)
+                            
+                            current_app.logger.info(f"Puzzle {puzzle_id} not solved (confidence: {confidence})")
+
+                    # Update state_data with puzzle changes
+                    db_game_state.state_data = state_data
+                    attributes.flag_modified(db_game_state, "state_data")
+
+                    # Skip plot point evaluation if there are unsolved puzzles gating progress
+                    if active_puzzles and not any_puzzle_solved:
+                        current_app.logger.info(f"Skipping plot point evaluation due to {len(active_puzzles)} unsolved puzzles")
+                        # Still proceed with basic action processing but skip plot points
+                        skip_plot_points = True
+                    else:
+                        skip_plot_points = False
+
+                    campaign = db_game_state.game.campaign
+                    # state_data already initialized in puzzle check section
 
                     # --- Narrative Guidance Logic (ID-Based) ---
                     STUCK_THRESHOLD = 3
@@ -405,9 +622,19 @@ class SocketService:
                     turns_since_plot_progress = state_data.get('turns_since_plot_progress', 0) + 1
                     # state_data['turns_since_plot_progress'] will be updated later, before AI call if no achievement, or after if achievement.
 
-                    # Identify next required plot point (ID and Description)
+                    # Skip plot point evaluation if there are unsolved puzzles gating progress
+                    if active_puzzles and not any_puzzle_solved:
+                        current_app.logger.info(f"Skipping plot point evaluation due to {len(active_puzzles)} unsolved puzzles")
+                        # Still proceed with basic action processing but skip plot points
+                        skip_plot_points = True
+                    else:
+                        skip_plot_points = False
+
+                    # Identify next required plot point (ID and Description) unless skipping
                     next_required_plot_point_id = None
                     next_required_plot_point_desc = None
+                    if skip_plot_points:
+                        current_app.logger.debug("Skipping plot point identification due to active puzzles")
                     
                     completed_plot_points_data = state_data.get('completed_plot_points', [])
                     if not isinstance(completed_plot_points_data, list): # Ensure it's a list
@@ -483,7 +710,7 @@ class SocketService:
                             else:
                                 for item_in_inv_lower in inventory_lower:
                                     if item_in_inv_lower.startswith(required_item_lower):
-                                        item_found_in_inventory = True
+                                        item_found_in_scene = True
                                         break
                         
                         if item_found_in_inventory:
@@ -977,7 +1204,7 @@ class SocketService:
                             'historical_summary': historical_summary,
                             'player_display_map': player_display_map,
                             # --- Ensure inventory is explicitly included (the full 'inventories' object) ---
-                            'inventory': db_game_state.state_data.get('inventories', {})
+                            'inventory': state_info['state'].get('inventories', {})
                         }
                         
                         current_app.logger.debug(f"Final broadcast data prepared for game {game_id}: {json.dumps(broadcast_data)}")
@@ -1043,8 +1270,7 @@ class SocketService:
             current_app.logger.info(f"[socket_service] Received 'request_state' for game_id={game_id}, user_id={user_id}, from SID: {request.sid}")
 
             if not game_id or not user_id:
-                current_app.logger.warning(f"[socket_service] 'request_state' failed for SID {request.sid}: Missing game_id or user_id. Data: {data}")
-                emit('error', {'message': 'Missing game ID or user ID'}, room=request.sid)
+                emit('error', {'message': 'Missing game_id or user_id'}, room=request.sid)
                 return
 
             try:
@@ -1100,7 +1326,7 @@ class SocketService:
                         
                     completed_plot_points_display_count_initial = 0
                     for pp_init in completed_plot_points_initial_raw:
-                        if isinstance(pp_init, dict) and pp_init.get('id') != first_required_pp_id_initial:
+                        if isinstance(pp_init, dict) and pp.get('id') != first_required_pp_id_initial:
                             completed_plot_points_display_count_initial += 1
 
                     # --- New: Extract latest_ai_response, player_commands, historical_summary for frontend initial state ---

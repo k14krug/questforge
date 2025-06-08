@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Edit Template: {{ template.name }}</h2>
-    <form method="POST" action="{{ url_for('template.edit_template', template_id=template.id) }}">
+    <form method="POST" action="{{ url_for('template.edit_template', template_id=template.id) }}" id="template-form" novalidate>
         {{ form.hidden_tag() }}
         
         {# --- Basic Info --- #}
@@ -96,6 +96,42 @@
             {{ form.ai_service_endpoint(class="form-control") }}
         </div>
 
+        {# --- Puzzle Configuration --- #}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Puzzle Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 form-check">
+                    {{ form.enable_puzzles(class="form-check-input") }}
+                    {{ form.enable_puzzles.label(class="form-check-label") }}
+                </div>
+                <div class="mb-3">
+                    {{ form.puzzle_types.label(class="form-label") }}
+                    <select class="form-select" id="puzzle_types" name="puzzle_types" multiple>
+                        {% for value, label in form.puzzle_types.choices %}
+                            <option value="{{ value }}" {% if value in form.puzzle_types.data %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Hold Ctrl/Cmd to select multiple types</small>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        {{ form.puzzle_difficulty.label(class="form-label") }}
+                        {{ form.puzzle_difficulty(class="form-select") }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form.puzzle_frequency.label(class="form-label") }}
+                        {{ form.puzzle_frequency(class="form-select") }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        {{ form.hint_frequency.label(class="form-label") }}
+                        {{ form.hint_frequency(class="form-select") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {# --- Removed Old JSON Fields --- #}
         {# 
         <div class="form-group">
@@ -128,7 +164,7 @@
         #}
 
         <div class="form-group mt-4">
-            <button type="submit" class="btn btn-primary">Update Template</button>
+            {{ form.submit(class="btn btn-primary") }}
             <a href="{{ url_for('template.list_templates') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>

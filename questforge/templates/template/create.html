@@ -100,6 +100,34 @@
             {{ form.ai_service_endpoint(class="form-control") }}
         </div>
 
+        {# --- Puzzle Configuration --- #}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Puzzle Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 form-check">
+                    {{ form.enable_puzzles(class="form-check-input") }}
+                    {{ form.enable_puzzles.label(class="form-check-label") }}
+                </div>
+                <div class="mb-3">
+                    {{ form.puzzle_types.label(class="form-label") }}
+                    {{ form.puzzle_types(class="form-select") }}
+                    <small class="text-muted">Hold Ctrl/Cmd to select multiple types</small>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.puzzle_difficulty.label(class="form-label") }}
+                        {{ form.puzzle_difficulty(class="form-select") }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        {{ form.puzzle_frequency.label(class="form-label") }}
+                        {{ form.puzzle_frequency(class="form-select") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {# --- Removed Old JSON Fields --- #}
         {# 
         <div class="form-group">

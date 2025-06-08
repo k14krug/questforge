@@ -1,17 +1,42 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify # Added jsonify back
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from sqlalchemy.orm.attributes import flag_modified
+
+def mark_json_changed(target, attribute):
+    """Force SQLAlchemy to detect changes to JSON fields"""
+    flag_modified(target, attribute)
 from flask_login import login_required, current_user
 import json # Import json for parsing/dumping
 from ..models.template import Template
 from ..extensions import db
 from ..views.forms import TemplateForm
 
+# Define the mapping from abbreviation to full name for puzzle types
+PUZZLE_TYPE_MAP = {
+    'r': 'Logic/Riddle',
+    'i': 'Inventory/Environmental',
+    'd': 'Social/Dialogue', # Assuming 'd' for Dialogue/Deduction
+    'l': 'Logic/Riddle', # 'l' for Logic
+    'e': 'Environmental/Physical', # 'e' for Environmental
+    'p': 'Procedural/Sequence', # 'p' for Procedural
+    'h': 'Hidden Objects', # 'h' for Hidden Objects
+    'c': 'Code Breaking' # 'c' for Code Breaking
+}
+
 template_bp = Blueprint('template', __name__)
+
+def log_template_routes(app):
+    """Log registered template routes after app initialization"""
+    with app.app_context():
+        print(f"\n\n=== TEMPLATE ROUTES REGISTERED ===\nRoutes:")
+        for rule in app.url_map.iter_rules():
+            if rule.endpoint.startswith('template.'):
+                print(f"- {rule}")
+        print("\n")
 
 @template_bp.route('/templates')
 @login_required
 def list_templates():
     """List all available templates"""
-    # fix_question_flow() # Removed call to potentially conflicting data fixing function
     templates = Template.query.filter_by(created_by=current_user.id).all()
     return render_template('template/list.html', templates=templates)
 
@@ -21,10 +46,19 @@ def create_template():
     """Create a new template"""
     form = TemplateForm()
 
-    # Removed default value setting for old JSON fields
-
     if form.validate_on_submit():
-        # Instantiate Template with new fields directly from the form
+        # Map abbreviated puzzle types from form to full names for storage
+        mapped_enabled_types = [PUZZLE_TYPE_MAP.get(t, t) for t in form.puzzle_types.data]
+
+        puzzle_config = {
+            "enabled": form.enable_puzzles.data,
+            "enabled_types": mapped_enabled_types,
+            "global_puzzle_difficulty": form.puzzle_difficulty.data,
+            "puzzle_frequency": form.puzzle_frequency.data,
+            "hint_frequency": form.hint_frequency.data,
+            "failure_consequences": form.puzzle_difficulty.data
+        }
+
         template = Template(
             name=form.name.data,
             description=form.description.data,
@@ -39,14 +73,14 @@ def create_template():
             player_character_guidance=form.player_character_guidance.data,
             difficulty=form.difficulty.data,
             estimated_length=form.estimated_length.data,
-            ai_service_endpoint=form.ai_service_endpoint.data
+            ai_service_endpoint=form.ai_service_endpoint.data,
+            default_rules={"puzzles": puzzle_config}
         )
         
         db.session.add(template)
         db.session.commit()
         flash('Template created successfully!', 'success')
         return redirect(url_for('template.list_templates'))
-        # Removed JSON parsing and related error handling
         
     return render_template('template/create.html', form=form)
 
@@ -60,32 +94,92 @@ def edit_template(template_id):
         flash('You can only edit your own templates', 'danger')
         return redirect(url_for('template.list_templates'))
 
-    # Use obj=template for initial population of simple fields on GET
-    # Use obj=template for initial population of simple fields on GET
-    form = TemplateForm(obj=template)
+    if request.method == 'POST':
+        form = TemplateForm(request.form) # Populate form with submitted data
 
-    if form.validate_on_submit(): # Process POST request
-        # Update template object with data from the new form fields
-        template.name = form.name.data
-        template.description = form.description.data
-        template.category = form.category.data
-        template.genre = form.genre.data
-        template.core_conflict = form.core_conflict.data
-        template.theme = form.theme.data
-        template.desired_tone = form.desired_tone.data
-        template.world_description = form.world_description.data
-        template.scene_suggestions = form.scene_suggestions.data
-        template.player_character_guidance = form.player_character_guidance.data
-        template.difficulty = form.difficulty.data
-        template.estimated_length = form.estimated_length.data
-        template.ai_service_endpoint = form.ai_service_endpoint.data
+        if not form.is_submitted():
+            if 'submit' not in request.form:
+                flash('Please submit the form using the Update Template button', 'error')
+            else:
+                flash('Invalid form submission. Please try again.', 'error')
+            return render_template('template/edit.html', form=form, template=template)
 
-        db.session.commit() # Save all changes
-        flash('Template updated successfully!', 'success')
-        return redirect(url_for('template.list_templates'))
-        # Removed JSON parsing and related error handling
+        if form.validate_on_submit():
+            # Update puzzle configuration
+            if not template.default_rules:
+                template.default_rules = {}
+                
+            # Map abbreviated puzzle types from form to full names for storage
+            mapped_enabled_types = [PUZZLE_TYPE_MAP.get(str(t), str(t)) for t in form.puzzle_types.data]
 
-    # Render the form for GET request (or if validation failed on POST)
+            puzzle_config = {
+                "enabled": bool(form.enable_puzzles.data),
+                "enabled_types": mapped_enabled_types,
+                "global_puzzle_difficulty": str(form.puzzle_difficulty.data),
+                "puzzle_frequency": str(form.puzzle_frequency.data),
+                "hint_frequency": str(form.hint_frequency.data),
+                "failure_consequences": str(form.puzzle_difficulty.data)
+            }
+            
+            template.default_rules["puzzles"] = puzzle_config
+            mark_json_changed(template, 'default_rules')
+            db.session.add(template)
+            
+            # Update other template fields
+            template.name = form.name.data
+            template.description = form.description.data
+            template.category = form.category.data
+            template.genre = form.genre.data
+            template.core_conflict = form.core_conflict.data
+            template.theme = form.theme.data
+            template.desired_tone = form.desired_tone.data
+            template.world_description = form.world_description.data
+            template.scene_suggestions = form.scene_suggestions.data
+            template.player_character_guidance = form.player_character_guidance.data
+            template.difficulty = form.difficulty.data
+            template.estimated_length = form.estimated_length.data
+            template.ai_service_endpoint = form.ai_service_endpoint.data
+
+            try:
+                db.session.commit() # Save all changes
+                
+                flash('Template updated successfully!', 'success')
+                return redirect(url_for('template.list_templates'))
+            except Exception as e:
+                db.session.rollback()
+                flash('Failed to update template. Please try again.', 'danger')
+                return render_template('template/edit.html', form=form, template=template)
+        else:
+            # Render the form if validation failed on POST
+            return render_template('template/edit.html', form=form, template=template)
+
+    # GET request handling
+    form = TemplateForm(obj=template) # Populate form with template object for GET
+    
+    # Then manually set puzzle fields from default_rules with proper type conversion and reverse mapping
+    if template.default_rules and 'puzzles' in template.default_rules:
+        puzzles = template.default_rules['puzzles']
+        form.enable_puzzles.data = bool(puzzles.get('enabled', False))
+        enabled_types = puzzles.get('enabled_types', [])
+        
+        # Ensure enabled_types is always a list of strings for processing
+        if isinstance(enabled_types, str):
+             enabled_types = [enabled_types]
+        elif not isinstance(enabled_types, list):
+             enabled_types = []
+
+        # Apply reverse mapping: map full names back to abbreviations for the form
+        reverse_map = {v: k for k, v in PUZZLE_TYPE_MAP.items()}
+        form.puzzle_types.data = [reverse_map.get(str(t), str(t)) for t in enabled_types]
+
+        form.puzzle_difficulty.data = str(puzzles.get('global_puzzle_difficulty', 'medium'))
+        form.puzzle_frequency.data = str(puzzles.get('puzzle_frequency', 'moderate'))
+        form.hint_frequency.data = str(puzzles.get('hint_frequency', 'moderate'))
+
+    return render_template('template/edit.html', form=form, template=template)
+    print(f"DEBUG: Before rendering template - form.puzzle_types.choices: {form.puzzle_types.choices}")
+
+
     return render_template('template/edit.html', form=form, template=template)
 
 @template_bp.route('/template/<int:template_id>/delete', methods=['POST'])
@@ -102,33 +196,6 @@ def delete_template(template_id):
     db.session.commit()
     flash('Template deleted successfully', 'success')
     return redirect(url_for('template.list_templates'))
-
-
-# Removed potentially conflicting data fixing function
-# @template_bp.route('/template/fix_question_flow')
-# @login_required
-# def fix_question_flow():
-#     """Temporary route to fix question_flow data in templates"""
-#     templates = Template.query.filter_by(created_by=current_user.id).all()
-    
-#     for template in templates:
-#         try:
-#             if isinstance(template.question_flow, dict):
-#                 # If it's already a dict, skip parsing
-#                 question_flow = template.question_flow
-#             else:
-#                 question_flow = json.loads(template.question_flow)
-#                 if isinstance(question_flow, list):
-#                     new_question_flow = {str(i): q for i, q in enumerate(question_flow)}
-#                     template.question_flow = new_question_flow
-#                     db.session.add(template)
-#         except (TypeError, json.JSONDecodeError):
-#             # Handle cases where question_flow is None or not a valid JSON string
-#             pass
-            
-#     db.session.commit()
-#     flash('Question flow data fixed successfully!', 'success')
-#     return redirect(url_for('template.list_templates'))
 
 # --- API Endpoint for Template Details ---
 

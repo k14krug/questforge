@@ -7,13 +7,14 @@ from questforge.models.game import Game
 from questforge.models.game_state import GameState
 from questforge.models.template import Template
 from questforge.models.campaign import Campaign
-from questforge.utils.prompt_builder import build_campaign_prompt, build_response_prompt, build_character_name_prompt, build_hint_prompt, build_plot_completion_check_prompt, build_summary_prompt # Added build_summary_prompt
+from questforge.utils.prompt_builder import build_campaign_prompt, build_response_prompt, build_character_name_prompt, build_hint_prompt, build_plot_completion_check_prompt, build_summary_prompt, build_puzzle_solution_check_prompt # Added build_puzzle_solution_check_prompt
 from questforge.utils.context_manager import build_context
 from typing import Dict, Optional, Tuple, Any, List
 import requests
 from decimal import Decimal
 from ..models.api_usage_log import ApiUsageLog
 from ..extensions import db
+from flask import current_app # Ensure current_app is imported
 
 class AIService:
     """Service for handling AI interactions, including campaign generation and responses."""
@@ -105,7 +106,16 @@ class AIService:
             log_ai_debug_payload("Generate campaign from template", payload, "campaign", 1)
             response = self.client.chat.completions.create(**payload)
             generated_content = response.choices[0].message.content
-            app.logger.debug(f"--- AI Service: Received raw response ---\\n{generated_content}\\n------------------------------------------")
+            app.logger.debug(f"--- AI Service: Received raw response for campaign generation ---\\n{generated_content}\\n------------------------------------------")
+            
+            # Explicitly log the raw content to a file for easier inspection
+            try:
+                with open("ai_debug_payloads/latest_campaign_response.json", "w") as f:
+                    f.write(generated_content)
+                app.logger.info("Raw AI campaign response saved to ai_debug_payloads/latest_campaign_response.json")
+            except Exception as file_e:
+                app.logger.error(f"Failed to save raw AI campaign response to file: {file_e}")
+
             usage_data = response.usage if response.usage else None
             model_used = response.model
             app.logger.info(f"AI call (generate_campaign) completed. Model: {model_used}, Usage Data: {usage_data}")
@@ -179,10 +189,16 @@ class AIService:
             else:
                 app.logger.info("All plot points appear to be atomic.")
 
+            # Extract generated_puzzles if present
+            generated_puzzles = parsed_data.get('generated_puzzles', [])
+            if not isinstance(generated_puzzles, list):
+                app.logger.warning("AI campaign response 'generated_puzzles' is not a list. Using empty list.")
+                generated_puzzles = []
+            
             app.logger.info("--- AI Service: Parsed campaign data successfully (new structure) ---")
             usage_data = response.usage if response.usage else None
             model_used = response.model
-            return parsed_data, model_used, usage_data
+            return parsed_data, generated_puzzles, model_used, usage_data
         except json.JSONDecodeError as e:
             app.logger.error(f"Error decoding AI JSON response: {e}")
             app.logger.error(f"Raw content that failed JSON parsing: {generated_content}")
@@ -677,6 +693,130 @@ class AIService:
             app.logger.error(f"Error in check_atomic_plot_completion for {plot_point_id}: {e}", exc_info=True)
             return {"error": f"Failed to check plot point completion: {e}"}
 
+    def check_puzzle_solution(
+        self,
+        puzzle_definition: Dict[str, Any],
+        current_game_state_data: Dict[str, Any],
+        player_action: str,
+        game_id: Optional[int] = None
+    ) -> Dict[str, Any] | None:
+        """
+        Evaluates if a player's action solves a given puzzle based on its solution criteria.
+        Uses a focused AI call (GPT 4.1 mini).
+
+        Args:
+            puzzle_definition: The dictionary defining the puzzle, including 'puzzle_id', 'description', 'solution_criteria'.
+            current_game_state_data: The full current GameState.state_data dictionary.
+            player_action: The player's original action from the current turn.
+            game_id: Optional ID of the game for logging.
+
+        Returns:
+            A dictionary containing 'puzzle_id', 'solved' (bool), 'confidence_score' (float),
+            'model_used' (str), and 'usage_data' (dict), or None if an error occurs.
+        """
+        from questforge.utils.ai_debug_logger import log_ai_debug_payload
+        app = current_app._get_current_object()
+        if not self.client:
+            app.logger.error("OpenAI client not initialized. Cannot check puzzle solution.")
+            return None
+
+        puzzle_id = puzzle_definition.get('puzzle_id')
+        puzzle_description = puzzle_definition.get('description')
+        solution_criteria = puzzle_definition.get('solution_criteria')
+
+        if not all([puzzle_id, puzzle_description, solution_criteria]):
+            app.logger.error(f"Missing required puzzle definition fields for check_puzzle_solution. Definition: {puzzle_definition}")
+            return {"error": "Invalid puzzle definition provided."}
+
+        prompt = build_puzzle_solution_check_prompt(
+            puzzle_id=puzzle_id,
+            puzzle_description=puzzle_description,
+            solution_criteria=solution_criteria,
+            current_game_state_data=current_game_state_data,
+            player_action=player_action
+        )
+        app.logger.debug(f"--- AI Service: Checking puzzle solution with prompt ---\\n{prompt}\\n-------------------------------------------------")
+        generated_content = ""
+        try:
+            # Use OPENAI_MODEL_MAIN for focused, faster checks (GPT 4.1 mini)
+            model_to_use = app.config.get('OPENAI_MODEL_MAIN', 'gpt-4o-mini')
+            app.logger.debug(f"Using OPENAI_MODEL_MAIN for check_puzzle_solution: {model_to_use}")
+
+            payload = {
+                "model": model_to_use,
+                "messages": [
+                    {"role": "system", "content": "You are an analytical AI assistant. Evaluate the player's action against the puzzle's solution criteria and the current game state. Respond ONLY with the requested JSON object."},
+                    {"role": "user", "content": prompt}
+                ],
+                "response_format": {"type": "json_object"},
+                "temperature": 0.2, # Low temperature for deterministic evaluation
+                "max_tokens": 256
+            }
+            log_ai_debug_payload("Check puzzle solution", payload, "puzzlecheck", 1)
+            response = self.client.chat.completions.create(**payload)
+            generated_content = response.choices[0].message.content
+            app.logger.debug(f"--- AI Service: Received raw puzzle check response ---\\n{generated_content}\\n------------------------------------------")
+            usage_data = response.usage if response.usage else None
+            model_used = response.model
+            app.logger.info(f"AI call (check_puzzle_solution) completed. Model: {model_used}, Usage Data: {usage_data}")
+
+            parsed_data = json.loads(generated_content)
+
+            required_keys = ['puzzle_id', 'solved', 'confidence_score']
+            missing_keys = [k for k in required_keys if k not in parsed_data]
+            if missing_keys:
+                app.logger.error(f"AI puzzle check response missing required keys: {missing_keys}. Data: {parsed_data}")
+                return {"error": f"AI response missing required keys: {', '.join(missing_keys)}", "raw_content": generated_content}
+
+            if not isinstance(parsed_data.get('puzzle_id'), str) or parsed_data.get('puzzle_id') != puzzle_id:
+                app.logger.error(f"AI puzzle check response 'puzzle_id' mismatch or not a string. Expected: {puzzle_id}, Got: {parsed_data.get('puzzle_id')}")
+                return {"error": "Invalid 'puzzle_id' in AI response", "raw_content": generated_content}
+            if not isinstance(parsed_data.get('solved'), bool):
+                app.logger.error(f"AI puzzle check response 'solved' is not a boolean. Got: {parsed_data.get('solved')}")
+                return {"error": "Invalid 'solved' type in AI response", "raw_content": generated_content}
+            if not isinstance(parsed_data.get('confidence_score'), (float, int)):
+                app.logger.error(f"AI puzzle check response 'confidence_score' is not a float/int. Got: {parsed_data.get('confidence_score')}")
+                return {"error": "Invalid 'confidence_score' type in AI response", "raw_content": generated_content}
+
+            confidence = float(parsed_data['confidence_score'])
+            if not (0.0 <= confidence <= 1.0):
+                app.logger.error(f"AI puzzle check response 'confidence_score' out of range (0.0-1.0). Got: {confidence}")
+                return {"error": "'confidence_score' out of range", "raw_content": generated_content}
+            parsed_data['confidence_score'] = confidence
+
+            app.logger.info(f"--- AI Service: Parsed puzzle check data successfully for {puzzle_id} ---")
+
+            if game_id and usage_data:
+                cost = calculate_cost(model_used, {'prompt_tokens': usage_data.prompt_tokens, 'completion_tokens': usage_data.completion_tokens})
+                log_api_usage(
+                    model_name=model_used,
+                    prompt_tokens=usage_data.prompt_tokens,
+                    completion_tokens=usage_data.completion_tokens,
+                    total_tokens=usage_data.total_tokens,
+                    cost=cost,
+                    game_id=game_id
+                )
+
+            return {
+                'puzzle_id': parsed_data['puzzle_id'],
+                'solved': parsed_data['solved'],
+                'confidence_score': parsed_data['confidence_score'],
+                'model_used': model_used,
+                'usage_data': {
+                    'prompt_tokens': usage_data.prompt_tokens if usage_data else 0,
+                    'completion_tokens': usage_data.completion_tokens if usage_data else 0,
+                    'total_tokens': usage_data.total_tokens if usage_data else 0,
+                } if usage_data else None
+            }
+
+        except json.JSONDecodeError as e:
+            app.logger.error(f"Error decoding AI puzzle check JSON response: {e}")
+            app.logger.error(f"Raw content: {generated_content}")
+            return {"error": "AI response content is not valid JSON", "raw_content": generated_content}
+        except Exception as e:
+            app.logger.error(f"Error in check_puzzle_solution for {puzzle_id}: {e}", exc_info=True)
+            return {"error": f"Failed to check puzzle solution: {e}"}
+
     def generate_historical_summary(self, player_action: str, stage_one_narrative: str, state_changes: Dict[str, Any], game_id: Optional[int] = None) -> Optional[str]:
         """
         Generates a detailed historical summary of a game turn using a secondary AI model.
@@ -826,12 +966,8 @@ def log_api_usage(model_name: str, prompt_tokens: int, completion_tokens: int, t
         game_id=game_id
     )
     db.session.add(log_entry)
-    try:
-        db.session.commit()
-        current_app.logger.info(f"Successfully logged API usage for model {model_name} (Game ID: {game_id}). Cost: {cost}")
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Failed to commit API usage log for model {model_name} (Game ID: {game_id}): {e}", exc_info=True)
+    # Do NOT commit here. The main transaction should commit.
+    current_app.logger.info(f"Added API usage log entry for model {model_name} (Game ID: {game_id}). Cost: {cost}")
 
 
 ai_service = AIService()
