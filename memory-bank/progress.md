@@ -1,40 +1,35 @@
-# QuestForge Development Progress
+# Progress
 
-## Current Phase: Puzzle Mechanics Implementation
+## Current Status:
+- **Specification Defined:** The core application features, modules, and high-level architecture have been outlined in `questforge_spec.md`.
+- **Memory Bank Initialized:** Core memory bank files (`projectbrief.md`, `productContext.md`, `systemPatterns.md`, `techContext.md`) have been populated based on the initial specification.
 
-### Phase 1: Core Data Model & AI Generation (COMPLETED)
-- Implemented Puzzle model and database schema
-- Created AI puzzle generation service
-- Developed test_puzzle_mechanic_phase1.py
+## What's Left to Build (High-Level Modules):
+- User Authentication Module
+- Template Module
+- Game Management Module
+- Campaign Structure Module & The Campaign Charter
+- AI Game Master Module
+- Game State Tracking Module
+- Real-Time Communication Module
+- AI Model Management & Economy (Implementation of cost tracking and model dictionary)
+- User Interface (UI) & User Experience (UX) Flow (All screens and visual components)
+- Administrative & History Tools
 
-### Phase 2: Backend Integration & Gating (COMPLETED)
-- Modified socket_service.py for puzzle evaluation
-- Implemented puzzle gating of plot points
-- Added puzzle state management
-- Created test_puzzle_mechanic_phase2.py
-- Verified all requirements from phase 2 plan
+## Known Issues:
+- None at this initial specification stage.
 
-### Phase 3: UI Integration (COMPLETED)
-- Implemented UI elements for displaying puzzles in `play.html`
-- Integrated puzzle interaction with `socketClient.mjs`
-- Ensured puzzle state updates are broadcast from `socket_service.py`
-- Enhanced AI context with active puzzle information in `context_manager.py`
+## Pending Specification Refinement Tasks:
+To minimize AI interpretation during implementation, the following technical details require further clarification in the app specification:
+- **Database Schemas:** Explicit definitions for models (e.g., `Game`, `GamePlayer`, `GameState`, `Template`, `User`) including fields, data types, relationships, and primary/foreign keys.
+- **API Endpoints & Formats:** Specific API endpoints, HTTP methods, and precise JSON request/response structures for all backend interactions (e.g., template CRUD, game creation, AI service calls).
+- **Socket.IO Event Payloads:** Exact names and data structures for all real-time communication events (e.g., `join_game`, `ready_up`, `submit_action`, `skill_check_initiated`, `dice_roll_result`).
+- **"Story So Far" & NPC Memory Details:** Clear input/output formats and condensation criteria for AI-generated "Story So Far" summaries and `npc_memory` condensation.
+- **"Core Directives" Definitions:** Explicit definitions for the "Directive of Adherence," "Narrative Redirection," "Deviation Budget," and "Post-Campaign Epilogue" features.
+- **Error Handling:** Guidelines on how various errors (e.g., AI API failures, invalid input, network issues) should be handled, logged, and communicated to users.
+- **Interactive Map JSON Schema:** A detailed JSON schema for the "node-based JSON structure of locations and their connections" for the interactive map.
 
-### Phase 4: Database & Configuration (COMPLETED)
-- Added `generated_puzzles` column to Campaign model via migration
-- Created manual migration file: `202502061453_add_generated_puzzles_to_campaign.py`
-- Updated TemplateForm with puzzle configuration fields
-- Implemented puzzle configuration UI in template creation form
-
-### Phase 5: Player Feedback & Polish (NEXT)
-- Implement puzzle feedback collection in play.html
-- Add puzzle difficulty adjustment based on player performance
-- Enhance puzzle completion UI/UX
-
-### Puzzle Activation Implementation (COMPLETED)
-- **Revised Activation Logic:** Puzzles now activate deterministically based on player entering a specific `location` or interacting with a designated `world object`.
-- **Removed Old Heuristic:** The previous action-to-plot-point heuristic for puzzle activation has been removed.
-- **AI Prompt Update:** `prompt_builder.py` was updated to instruct the AI to generate puzzles with a `trigger` field (`type: "location"` or `"object"`, and `value`).
-- **Socket Service Update:** `socket_service.py` was updated to implement the new location/object-based activation logic and to add system messages to the game log upon puzzle activation.
-- Verified activation logic works with existing puzzle solving.
-- Maintained all existing puzzle functionality.
+## Evolution of Project Decisions:
+- Initial decision to use a tiered AI model approach for cost and performance optimization.
+- Implementation of a two-step action resolution system for enhanced mechanical depth and AI control.
+- Emphasis on an immutable Campaign Charter for narrative consistency.
