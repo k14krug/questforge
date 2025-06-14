@@ -1,17 +1,21 @@
 # Active Context
 
 ## Current Roadmap Position:
-- **Phase:** Phase 0: Specification Refinement & Setup
-- **Current Task:** Address Pending Specification Refinement Tasks (specifically, defining database schemas)
+- **Phase:** Phase 1: Core Backend Modules
+- **Current Task:** Implement User Authentication Module: Develop user registration functionality.
 
 ## Current Work Focus:
-- Defining the detailed database schema for the QuestForge application.
-- Initial setup and documentation of the QuestForge project based on the `questforge_spec. md` document.
-- Populating the core memory bank files to establish a foundational understanding of the project.
+- Developing user registration functionality as part of the User Authentication Module.
+- Continuing the refinement of the QuestForge application specification.
+- Ensuring the memory bank accurately reflects the current state of the project and upcoming tasks.
 
 ## Recent Changes:
 - Creation and initial population of `projectbrief.md`, `productContext.md`, `systemPatterns.md`, `techContext.md`, `progress.md`, and `development_roadmap.md` with information extracted from `questforge_spec. md`.
 - Creation of `database_schema.md` to house the detailed database schema plan.
+- Creation of `api_endpoints.md` detailing precise API endpoints, HTTP methods, and JSON request/response structures.
+- Set up Initial Project Environment: Created the basic Flask project structure (`app.py`, `config.py`, `requirements.txt`, `static/`, `templates/`).
+- Installed Initial Basic Dependencies: Installed Flask, Flask-SocketIO, python-dotenv, and Flask-Bcrypt.
+- Established AI Model Configuration: Created `config.json` to serve as the single source of truth for available AI models, their tier, API identifiers, and token costs.
 
 ## Next Steps:
 - Proceed with the task identified in "Current Roadmap Position" from `development_roadmap.md`.
