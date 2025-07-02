@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Create New Game - QuestForge
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Create New Game</h1>
+    <hr>
+
+    <form id="create-game-form">
+        <div class="form-group">
+            <label for="game-name">Game Name</label>
+            <input type="text" class="form-control" id="game-name" name="game_name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="template-id">Campaign Template</label>
+            <select class="form-control" id="template-id" name="template_id" required>
+                <option value="" disabled selected>Loading templates...</option>
+                <!-- Templates will be populated by JavaScript -->
+            </select>
+        </div>
+        
+        <!-- Game Settings -->
+        <h4>Game Settings</h4>
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" id="enable-visual-dice-roller" name="enable_visual_dice_roller">
+            <label class="form-check-label" for="enable-visual-dice-roller">Enable Visual Dice Roller</label>
+        </div>
+
+        <div class="form-group">
+            <label for="expected-session-length">Expected Session Length (minutes)</label>
+            <input type="number" class="form-control" id="expected-session-length" name="expected_session_length_minutes" min="30" value="120">
+        </div>
+        
+        <!-- Placeholder for AI Model Overrides if needed in future -->
+        <!-- 
+        <div class="form-group">
+            <label for="ai-gm-persona-override">AI GM Persona (Override - Optional)</label>
+            <textarea class="form-control" id="ai-gm-persona-override" name="ai_gm_persona_override" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="primary_model_override">Primary AI Model (Override - Optional)</label>
+            <input type="text" class="form-control" id="primary_model_override" name="primary_model_override">
+        </div>
+        <div class="form-group">
+            <label for="secondary_model_override">Secondary AI Model (Override - Optional)</label>
+            <input type="text" class="form-control" id="secondary_model_override" name="secondary_model_override">
+        </div>
+        -->
+
+        <div id="create-game-error" class="alert alert-danger" style="display: none;" role="alert"></div>
+        <div id="create-game-success" class="alert alert-success" style="display: none;" role="alert"></div>
+
+        <button type="submit" class="btn btn-primary">Create Game</button>
+        <a href="{{ url_for('games_route') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- JavaScript for populating templates and handling form submission will be in main.js -->
+<script>
+    // Specific JS for this page will be triggered by DOMContentLoaded in main.js
+    // based on the URL or a specific ID on this page.
+</script>
+{% endblock %}

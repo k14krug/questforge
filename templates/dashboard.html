@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - QuestForge{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Welcome, {{ current_user.username if current_user else "Guest" }}!</p> {# Assuming current_user is passed to template #}
+</div>
+
+<section id="dashboard-actions" class="dashboard-section">
+    <h2>Quick Actions</h2>
+    <div class="action-buttons">
+        <a href="{{ url_for('games_route') }}?action=create" class="btn btn-primary">Create New Game</a>
+        <a href="{{ url_for('templates_route') }}?action=create" class="btn btn-secondary">Create New Template</a>
+    </div>
+</section>
+
+<section id="active-games" class="dashboard-section">
+    <h2>My Active Games</h2>
+    <div class="item-list">
+        <!-- Games will be loaded here by JavaScript -->
+    </div>
+</section>
+
+<section id="my-templates" class="dashboard-section">
+    <h2>My Templates</h2>
+    <div class="item-list">
+        <!-- Templates will be loaded here by JavaScript -->
+    </div>
+</section>
+
+<section id="profile-link" class="dashboard-section">
+    <h2>My Profile</h2>
+    <p><a href="{{ url_for('profile_route') if false else '#' }}">View/Edit Profile</a></p> {# Placeholder, assuming 'profile_route' will exist. Using '#' for now to prevent errors #}
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

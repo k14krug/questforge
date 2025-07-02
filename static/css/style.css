@@ -1,0 +1,456 @@
+/* QuestForge Main Stylesheet */
+
+body {
+    font-family: sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+.container {
+    width: 80%;
+    margin: auto;
+    overflow: hidden;
+    padding: 0 20px;
+}
+
+header {
+    background: #333;
+    color: #fff;
+    padding-top: 10px;
+    min-height: 70px;
+    border-bottom: #0779e4 3px solid;
+}
+
+header a {
+    color: #fff;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 16px;
+}
+
+header .main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 90%;
+    margin: auto;
+}
+
+header .nav-logo a {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+header .nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+}
+
+header .nav-links li {
+    padding: 0 20px;
+}
+
+header .nav-links a:hover,
+header .nav-auth-links a:hover {
+    color: #0779e4;
+}
+
+header .nav-auth-links a {
+    margin-left: 15px;
+}
+
+main.container {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    background-color: #fff;
+    min-height: calc(100vh - 70px - 73px); /* Full height minus header and footer */
+}
+
+footer {
+    background: #333;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+/* Dashboard Specific Styles */
+.page-header {
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.page-header h1 {
+    margin-bottom: 5px;
+}
+
+.dashboard-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dashboard-section h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+    border-bottom: 2px solid #0779e4;
+    padding-bottom: 8px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px; /* Space between buttons */
+    margin-bottom: 20px;
+}
+
+.item-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsive grid */
+    gap: 20px; /* Space between cards */
+}
+
+.card {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.card h3 a {
+    text-decoration: none;
+    color: #0779e4;
+}
+
+.card h3 a:hover {
+    text-decoration: underline;
+}
+
+.card p {
+    font-size: 0.9em;
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.card p strong {
+    color: #333;
+}
+
+.card p small {
+    font-size: 0.8em;
+    color: #777;
+}
+
+/* Button Styles */
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    text-decoration: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    border: none;
+    text-align: center;
+}
+
+.btn-primary {
+    background-color: #0779e4;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: #055fa0;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+#profile-link a {
+    color: #0779e4;
+    text-decoration: none;
+}
+
+#profile-link a:hover {
+    text-decoration: underline;
+}
+
+/* Play Page Specific Styles */
+.play-container .game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Tabbed Info Panel Styles */
+.info-panel {
+    margin-top: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+/* Party Management Styles */
+.party-management {
+    display: flex;
+    gap: 20px;
+}
+
+.party-members, .npcs {
+    flex: 1;
+}
+
+.character-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+.character-list li {
+    padding: 8px;
+    margin-bottom: 5px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.character-list .character-name {
+    font-weight: bold;
+}
+
+.character-list .character-actions button {
+    padding: 3px 6px;
+    font-size: 0.8em;
+    margin-left: 5px;
+}
+
+#add-party-member, #add-npc {
+    margin-top: 10px;
+    width: 100%;
+}
+
+
+
+.tab-content {
+    padding: 15px;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.game-metadata, .game-stats {
+    display: flex;
+    flex-direction: column;
+}
+
+.game-metadata {
+    flex: 2;
+}
+
+.game-stats {
+    flex: 1;
+    align-items: flex-end;
+    text-align: right;
+}
+
+#gm-persona {
+    font-style: italic;
+    color: #555;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+#campaign-cost {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+#summary-btn {
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+
+.turn-indicator {
+    font-size: 1.1em;
+    color: #555;
+    margin-top: 5px;
+}
+
+#current-player-name {
+    font-weight: bold;
+    color: #0779e4;
+}
+
+.play-area {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* Two columns: main and action */
+    gap: 20px;
+}
+
+/* Adjust main panel to flex column for tab layout */
+.main-panel {
+    display: flex;
+    flex-direction: column;
+}
+.game-log-panel .log-box {
+    height: 50vh; /* Reduced height to fit scene panel */
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 15px;
+    background-color: #fdfdfd;
+    border-radius: 5px;
+}
+
+.action-panel textarea {
+    width: 100%;
+    height: 150px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: vertical;
+}
+
+.action-panel button {
+    width: 100%;
+}
+
+.not-your-turn {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    text-align: center;
+    border-radius: 5px;
+}
+
+/* Party & NPCs Tab Styles */
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.character-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  background: #f9f9f9;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease;
+}
+
+.character-card:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.character-card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.character-portrait-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+    object-fit: cover;
+}
+
+.character-name {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.character-details p {
+    margin: 0 0 5px 0;
+    font-size: 0.9em;
+    color: #555;
+}
+
+/* Modal styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    max-width: 500px;
+    border-radius: 5px;
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.log-entry.log-player_action {
+    background-color: #e7f3fe; /* A light blue background */
+    border-left: 4px solid #0779e4; /* A solid blue left border */
+    padding-left: 12px; /* Add some padding to not touch the border */
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}

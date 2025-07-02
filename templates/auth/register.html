@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{% block title %}Register - QuestForge{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Register</h2>
+    <form id="register-form" class="auth-form">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <label for="confirm-password">Confirm Password:</label>
+            <input type="password" id="confirm-password" name="confirm_password" required>
+        </div>
+        <button type="submit" class="btn">Register</button>
+        <p id="register-error" class="error-message" style="display:none;"></p>
+        <p id="register-success" class="success-message" style="display:none;"></p>
+    </form>
+    <p>Already have an account? <a href="{{ url_for('auth.login_page') }}">Login here</a></p> {# Assuming login_page route #}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Specific scripts for register page if any, or rely on main.js
+    // For now, main.js will handle the form submission
+</script>
+{% endblock %}

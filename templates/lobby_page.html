@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Game Lobby - QuestForge
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 id="game-title">Game Lobby: [Game Title Placeholder]</h1>
+    <hr>
+
+    <div class="lobby-details">
+        <h2>Game Details</h2>
+        <p><strong>GM Persona:</strong> <span id="gm-persona">[GM Persona Placeholder]</span></p>
+        <p><strong>Description:</strong> <span id="game-description">[Game Description Placeholder]</span></p>
+        <!-- Add more game details as needed -->
+    </div>
+    <hr>
+
+    <div class="player-list-section">
+        <h2>Players</h2>
+        <ul id="player-list" class="list-group">
+            <!-- Player items will be dynamically inserted here by JavaScript -->
+            <!-- Example player item structure:
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>Player Name (Character Name) - <span class="player-status">Not Ready</span></span>
+            </li>
+            -->
+        </ul>
+    </div>
+    <hr>
+
+    <div class="lobby-actions text-center mt-3">
+        <button id="ready-up-button" class="btn btn-primary mr-2">Ready Up</button>
+        <button id="start-game-button" class="btn btn-success" style="display: none;">Start Game</button> <!-- Hidden by default, shown for creator -->
+    </div>
+
+    <div class="mt-4">
+        <a href="{{ url_for('games_route') }}" class="btn btn-secondary">Back to Games List</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+{% endblock %}

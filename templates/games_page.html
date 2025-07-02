@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block title %}Game Management - QuestForge{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Game Management</h1>
+    <p>View your active and completed games, or start a new adventure!</p>
+</div>
+
+<section id="game-actions" class="dashboard-section">
+    <h2>Actions</h2>
+    <div class="action-buttons">
+        {# Link to a future "Create Game" page/modal. For now, could be a placeholder or link to a route that handles game creation setup. #}
+        {# The dashboard already has a "Create New Game" button linking to games_route?action=create #}
+        {# Let's assume this page will primarily list games, and creation might be initiated from here or dashboard #}
+        <a href="{{ url_for('create_game_page_route') }}" class="btn btn-primary">Create New Game</a>
+        {# We might add other general game actions here later, like "Join Game by ID" if applicable #}
+    </div>
+</section>
+
+<section id="game-list-section" class="dashboard-section">
+    <h2>My Games</h2>
+    <div id="games-list-container" class="item-list">
+        <!-- Games will be loaded here by JavaScript -->
+        <p>Loading your games...</p>
+    </div>
+</section>
+
+{# Future sections for game details or specific game interactions could be added here #}
+{# For example, a modal to display game details when a game is clicked #}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Game management specific JS will be added to main.js or a new games.js
+    console.log("Game Management page loaded.");
+    // JS to fetch and display games will be called from main.js based on page context
+</script>
+{% endblock %}

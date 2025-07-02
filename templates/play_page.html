@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Play - QuestForge
+{% endblock %}
+
+{% block content %}
+<div class="container play-container">
+<div class="game-header">
+    <div class="game-metadata">
+        <h1 id="game-title">{{ game_name }} <small>({{ game.campaign_charter.campaign_name }})</small></h1>
+        <div id="gm-persona">GM: {{ gm_persona }}</div>
+    </div>
+    <div class="game-stats">
+        <button id="summary-btn">Summary</button>
+        <div id="campaign-cost">Cost: {{ game.cumulative_cost }}</div>
+        <div id="turn-indicator" class="turn-indicator">
+            Turn: <span id="turn-number">1</span> | Current Player: <span id="current-player-name">Loading...</span>
+        </div>
+    </div>
+</div>
+    <div class="play-area">
+        <div class="main-panel">
+            <!-- Game Log Panel -->
+            <div class="game-log-panel">
+                <h2>Game Log</h2>
+                <div id="game-log" class="log-box">
+                    <!-- Game narrative and events will be appended here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabbed Information Panel -->
+        <div class="information-panel">
+            <ul class="nav nav-tabs" id="info-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="party-npcs-tab" data-bs-toggle="tab" data-bs-target="#party-npcs-content" type="button" role="tab" aria-controls="party-npcs-content" aria-selected="true">Party & NPCs</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="world-map-tab" data-bs-toggle="tab" data-bs-target="#world-map-content" type="button" role="tab" aria-controls="world-map-content" aria-selected="false">World & Map</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="objectives-lore-tab" data-bs-toggle="tab" data-bs-target="#objectives-lore-content" type="button" role="tab" aria-controls="objectives-lore-content" aria-selected="false">Objectives & Lore</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="comms-chat-tab" data-bs-toggle="tab" data-bs-target="#comms-chat-content" type="button" role="tab" aria-controls="comms-chat-content" aria-selected="false">Comms & Chat</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="info-tabs-content">
+                <div class="tab-pane fade show active" id="party-npcs-content" role="tabpanel" aria-labelledby="party-npcs-tab">
+                    <div class="character-section">
+                        <h3>Party Members</h3>
+                        <div id="party-grid" class="character-grid"></div>
+                        <h3>NPCs</h3>
+                        <div id="npc-grid" class="character-grid"></div>
+                        <button id="add-npc" class="btn btn-small btn-primary">Add NPC</button>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="world-map-content" role="tabpanel" aria-labelledby="world-map-tab">
+                    <div id="map-container" class="p-3">
+                        <!-- Interactive map nodes will be dynamically inserted here by main.js -->
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="objectives-lore-content" role="tabpanel" aria-labelledby="objectives-lore-tab">
+                    <div id="objectives-section">
+                        <h3>Objectives</h3>
+                        <ul id="objectives-list"></ul>
+                    </div>
+                    <div id="lore-section">
+                        <h3>Discovered Lore</h3>
+                        <div id="lore-documents"></div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="comms-chat-content" role="tabpanel" aria-labelledby="comms-chat-tab">
+                    <p>Player chat will be available here.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-panel">
+            <h2>Take Action</h2>
+            
+            <div id="action-controls">
+                <textarea id="action-input" placeholder="What do you do?"></textarea>
+                <div class="action-buttons">
+                    <button id="submit-action-btn" class="btn">Submit</button>
+                </div>
+            </div>
+            <div id="not-your-turn-notice" class="not-your-turn" style="display: none;">
+                <p>It is not your turn.</p>
+            </div>
+        </div>
+        
+        <!-- Character Details Modal -->
+        <div id="character-details-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <div id="modal-details-content"></div>
+            </div>
+        </div>
+
+        <!-- Dice Roller Modal -->
+        <div id="dice-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>3D Dice Roller</h3>
+                <div id="dice-container" style="width: 100%; height: 400px;"></div>
+                <div id="dice-result" style="text-align: center; font-size: 24px; margin-top: 20px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        // Pass data from Flask to JavaScript
+        window.questForgeData = {
+            gameId: "{{ game.id }}",
+            currentUserId: "{{ current_user.id }}",
+            gameCreatorId: "{{ game.creator_user_id }}",
+            players: {{ players | tojson | safe }},
+            npcs: {{ npcs | tojson | safe }},
+            objectives: {{ objectives | tojson | safe }},
+            objective_states: {{ objective_states | tojson | safe }},
+            lore_documents: {{ lore_documents | tojson | safe }}
+        };
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

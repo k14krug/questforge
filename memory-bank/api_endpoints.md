@@ -201,244 +201,203 @@ This document details the precise API endpoints, HTTP methods, and JSON request/
 -   **Request Body (JSON):**
     ```json
     {
-      "user_id": "uuid",
       "name": "string",
-      "description": "string",
-      "charter": {
-        "campaign_name": "string",
-        "setting_description": "string",
-        "core_conflict": "string",
-        "initial_player_context": "string",
-        "ai_directives": {
-          "adherence": "string",
-          "narrative_redirection": "string",
-          "deviation_budget": "string",
-          "post_campaign_epilogue": "string"
-        },
-        "game_rules": {
-          "combat_system": "string",
-          "magic_system": "string",
-          "skill_checks": "string",
-          "inventory_management": "string"
-        },
-        "initial_state_elements": {
-          "starting_location": "string",
-          "key_npcs": "array of strings",
-          "initial_quests": "array of strings"
-        }
-      },
-      "settings": {
-        "difficulty": "string (e.g., 'easy', 'medium', 'hard')",
-        "player_limit": "integer",
-        "genre": "string (e.g., 'fantasy', 'sci-fi', 'horror')"
-      }
+      "genre": "string",
+      "core_conflict": "string",
+      "world_description": "string",
+      "ai_gm_persona": "string",
+      "core_skills": ["string", "string"]
     }
     ```
 -   **Response (JSON):**
     -   **Success (201 Created):**
         ```json
         {
-          "message": "Template created successfully",
-          "template_id": "uuid"
+          "id": "integer",
+          "name": "string",
+          "genre": "string",
+          "core_conflict": "string",
+          "world_description": "string",
+          "ai_gm_persona": "string",
+          "core_skills": ["string", "string"],
+          "created_by_user_id": "integer",
+          "created_at": "datetime (ISO 8601)"
         }
         ```
     -   **Error (400 Bad Request):**
         ```json
         {
-          "error": "Invalid input data"
+          "msg": "Missing required fields"
         }
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
+        }
+        ```
+    -   **Error (409 Conflict):**
+        ```json
+        {
+          "msg": "Template with this name already exists"
         }
         ```
 
-### 3.2 Get All Templates (Public/User-Owned)
+### 3.2 Get All Templates
 -   **Endpoint:** `/api/templates`
 -   **Method:** `GET`
--   **Description:** Retrieves a list of all public templates or templates owned by the authenticated user.
--   **Query Parameters:**
-    -   `user_id`: `uuid` (optional, filter by user-owned templates)
-    -   `public`: `boolean` (optional, filter by public templates, default true if user_id not provided)
+-   **Description:** Retrieves a list of all campaign templates owned by the authenticated user. (Requires authentication)
+-   **Query Parameters:** None
 -   **Response (JSON):**
     -   **Success (200 OK):**
         ```json
         [
           {
-            "template_id": "uuid",
-            "user_id": "uuid",
+            "id": "integer",
             "name": "string",
-            "description": "string",
-            "created_at": "datetime (ISO 8601)",
-            "updated_at": "datetime (ISO 8601)",
-            "settings": {
-              "difficulty": "string",
-              "player_limit": "integer",
-              "genre": "string"
-            }
+            "genre": "string",
+            "core_conflict": "string",
+            "world_description": "string",
+            "ai_gm_persona": "string",
+            "core_skills": ["string", "string"],
+            "created_by_user_id": "integer",
+            "created_at": "datetime (ISO 8601)"
           }
         ]
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
         }
         ```
 
 ### 3.3 Get Template by ID
--   **Endpoint:** `/api/templates/{template_id}`
+-   **Endpoint:** `/api/templates/<int:template_id>`
 -   **Method:** `GET`
--   **Description:** Retrieves a specific campaign template by its ID.
+-   **Description:** Retrieves a specific campaign template by its ID. (Requires authentication, user must own the template)
 -   **Path Parameters:**
-    -   `template_id`: `uuid` (ID of the template)
+    -   `template_id`: `integer` (ID of the template)
 -   **Response (JSON):**
     -   **Success (200 OK):**
         ```json
         {
-          "template_id": "uuid",
-          "user_id": "uuid",
+          "id": "integer",
           "name": "string",
-          "description": "string",
-          "charter": {
-            "campaign_name": "string",
-            "setting_description": "string",
-            "core_conflict": "string",
-            "initial_player_context": "string",
-            "ai_directives": {
-              "adherence": "string",
-              "narrative_redirection": "string",
-              "deviation_budget": "string",
-              "post_campaign_epilogue": "string"
-            },
-            "game_rules": {
-              "combat_system": "string",
-              "magic_system": "string",
-              "skill_checks": "string",
-              "inventory_management": "string"
-            },
-            "initial_state_elements": {
-              "starting_location": "string",
-              "key_npcs": "array of strings",
-              "initial_quests": "array of strings"
-            }
-          },
-          "settings": {
-            "difficulty": "string",
-            "player_limit": "integer",
-            "genre": "string"
-          },
-          "created_at": "datetime (ISO 8601)",
-          "updated_at": "datetime (ISO 8601)"
+          "genre": "string",
+          "core_conflict": "string",
+          "world_description": "string",
+          "ai_gm_persona": "string",
+          "core_skills": ["string", "string"],
+          "created_by_user_id": "integer",
+          "created_at": "datetime (ISO 8601)"
+        }
+        ```
+    -   **Error (401 Unauthorized):**
+        ```json
+        {
+          "msg": "Missing Authorization Header"
+        }
+        ```
+    -   **Error (403 Forbidden):**
+        ```json
+        {
+          "msg": "Unauthorized: You do not own this template"
         }
         ```
     -   **Error (404 Not Found):**
         ```json
         {
-          "error": "Template not found"
+          "msg": "Template not found"
         }
         ```
 
 ### 3.4 Update Template
--   **Endpoint:** `/api/templates/{template_id}`
+-   **Endpoint:** `/api/templates/<int:template_id>`
 -   **Method:** `PUT`
 -   **Description:** Updates an existing campaign template. (Requires authentication, user must own the template)
 -   **Path Parameters:**
-    -   `template_id`: `uuid` (ID of the template to update)
+    -   `template_id`: `integer` (ID of the template to update)
 -   **Request Body (JSON):**
     ```json
     {
       "name": "string (optional)",
-      "description": "string (optional)",
-      "charter": {
-        "campaign_name": "string (optional)",
-        "setting_description": "string (optional)",
-        "core_conflict": "string (optional)",
-        "initial_player_context": "string (optional)",
-        "ai_directives": {
-          "adherence": "string (optional)",
-          "narrative_redirection": "string (optional)",
-          "deviation_budget": "string (optional)",
-          "post_campaign_epilogue": "string (optional)"
-        },
-        "game_rules": {
-          "combat_system": "string (optional)",
-          "magic_system": "string (optional)",
-          "skill_checks": "string (optional)",
-          "inventory_management": "string (optional)"
-        },
-        "initial_state_elements": {
-          "starting_location": "string (optional)",
-          "key_npcs": "array of strings (optional)",
-          "initial_quests": "array of strings (optional)"
-        }
-      },
-      "settings": {
-        "difficulty": "string (e.g., 'easy', 'medium', 'hard', optional)",
-        "player_limit": "integer (optional)",
-        "genre": "string (e.g., 'fantasy', 'sci-fi', 'horror', optional)"
-      }
+      "genre": "string (optional)",
+      "core_conflict": "string (optional)",
+      "world_description": "string (optional)",
+      "ai_gm_persona": "string (optional)",
+      "core_skills": ["string", "string"] (optional)
     }
     ```
 -   **Response (JSON):**
     -   **Success (200 OK):**
         ```json
         {
-          "message": "Template updated successfully",
-          "template_id": "uuid"
+          "id": "integer",
+          "name": "string",
+          "genre": "string",
+          "core_conflict": "string",
+          "world_description": "string",
+          "ai_gm_persona": "string",
+          "core_skills": ["string", "string"],
+          "created_by_user_id": "integer",
+          "created_at": "datetime (ISO 8601)"
         }
         ```
     -   **Error (400 Bad Request):**
         ```json
         {
-          "error": "Invalid input data"
+          "msg": "core_skills must be a list"
         }
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
         }
         ```
     -   **Error (403 Forbidden):**
         ```json
         {
-          "error": "Access denied (user does not own template)"
+          "msg": "Unauthorized: You do not own this template"
         }
         ```
     -   **Error (404 Not Found):**
         ```json
         {
-          "error": "Template not found"
+          "msg": "Template not found"
         }
         ```
 
 ### 3.5 Delete Template
--   **Endpoint:** `/api/templates/{template_id}`
+-   **Endpoint:** `/api/templates/<int:template_id>`
 -   **Method:** `DELETE`
 -   **Description:** Deletes a campaign template. (Requires authentication, user must own the template)
 -   **Path Parameters:**
-    -   `template_id`: `uuid` (ID of the template to delete)
+    -   `template_id`: `integer` (ID of the template to delete)
 -   **Response (JSON):**
-    -   **Success (204 No Content):** (No response body)
+    -   **Success (200 OK):**
+        ```json
+        {
+          "msg": "Template deleted successfully"
+        }
+        ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
         }
         ```
     -   **Error (403 Forbidden):**
         ```json
         {
-          "error": "Access denied (user does not own template)"
+          "msg": "Unauthorized: You do not own this template"
         }
         ```
     -   **Error (404 Not Found):**
         ```json
         {
-          "error": "Template not found"
+          "msg": "Template not found"
         }
         ```
 
@@ -453,11 +412,10 @@ This document details the precise API endpoints, HTTP methods, and JSON request/
 -   **Request Body (JSON):**
     ```json
     {
-      "template_id": "uuid",
-      "host_user_id": "uuid",
+      "template_id": "integer",
       "game_name": "string",
-      "player_limit": "integer (optional, overrides template if provided)",
-      "initial_player_ids": ["uuid"] (optional, initial players)
+      "character_name": "string (optional, defaults to creator's username + ' Character')",
+      "settings": "object (optional, e.g., {\"enable_visual_dice_roller\": true, \"expected_session_length_minutes\": 120})"
     }
     ```
 -   **Response (JSON):**
@@ -465,146 +423,140 @@ This document details the precise API endpoints, HTTP methods, and JSON request/
         ```json
         {
           "message": "Game created successfully",
-          "game_id": "uuid",
-          "initial_game_state": {
-            "game_state_id": "uuid",
-            "current_location": "string",
-            "active_quests": "array of strings",
-            "completed_objectives": "array of strings",
-            "discovered_lore_items": "array of strings",
-            "game_log": "array of objects",
-            "player_states": "array of objects",
-            "npc_states": "array of objects",
-            "inventory": "array of objects",
-            "world_events": "array of objects",
-            "current_turn": "integer",
-            "last_updated": "datetime (ISO 8601)"
-          }
+          "game_id": "integer",
+          "template_id": "integer",
+          "creator_user_id": "integer",
+          "settings": "object",
+          "campaign_charter": "object",
+          "cumulative_cost": "float",
+          "created_at": "datetime (ISO 8601)",
+          "initial_game_player_id": "integer"
         }
         ```
     -   **Error (400 Bad Request):**
         ```json
         {
-          "error": "Invalid input data",
-          "details": "Template not found or player limit exceeded"
+          "msg": "Missing template_id or game_name"
         }
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
+        }
+        ```
+    -   **Error (404 Not Found):**
+        ```json
+        {
+          "msg": "Template not found"
+        }
+        ```
+    -   **Error (409 Conflict):**
+        ```json
+        {
+          "msg": "Error creating game. Check unique constraints."
+        }
+        ```
+    -   **Error (500 Internal Server Error):**
+        ```json
+        {
+          "msg": "An error occurred: <error_details>"
         }
         ```
 
 ### 4.2 Get All Games (User-Specific)
 -   **Endpoint:** `/api/games`
 -   **Method:** `GET`
--   **Description:** Retrieves a list of games associated with the authenticated user (either as host or player).
--   **Query Parameters:**
-    -   `user_id`: `uuid` (optional, filter by games where this user is host or player)
+-   **Description:** Retrieves a list of games associated with the authenticated user (either as creator or player). (Requires authentication)
+-   **Query Parameters:** None
 -   **Response (JSON):**
     -   **Success (200 OK):**
         ```json
         [
           {
-            "game_id": "uuid",
-            "template_id": "uuid",
-            "host_user_id": "uuid",
-            "game_name": "string",
-            "status": "string (e.g., 'active', 'completed', 'paused')",
-            "current_players": ["uuid"],
+            "game_id": "integer",
+            "template_id": "integer",
+            "creator_user_id": "integer",
+            "settings": "object",
+            "campaign_charter": "object",
+            "cumulative_cost": "float",
             "created_at": "datetime (ISO 8601)",
-            "last_played": "datetime (ISO 8601)"
+            "started_at": "datetime (ISO 8601, nullable)",
+            "completed_at": "datetime (ISO 8601, nullable)",
+            "current_players": ["integer"]
           }
         ]
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
         }
         ```
 
 ### 4.3 Get Game Details by ID
--   **Endpoint:** `/api/games/{game_id}`
+-   **Endpoint:** `/api/games/<int:game_id>`
 -   **Method:** `GET`
 -   **Description:** Retrieves detailed information about a specific game instance. (Requires authentication, user must be a participant)
 -   **Path Parameters:**
-    -   `game_id`: `uuid` (ID of the game)
+    -   `game_id`: `integer` (ID of the game)
 -   **Response (JSON):**
     -   **Success (200 OK):**
         ```json
         {
-          "game_id": "uuid",
-          "template_id": "uuid",
-          "host_user_id": "uuid",
-          "game_name": "string",
-          "status": "string",
-          "player_limit": "integer",
-          "current_players": [
+          "game_id": "integer",
+          "template_id": "integer",
+          "creator_user_id": "integer",
+          "current_game_state_id": "integer (nullable)",
+          "settings": "object",
+          "campaign_charter": "object",
+          "cumulative_cost": "float",
+          "created_at": "datetime (ISO 8601)",
+          "started_at": "datetime (ISO 8601, nullable)",
+          "completed_at": "datetime (ISO 8601, nullable)",
+          "players": [
             {
-              "game_player_id": "uuid",
-              "user_id": "uuid",
+              "game_player_id": "integer",
+              "user_id": "integer",
               "character_name": "string",
+              "character_description": "string (nullable)",
+              "ai_generated_backstory": "string (nullable)",
+              "character_portrait_url": "string (nullable)",
+              "ready_status": "boolean",
+              "character_sheet": "object",
               "joined_at": "datetime (ISO 8601)"
             }
-          ],
-          "created_at": "datetime (ISO 8601)",
-          "last_played": "datetime (ISO 8601)",
-          "charter": {
-            "campaign_name": "string",
-            "setting_description": "string",
-            "core_conflict": "string",
-            "initial_player_context": "string",
-            "ai_directives": {
-              "adherence": "string",
-              "narrative_redirection": "string",
-              "deviation_budget": "string",
-              "post_campaign_epilogue": "string"
-            },
-            "game_rules": {
-              "combat_system": "string",
-              "magic_system": "string",
-              "skill_checks": "string",
-              "inventory_management": "string"
-            },
-            "initial_state_elements": {
-              "starting_location": "string",
-              "key_npcs": "array of strings",
-              "initial_quests": "array of strings"
-            }
-          }
+          ]
         }
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
         }
         ```
     -   **Error (403 Forbidden):**
         ```json
         {
-          "error": "Access denied (user not a participant)"
+          "msg": "Unauthorized: You are not a participant in this game"
         }
         ```
     -   **Error (404 Not Found):**
         ```json
         {
-          "error": "Game not found"
+          "msg": "Game not found"
         }
         ```
 
 ### 4.4 Join Game
--   **Endpoint:** `/api/games/{game_id}/join`
+-   **Endpoint:** `/api/games/<int:game_id>/join`
 -   **Method:** `POST`
 -   **Description:** Allows a user to join an existing game. (Requires authentication)
 -   **Path Parameters:**
-    -   `game_id`: `uuid` (ID of the game to join)
+    -   `game_id`: `integer` (ID of the game to join)
 -   **Request Body (JSON):**
     ```json
     {
-      "user_id": "uuid",
       "character_name": "string"
     }
     ```
@@ -613,40 +565,47 @@ This document details the precise API endpoints, HTTP methods, and JSON request/
         ```json
         {
           "message": "Successfully joined game",
-          "game_player_id": "uuid"
+          "game_player_id": "integer"
         }
         ```
     -   **Error (400 Bad Request):**
         ```json
         {
-          "error": "Game is full or user already joined"
+          "msg": "Missing character_name"
         }
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
         }
         ```
     -   **Error (404 Not Found):**
         ```json
         {
-          "error": "Game not found"
+          "msg": "Game not found"
+        }
+        ```
+    -   **Error (409 Conflict):**
+        ```json
+        {
+          "msg": "User already joined this game"
+        }
+        ```
+    -   **Error (500 Internal Server Error):**
+        ```json
+        {
+          "msg": "An error occurred: <error_details>"
         }
         ```
 
 ### 4.5 Leave Game
--   **Endpoint:** `/api/games/{game_id}/leave`
+-   **Endpoint:** `/api/games/<int:game_id>/leave`
 -   **Method:** `POST`
 -   **Description:** Allows a user to leave an existing game. (Requires authentication)
 -   **Path Parameters:**
-    -   `game_id`: `uuid` (ID of the game to leave)
--   **Request Body (JSON):**
-    ```json
-    {
-      "user_id": "uuid"
-    }
-    ```
+    -   `game_id`: `integer` (ID of the game to leave)
+-   **Request Body:** None
 -   **Response (JSON):**
     -   **Success (200 OK):**
         ```json
@@ -657,53 +616,71 @@ This document details the precise API endpoints, HTTP methods, and JSON request/
     -   **Error (400 Bad Request):**
         ```json
         {
-          "error": "User not in this game"
+          "msg": "User not in this game"
         }
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
         }
         ```
     -   **Error (404 Not Found):**
         ```json
         {
-          "error": "Game not found"
+          "msg": "Game not found"
+        }
+        ```
+    -   **Error (500 Internal Server Error):**
+        ```json
+        {
+          "msg": "An error occurred: <error_details>"
         }
         ```
 
 ### 4.6 End Game
--   **Endpoint:** `/api/games/{game_id}/end`
+-   **Endpoint:** `/api/games/<int:game_id>/end`
 -   **Method:** `POST`
 -   **Description:** Ends an active game. (Requires authentication, only host can end)
 -   **Path Parameters:**
-    -   `game_id`: `uuid` (ID of the game to end)
+    -   `game_id`: `integer` (ID of the game to end)
 -   **Request Body:** None
 -   **Response (JSON):**
     -   **Success (200 OK):**
         ```json
         {
           "message": "Game ended successfully",
-          "game_id": "uuid"
+          "game_id": "integer"
+        }
+        ```
+    -   **Error (400 Bad Request):**
+        ```json
+        {
+          "msg": "Game is already ended"
         }
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
         }
         ```
     -   **Error (403 Forbidden):**
         ```json
         {
-          "error": "Access denied (user is not the host)"
+          "msg": "Unauthorized: Only the game creator can end the game"
         }
         ```
     -   **Error (404 Not Found):**
         ```json
         {
-          "error": "Game not found"
+          "msg": "Game not found"
+        }
+        ```
+    -   **Error (500 Internal Server Error):**
+        ```json
+        {
+          "msg": "An error occurred: <error_details>"
         }
         ```
 
@@ -712,139 +689,105 @@ This document details the precise API endpoints, HTTP methods, and JSON request/
 ## 5. Game State Interaction Endpoints
 
 ### 5.1 Get Current Game State
--   **Endpoint:** `/api/games/{game_id}/state`
+-   **Endpoint:** `/api/games/<int:game_id>/state`
 -   **Method:** `GET`
 -   **Description:** Retrieves the current mutable game state. (Requires authentication, user must be a participant)
 -   **Path Parameters:**
-    -   `game_id`: `uuid` (ID of the game)
+    -   `game_id`: `integer` (ID of the game)
 -   **Response (JSON):**
     -   **Success (200 OK):**
         ```json
         {
-          "game_state_id": "uuid",
-          "game_id": "uuid",
-          "current_location": "string",
-          "active_quests": "array of strings",
-          "completed_objectives": "array of strings",
-          "discovered_lore_items": "array of strings",
-          "game_log": [
-            {
-              "timestamp": "datetime (ISO 8601)",
-              "event_type": "string (e.g., 'player_action', 'ai_response', 'system_event')",
-              "actor": "string (e.g., 'player_name', 'AI', 'System')",
-              "message": "string",
-              "details": "object (optional, context-specific data)"
-            }
-          ],
-          "player_states": [
-            {
-              "player_id": "uuid",
-              "health": "integer",
-              "mana": "integer",
-              "inventory": "array of objects",
-              "status_effects": "array of strings",
-              "location": "string"
-            }
-          ],
-          "npc_states": [
-            {
-              "npc_id": "uuid",
-              "name": "string",
-              "health": "integer",
-              "location": "string",
-              "status": "string"
-            }
-          ],
-          "inventory": [
-            {
-              "item_id": "uuid",
-              "name": "string",
-              "description": "string",
-              "quantity": "integer"
-            }
-          ],
-          "world_events": [
-            {
-              "event_id": "uuid",
-              "name": "string",
-              "description": "string",
-              "status": "string"
-            }
-          ],
-          "current_turn": "integer",
-          "last_updated": "datetime (ISO 8601)"
+          "game_state_id": "integer (nullable)",
+          "game_id": "integer",
+          "turn_number": "integer",
+          "current_story_summary": "string (nullable)",
+          "current_location": "string (nullable)",
+          "active_npcs": "array/object (JSON)",
+          "player_states": "array/object (JSON)",
+          "game_log": "array (JSON)",
+          "completed_objectives": "object (JSON)",
+          "discovered_lore_items": "array (JSON)",
+          "last_ai_exchange": "object (JSON, nullable)",
+          "updated_at": "datetime (ISO 8601)"
         }
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
         }
         ```
     -   **Error (403 Forbidden):**
         ```json
         {
-          "error": "Access denied (user not a participant)"
+          "msg": "Unauthorized: You are not a participant in this game"
         }
         ```
     -   **Error (404 Not Found):**
         ```json
         {
-          "error": "Game or GameState not found"
+          "msg": "Game not found"
+        }
+        ```
+    -   **Error (500 Internal Server Error):**
+        ```json
+        {
+          "msg": "An error occurred: <error_details>"
         }
         ```
 
 ### 5.2 Submit Player Action
--   **Endpoint:** `/api/games/{game_id}/action`
+-   **Endpoint:** `/api/games/<int:game_id>/action`
 -   **Method:** `POST`
--   **Description:** Submits a player's action to the game. This triggers the AI processing. (Requires authentication, user must be a participant)
+-   **Description:** Submits a player's action to the game. This triggers the AI processing and game state updates. (Requires authentication, user must be a participant)
 -   **Path Parameters:**
-    -   `game_id`: `uuid` (ID of the game)
+    -   `game_id`: `integer` (ID of the game)
 -   **Request Body (JSON):**
     ```json
     {
-      "game_player_id": "uuid",
-      "action_type": "string (e.g., 'move', 'interact', 'attack', 'speak')",
-      "action_details": "object (context-specific data for the action, e.g., {'target': 'NPC Name', 'dialogue': 'Hello'})"
+      "game_player_id": "integer",
+      "action_text": "string"
     }
     ```
 -   **Response (JSON):**
     -   **Success (200 OK):**
         ```json
         {
-          "message": "Action submitted, awaiting AI response",
-          "game_state_id": "uuid",
-          "new_game_log_entry": {
-            "timestamp": "datetime (ISO 8601)",
-            "event_type": "player_action",
-            "actor": "player_name",
-            "message": "string (summary of action)",
-            "details": "object (original action_details)"
-          }
+          "message": "Action processed",
+          "ai_narrative": "string",
+          "ai_cost": "float",
+          "game_log_entries": "array of objects"
         }
         ```
     -   **Error (400 Bad Request):**
         ```json
         {
-          "error": "Invalid action or not player's turn"
+          "msg": "Missing action_text or game_player_id"
         }
         ```
     -   **Error (401 Unauthorized):**
         ```json
         {
-          "error": "Authentication required"
+          "msg": "Missing Authorization Header"
         }
         ```
     -   **Error (403 Forbidden):**
         ```json
         {
-          "error": "Access denied (user not a participant)"
+          "msg": "Unauthorized: Invalid game_player_id or not your player in this game"
         }
         ```
     -   **Error (404 Not Found):**
         ```json
         {
-          "error": "Game or GamePlayer not found"
+          "msg": "Game not found"
+        }
+        ```
+    -   **Error (500 Internal Server Error):**
+        ```json
+        {
+          "msg": "An error occurred: <error_details>"
         }
         ```
 

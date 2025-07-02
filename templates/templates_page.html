@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+
+{% block title %}Template Management - QuestForge{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Template Management</h1>
+    <p>Create, view, and manage your campaign templates.</p>
+</div>
+
+<section id="template-actions" class="dashboard-section">
+    <h2>Actions</h2>
+    <div class="action-buttons">
+        <button id="create-template-btn" class="btn btn-primary">Create New Template</button>
+    </div>
+</section>
+
+<!-- Form for creating/editing a template (initially hidden) -->
+<section id="template-form-section" class="dashboard-section" style="display:none;">
+    <h2 id="template-form-title">Create New Template</h2>
+    <form id="template-form" class="form-styled">
+        <input type="hidden" id="template-id" name="template_id">
+        <div class="form-group">
+            <label for="template-name">Template Name:</label>
+            <input type="text" id="template-name" name="name" required>
+        </div>
+        <div class="form-group">
+            <label for="template-genre">Genre:</label>
+            <input type="text" id="template-genre" name="genre" required>
+        </div>
+        <div class="form-group">
+            <label for="template-core-conflict">Core Conflict:</label>
+            <textarea id="template-core-conflict" name="core_conflict" rows="3" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="template-world-description">World Description:</label>
+            <textarea id="template-world-description" name="world_description" rows="5" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="template-ai-gm-persona">AI GM Persona:</label>
+            <textarea id="template-ai-gm-persona" name="ai_gm_persona" rows="3" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="template-core-skills">Core Skills (comma-separated):</label>
+            <input type="text" id="template-core-skills" name="core_skills" placeholder="e.g., Stealth, Persuasion, Arcana">
+            <small>Enter skills separated by commas.</small>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-success">Save Template</button>
+            <button type="button" id="cancel-edit-btn" class="btn btn-secondary" style="display:none;">Cancel</button>
+        </div>
+        <p id="template-form-error" class="error-message" style="display:none;"></p>
+    </form>
+</section>
+
+<section id="template-list-section" class="dashboard-section">
+    <h2>My Templates</h2>
+    <div id="templates-list-container" class="item-list">
+        <!-- Templates will be loaded here by JavaScript -->
+        <p>Loading templates...</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

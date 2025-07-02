@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}Login - QuestForge{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Login</h2>
+    <form id="login-form" class="auth-form">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn">Login</button>
+        <p id="login-error" class="error-message" style="display:none;"></p>
+    </form>
+    <p>Don't have an account? <a href="{{ url_for('auth.register_page') }}">Register here</a></p> {# Assuming register_page route #}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Specific scripts for login page if any, or rely on main.js
+    // For now, main.js will handle the form submission
+</script>
+{% endblock %}

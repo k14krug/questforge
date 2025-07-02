@@ -77,6 +77,7 @@ Represents the mutable, live state of a game at a given point in time.
 | :------------------ | :-------- | :-------------------------------------------- | :---------------------------------------------- |
 | `id`                | INTEGER   | PRIMARY KEY, AUTOINCREMENT                    | Unique identifier for this game state snapshot. |
 | `game_id`           | INTEGER   | NOT NULL, FOREIGN KEY (`games.id`)            | The game this state belongs to.                 |
+| `current_player_id` | INTEGER   | NOT NULL, FOREIGN KEY (`users.id`)            | The user whose turn it is.                      |
 | `turn_number`       | INTEGER   | NOT NULL, DEFAULT 1                           | Current turn number of the game.                |
 | `current_story_summary`| TEXT   | NULLABLE                                      | AI-generated summary of the story so far.       |
 | `current_location`  | TEXT      | NULLABLE                                      | Current location of the party (from interactive map). |
