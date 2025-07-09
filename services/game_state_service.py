@@ -60,7 +60,8 @@ class GameStateService:
         ai_step1_response, cost_step1, _, _ = self.ai_service.process_action_step1_check_identification(
             player_action_text=action_text,
             game_state=current_game_state_data,
-            charter=campaign_charter
+            charter=campaign_charter,
+            character_sheet=game_player.character_sheet
         )
         total_ai_cost += cost_step1
 
@@ -159,14 +160,6 @@ class GameStateService:
             "details": {}
         })
 
-        # Emit narrative_update event
-        if self.socketio:
-            self.socketio.emit('narrative_update', {
-                'game_id': game_id,
-                'narrative': ai_narrative_response,
-                'new_log_entries': game_log_entries
-            }, to=room_name)
-
         # Update game's cumulative cost and save the new game log
         game.cumulative_cost += total_ai_cost
         current_game_state_obj.game_log = (current_game_state_obj.game_log or []) + game_log_entries
@@ -178,12 +171,38 @@ class GameStateService:
         # Advance the turn to the next player
         self._advance_turn(game, current_game_state_obj)
 
+        # After advancing the turn, emit the full game state to all clients
+        if self.socketio:
+            self.broadcast_game_state(game_id)
+
         return {
             "message": "Action processed",
             "ai_narrative": ai_narrative_response,
             "ai_cost": total_ai_cost,
             "game_log_entries": game_log_entries
         }, None
+
+    def broadcast_game_state(self, game_id):
+        """Fetches the current game state and broadcasts it to the room."""
+        game = Game.query.get(game_id)
+        if not game:
+            logging.error(f"broadcast_game_state: Game not found for game_id {game_id}")
+            return
+
+        game_state, error = self.get_current_game_state(game_id)
+        if error:
+            logging.error(f"broadcast_game_state: Could not get game state for game_id {game_id}: {error}")
+            return
+
+        state_dict = game_state.to_dict()
+        state_dict['players'] = [player.to_dict() for player in game.game_players]
+        state_dict['campaign_charter'] = game.campaign_charter
+
+        logging.info(f"Broadcasting game_state_update for game {game_id} with data: {state_dict}")
+
+        room_name = f"game_{game_id}"
+        self.socketio.emit('game_state_update', state_dict, to=room_name)
+        logging.info(f"Broadcasted game_state_update for game {game_id} to room {room_name}")
 
     def _advance_turn(self, game, current_game_state):
         """
@@ -212,17 +231,6 @@ class GameStateService:
         db.session.commit()
 
         logging.info(f"Game {game.id} advanced to turn {current_game_state.turn_number}. Current player is now User ID: {next_player.user_id}")
-
-        # Emit a socket event to notify clients of the turn change
-        if self.socketio:
-            room_name = f"game_{game.id}"
-            self.socketio.emit('player_turn_changed', {
-                'game_id': game.id,
-                'new_turn_number': current_game_state.turn_number,
-                'current_player_id': next_player.user_id,
-                'current_player_name': next_player.user.username, # Assuming user relationship is loaded
-                'message': f"It is now {next_player.user.username}'s turn."
-            }, to=room_name)
 
     # NPC Management Methods
 

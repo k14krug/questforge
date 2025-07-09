@@ -529,7 +529,7 @@ function renderInteractiveMap(mapData) {
 
     mapContainer.innerHTML = ''; // Clear existing content
 
-    if (mapData && mapData.nodes && Array.isArray(mapData.nodes)) {
+    if (mapData && mapData.nodes && Array.isArray(mapData.nodes) && mapData.nodes.length > 0) {
         mapData.nodes.forEach(node => {
             const locationButton = document.createElement('button');
             locationButton.className = 'btn btn-link map-location';
@@ -540,11 +540,12 @@ function renderInteractiveMap(mapData) {
             mapContainer.appendChild(locationButton);
         });
     } else {
-        mapContainer.innerHTML = '<p>No map data available.</p>';
+        mapContainer.innerHTML = '<p>No map data available for this location.</p>';
     }
 }
 
 async function initializePlayPage() { // Made async to support dynamic import
+    console.log("Initializing play page...");
     const { gameId, currentUserId, gameCreatorId } = window.questForgeData;
     let isCurrentUserTurn = false;
     let currentPlayerId = null;
@@ -562,6 +563,9 @@ async function initializePlayPage() { // Made async to support dynamic import
     const closeButton = characterDetailsModal.querySelector('.close-button');
     const turnNumberEl = document.getElementById('turn-number');
     const currentPlayerNameEl = document.getElementById('current-player-name');
+    const chatInput = document.getElementById('chat-input');
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatLog = document.getElementById('chat-log');
 
     
 
@@ -571,43 +575,24 @@ async function initializePlayPage() { // Made async to support dynamic import
         socket.emit('join_game_room', { game_id: gameId });
     });
 
+    socket.on('new_chat_message', (data) => {
+        const p = document.createElement('p');
+        p.innerHTML = `<strong>[${data.sender_name}]:</strong> ${data.message}`;
+        chatLog.appendChild(p);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    });
+
     socket.on('game_state_update', updateGameState);
-    socket.on('narrative_update', (data) => {
-        const gameLog = document.getElementById('game-log');
-        if (data.new_log_entries && Array.isArray(data.new_log_entries)) {
-            data.new_log_entries.forEach(entry => {
-                const logEntry = document.createElement('div');
-                const entryType = entry.type ? entry.type.toLowerCase() : 'system';
-                logEntry.className = `log-entry log-${entryType}`;
-                if (entry.type === 'PLAYER_ACTION') {
-                    logEntry.classList.add('log-player-action');
-                }
-                logEntry.innerHTML = `<span class="log-timestamp">${new Date(entry.timestamp).toLocaleTimeString()}</span>: ${entry.content}`;
-                gameLog.appendChild(logEntry);
-            });
-            gameLog.scrollTop = gameLog.scrollHeight;
-        }
-    });
-
-    socket.on('player_turn_changed', (data) => {
-        const turnNumberEl = document.getElementById('turn-number');
-        const currentPlayerNameEl = document.getElementById('current-player-name');
-        turnNumberEl.textContent = data.new_turn_number;
-        currentPlayerNameEl.textContent = data.current_player_name;
-
-        const { currentUserId } = window.questForgeData;
-        isCurrentUserTurn = (String(data.current_player_id) === String(currentUserId));
-        const actionControls = document.getElementById('action-controls');
-        const notYourTurnNotice = document.getElementById('not-your-turn-notice');
-        actionControls.style.display = isCurrentUserTurn ? 'block' : 'none';
-        notYourTurnNotice.style.display = isCurrentUserTurn ? 'none' : 'block';
-    });
 
     socket.on('error', (data) => alert(`An error occurred: ${data.error}`));
 
-    fetch(`/api/games/${gameId}/state`).then(res => res.json()).then(updateGameState).catch(console.error);
+    fetch(`/api/games/${gameId}/state`).then(res => res.json()).then(state => {
+        console.log("Initial state fetched successfully:", state);
+        updateGameState(state);
+    }).catch(console.error);
 
     function updateGameState(state) {
+        console.log("Received game_state_update:", state);
         turnNumberEl.textContent = state.turn_number;
         currentPlayerId = state.current_player_id;
         const currentPlayer = state.players.find(p => p.user_id === currentPlayerId);
@@ -628,22 +613,26 @@ async function initializePlayPage() { // Made async to support dynamic import
         isCurrentUserTurn = (String(currentPlayerId) === String(currentUserId));
         actionControls.style.display = isCurrentUserTurn ? 'block' : 'none';
         notYourTurnNotice.style.display = isCurrentUserTurn ? 'none' : 'block';
-        updateObjectivesAndLore(state.completed_objectives, state.discovered_lore_items);
+        updateObjectivesAndLore(state.completed_objectives, state.discovered_lore_items, state.all_objectives);
         if (state.campaign_charter && state.campaign_charter.interactive_map_layout) {
             renderInteractiveMap(state.campaign_charter.interactive_map_layout);
         }
     }
 
-    function updateObjectivesAndLore(completedObjectives, discoveredLore) {
+    function updateObjectivesAndLore(completedObjectives, discoveredLore, allObjectives) {
+        console.log("Updating objectives and lore with:", {
+            completedObjectives,
+            discoveredLore,
+            allObjectives
+        });
         const objectivesList = document.getElementById('objectives-list');
         const loreDocuments = document.getElementById('lore-documents');
-        const { objectives } = window.questForgeData; // The full list of objectives from the charter
 
         if (!objectivesList || !loreDocuments) return;
 
         objectivesList.innerHTML = '';
-        if (objectives && objectives.length > 0) {
-            objectives.forEach(obj => {
+        if (allObjectives && allObjectives.length > 0) {
+            allObjectives.forEach(obj => {
                 const li = document.createElement('li');
                 const isCompleted = completedObjectives && completedObjectives.includes(obj);
                 li.textContent = obj;
@@ -790,6 +779,14 @@ async function initializePlayPage() { // Made async to support dynamic import
                     }
                 });
             }
+        }
+    });
+
+    chatSendBtn.addEventListener('click', () => {
+        const message = chatInput.value.trim();
+        if (message) {
+            socket.emit('send_chat_message', { game_id: gameId, message: message });
+            chatInput.value = '';
         }
     });
 

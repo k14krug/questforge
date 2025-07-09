@@ -73,91 +73,37 @@ class AIService:
 
     def generate_campaign_charter(self, template_data, game_settings):
         """
-        Generates a Campaign Charter using the OpenAI Chat Completions API.
-        The AI is instructed to output a JSON object.
+        Generates a Campaign Charter in a more reliable two-step process.
+        Step 1: Generate the core narrative content.
+        Step 2: Generate the interactive map based on the narrative content.
         """
-        model_name = self.default_logic_model # Use a primary model for this complex task
-        temperature = self.default_temperature
-        max_tokens = self.default_max_tokens
+        total_cost = 0.0
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
 
-        prompt = f"""
-        Generate a comprehensive Campaign Charter in JSON format based on the provided template data and game settings.
-        The Campaign Charter should define the foundational elements of the RPG campaign, ensuring consistency and narrative coherence.
+        # Step 1: Generate the core narrative content (without the map)
+        narrative_charter, cost, p_tokens, c_tokens = self._generate_narrative_charter(template_data, game_settings)
+        total_cost += cost
+        total_prompt_tokens += p_tokens
+        total_completion_tokens += c_tokens
 
-        Template Data:
-        {json.dumps(template_data, indent=2)}
+        if not narrative_charter:
+            logging.error("Failed to generate narrative charter in Step 1. Aborting.")
+            return {}, total_cost, total_prompt_tokens, total_completion_tokens
 
-        Game Settings:
-        {json.dumps(game_settings, indent=2)}
+        # Step 2: Generate the interactive map based on the setting description
+        setting_description = narrative_charter.get("setting_description", "")
+        if setting_description:
+            map_layout, cost, p_tokens, c_tokens = self._generate_interactive_map_layout(setting_description)
+            total_cost += cost
+            total_prompt_tokens += p_tokens
+            total_completion_tokens += c_tokens
+            narrative_charter['interactive_map_layout'] = map_layout
+        else:
+            logging.warning("No setting_description found in narrative charter. Skipping map generation.")
+            narrative_charter['interactive_map_layout'] = {"nodes": [], "edges": []} # Add empty map
 
-        The JSON output should strictly follow this structure:
-        {{
-            "campaign_name": "string",
-            "setting_description": "string",
-            "core_conflict": "string",
-            "initial_player_context": "string",
-            "ai_directives": {{
-                "adherence": "string",
-                "narrative_redirection": "string",
-                "deviation_budget": "string",
-                "post_campaign_epilogue": "string"
-            }},
-            "game_rules": {{
-                "combat_system": "string",
-                "magic_system": "string",
-                "skill_checks": "string",
-                "inventory_management": "string"
-            }},
-            "initial_state_elements": {{
-                "starting_location": "string",
-                "key_npcs": [
-                    {{"name": "string", "description": "string"}}
-                ],
-                "initial_quests": ["string"]
-            }},
-            "core_skills_for_campaign": ["string"],
-            "ai_gm_persona_for_campaign": "string",
-            "game_settings_at_charter_creation": {{}}
-        }}
-
-        Ensure all fields are populated with relevant and creative content derived from the template and settings.
-        The "ai_directives" should reflect the general principles of adherence, redirection, deviation management, and epilogue generation.
-        """
-
-        messages = [
-            {"role": "system", "content": "You are a highly creative AI that generates structured JSON for RPG campaign charters."},
-            {"role": "user", "content": prompt}
-        ]
-
-        try:
-            logging.info(f"Calling OpenAI for Campaign Charter generation with model: {model_name}")
-            response = self.client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                response_format={"type": "json_object"} # Ensure JSON output
-            )
-
-            generated_json_str = response.choices[0].message.content
-            campaign_charter = json.loads(generated_json_str)
-            
-            prompt_tokens = response.usage.prompt_tokens
-            completion_tokens = response.usage.completion_tokens
-            cost = self.calculate_cost(model_name, prompt_tokens, completion_tokens)
-
-            logging.info(f"OpenAI Campaign Charter generation cost: {cost:.4f}")
-            return campaign_charter, cost, prompt_tokens, completion_tokens
-
-        except openai.APIError as e:
-            logging.error(f"OpenAI API Error during Campaign Charter generation: {e}")
-            return {}, 0.0, 0, 0
-        except json.JSONDecodeError as e:
-            logging.error(f"JSON decoding error from OpenAI response: {e}. Response: {generated_json_str[:500]}...")
-            return {}, 0.0, 0, 0
-        except Exception as e:
-            logging.error(f"An unexpected error occurred during Campaign Charter generation: {e}")
-            return {}, 0.0, 0, 0
+        return narrative_charter, total_cost, total_prompt_tokens, total_completion_tokens
 
     def generate_character_sheet(self, character_keywords, core_skills):
         """
@@ -231,8 +177,107 @@ class AIService:
             logging.error(f"JSON decoding error from OpenAI response: {e}. Response: {generated_json_str[:500]}...")
             return {"character_sheet": {"skills": {}}}, 0.0, 0, 0
         except Exception as e:
-            logging.error(f"An unexpected error occurred during character sheet generation: {e}")
+            logging.error(f"An unexpected error occurred during Campaign Charter generation: {e}")
             return {"character_sheet": {"skills": {}}}, 0.0, 0, 0
+
+    def _generate_narrative_charter(self, template_data, game_settings):
+        model_name = self.default_logic_model
+        temperature = self.default_temperature
+        max_tokens = self.default_max_tokens
+
+        prompt = f"""
+        Generate the narrative part of a Campaign Charter in JSON format based on the provided data.
+
+        Template Data: {json.dumps(template_data, indent=2)}
+        Game Settings: {json.dumps(game_settings, indent=2)}
+
+        The JSON output should strictly follow this structure, omitting the map layout:
+        {{
+            "campaign_name": "string",
+            "setting_description": "string",
+            "core_conflict": "string",
+            "initial_player_context": "string",
+            "ai_directives": {{...}},
+            "game_rules": {{...}},
+            "initial_state_elements": {{
+                "starting_location": "string",
+                "key_npcs": [{{...}}]
+            }},
+            "critical_path_objectives": ["string"],
+            "core_skills_for_campaign": ["string"],
+            "ai_gm_persona_for_campaign": "string",
+            "game_settings_at_charter_creation": {{}}
+        }}
+
+        CRITICAL JSON RULES:
+        1. The entire output MUST be a single, valid JSON object.
+        2. Ensure all string values are properly escaped (e.g., " for quotes).
+        """
+        messages = [
+            {"role": "system", "content": "You generate structured JSON for the narrative part of RPG campaign charters."},
+            {"role": "user", "content": prompt}
+        ]
+
+        try:
+            logging.info(f"Calling OpenAI for narrative charter with model: {model_name}")
+            response = self.client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                response_format={"type": "json_object"}
+            )
+            narrative_charter = json.loads(response.choices[0].message.content)
+            cost = self.calculate_cost(model_name, response.usage.prompt_tokens, response.usage.completion_tokens)
+            return narrative_charter, cost, response.usage.prompt_tokens, response.usage.completion_tokens
+        except Exception as e:
+            logging.error(f"Error in _generate_narrative_charter: {e}")
+            return None, 0.0, 0, 0
+
+    def _generate_interactive_map_layout(self, setting_description):
+        model_name = self.default_logic_model
+        temperature = self.default_temperature
+        max_tokens = self.default_max_tokens
+
+        prompt = f"""
+        Based on the following setting description, generate an interactive map layout with 3-5 key locations (nodes) and the connections between them (edges).
+
+        Setting Description: {setting_description}
+
+        The JSON output must strictly follow this structure:
+        {{
+            "nodes": [
+                {{"id": "string (unique identifier)", "name": "string", "description": "string"}}
+            ],
+            "edges": [
+                {{"from": "string (node id)", "to": "string (node id)", "description": "string (e.g., a locked door, a hallway)"}}
+            ]
+        }}
+
+        CRITICAL JSON RULES:
+        1. The entire output MUST be a single, valid JSON object.
+        2. Ensure all string values are properly escaped.
+        """
+        messages = [
+            {"role": "system", "content": "You generate structured JSON for RPG map layouts."},
+            {"role": "user", "content": prompt}
+        ]
+
+        try:
+            logging.info(f"Calling OpenAI for interactive map layout with model: {model_name}")
+            response = self.client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                response_format={"type": "json_object"}
+            )
+            map_layout = json.loads(response.choices[0].message.content)
+            cost = self.calculate_cost(model_name, response.usage.prompt_tokens, response.usage.completion_tokens)
+            return map_layout, cost, response.usage.prompt_tokens, response.usage.completion_tokens
+        except Exception as e:
+            logging.error(f"Error in _generate_interactive_map_layout: {e}")
+            return {"nodes": [], "edges": []}, 0.0, 0, 0
 
     def generate_player_npc_image_url(self, description, entity_type="character"):
         """
@@ -379,7 +424,7 @@ class AIService:
             logging.error(f"An unexpected error occurred during story summary generation: {e}")
             return "The story continues...", 0.0, 0, 0
 
-    def process_action_step1_check_identification(self, player_action_text, game_state, charter):
+    def process_action_step1_check_identification(self, player_action_text, game_state, charter, character_sheet):
         """
         AI Step 1: Check Identification.
         AI analyzes player action and responds with structured JSON for skill checks using OpenAI.
@@ -393,12 +438,12 @@ class AIService:
         
         prompt = f"""
         Analyze the player's action and determine if a skill check is required in the context of the game.
-        If a skill check is required, identify the most relevant skill and a suitable difficulty class (DC) between 10 and 25.
-        Also, provide a brief narration prompt for the AI GM to use if a roll is needed.
+        If a skill check is required, you MUST choose a skill from the character's actual skill list.
 
         Player Action: "{player_action_text}"
         Current Game State: {json.dumps(game_state, indent=2)}
         Campaign Charter: {json.dumps(charter, indent=2)}
+        Character Sheet: {json.dumps(character_sheet, indent=2)}
 
         Output a JSON object strictly following this structure:
         {{
@@ -463,7 +508,7 @@ class AIService:
         # to guide the AI's generation.
 
         ai_gm_persona = charter.get('ai_gm_persona_for_campaign', 'The Chronicler')
-        critical_path_objectives = charter.get('initial_state_elements', {}).get('initial_quests', [])
+        critical_path_objectives = charter.get('critical_path_objectives') or charter.get('initial_state_elements', {}).get('initial_quests', [])
         current_location = game_state.get('current_location', 'an unknown location')
 
         system_message_content = f"""

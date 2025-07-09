@@ -267,6 +267,17 @@ def get_game_state(game_id):
     state_dict = game_state.to_dict()
     state_dict['players'] = [player.to_dict() for player in game.game_players]
     
+    charter = game.campaign_charter
+    if isinstance(charter, str):
+        try:
+            charter = json.loads(charter)
+        except json.JSONDecodeError:
+            logging.error(f"Failed to decode campaign_charter for game {game_id}")
+            charter = {}
+
+    state_dict['campaign_charter'] = charter
+    state_dict['all_objectives'] = charter.get('critical_path_objectives') or charter.get('initial_state_elements', {}).get('initial_quests', [])
+    
     return jsonify(state_dict), 200
 
 @games_bp.route('/games/<int:game_id>/action', methods=['POST'])
@@ -347,7 +358,7 @@ def end_game(game_id):
 @jwt_required()
 def ready_up(game_id):
     current_user_id = get_jwt_identity()
-    game_player = GamePlayer.query.filter_by(game_id=game_id, user_id=current_user_id).first()
+    game_player = GamePlayer.query.filter_by(game_id=game_id, user_id=int(current_user_id)).first()
 
     if not game_player:
         return jsonify({"msg": "Player not in this game"}), 404
@@ -372,6 +383,17 @@ def ready_up(game_id):
             
             state_dict = game_state.to_dict()
             state_dict['players'] = [player.to_dict() for player in all_players]
+            
+            charter = game.campaign_charter
+            if isinstance(charter, str):
+                try:
+                    charter = json.loads(charter)
+                except json.JSONDecodeError:
+                    logging.error(f"Failed to decode campaign_charter for game {game_id} in ready_up")
+                    charter = {}
+
+            state_dict['campaign_charter'] = charter
+            state_dict['all_objectives'] = charter.get('critical_path_objectives') or charter.get('initial_state_elements', {}).get('initial_quests', [])
             current_app.socketio.emit('game_state_update', state_dict, room=f'game_{game_id}')
         
         return jsonify({"message": "Ready status updated"}), 200

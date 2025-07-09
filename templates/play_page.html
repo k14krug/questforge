@@ -57,6 +57,10 @@ Play - QuestForge
                     </div>
                 </div>
                 <div class="tab-pane fade" id="world-map-content" role="tabpanel" aria-labelledby="world-map-tab">
+                    <div id="world-description" class="p-3">
+                        <h3>World</h3>
+                        <p>{{ game.campaign_charter.setting_description }}</p>
+                    </div>
                     <div id="map-container" class="p-3">
                         <!-- Interactive map nodes will be dynamically inserted here by main.js -->
                     </div>
@@ -72,7 +76,15 @@ Play - QuestForge
                     </div>
                 </div>
                 <div class="tab-pane fade" id="comms-chat-content" role="tabpanel" aria-labelledby="comms-chat-tab">
-                    <p>Player chat will be available here.</p>
+                   <div class="d-flex flex-column h-100 p-2">
+                       <div id="chat-log" class="flex-grow-1 border rounded p-2 mb-2" style="overflow-y: auto; height: 200px;">
+                           <!-- Chat messages will be appended here -->
+                       </div>
+                       <div class="d-flex">
+                           <input type="text" id="chat-input" class="form-control" placeholder="Type a message...">
+                           <button id="chat-send-btn" class="btn btn-primary ms-2">Send</button>
+                       </div>
+                   </div>
                 </div>
             </div>
         </div>

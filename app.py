@@ -184,7 +184,7 @@ def play_page_route(game_id):
     
     # Extract data for the information panel
     npcs = game_state.active_npcs if game_state else []
-    objectives = campaign_charter_data.get('critical_path_objectives', [])
+    objectives = campaign_charter_data.get('critical_path_objectives') or campaign_charter_data.get('initial_state_elements', {}).get('initial_quests', [])
     # Placeholder for objective states and lore, assuming they will be in world_state
     objective_states = game_state.completed_objectives if game_state and game_state.completed_objectives else []
     lore_documents = game_state.discovered_lore_items if game_state and game_state.discovered_lore_items else []
@@ -253,6 +253,31 @@ def play_page_route(game_id):
             current_app.game_state_service.move_npc(game_id, npc_id, new_location)
         except Exception as e:
             emit('error', {'message': f'Failed to move NPC: {str(e)}'}, room=request.sid)
+
+@socketio.on('send_chat_message')
+@jwt_required(optional=True) # Or your preferred auth method
+def handle_send_chat_message(data):
+    current_user_id_str = get_jwt_identity()
+    if not current_user_id_str:
+        emit('error', {'message': 'Authentication required for chat.'})
+        return
+
+    game_id = data.get('game_id')
+    message = data.get('message')
+    if not game_id or not message:
+        return # Ignore empty messages or requests
+
+    player = GamePlayer.query.filter_by(game_id=game_id, user_id=int(current_user_id_str)).first()
+    if not player:
+        return # User is not a player in this game
+
+    room_name = f"game_{game_id}"
+    emit('new_chat_message', {
+        'sender_name': player.character_name,
+        'message': message,
+        'timestamp': datetime.utcnow().isoformat()
+    }, to=room_name)
+
 
 @socketio.on('disconnect')
 def handle_disconnect():
