@@ -1,8 +1,14 @@
 import os
+from dotenv import load_dotenv
+from datetime import timedelta
+
+# Load environment variables from .env file
+load_dotenv()
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'a_very_secret_key_that_should_be_changed_in_production'
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'super-secret-jwt-key'
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_HOURS', 1)))
     JSON_SORT_KEYS = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SOCKETIO_CORS_ORIGINS = os.environ.get('SOCKETIO_CORS_ORIGINS', 'http://localhost')
@@ -29,6 +35,7 @@ class DevelopmentConfig(Config):
     DEBUG = True
     TESTING = True
     LOGLEVEL = 'DEBUG'
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_HOURS', 8)))  # Longer for dev
     SOCKETIO_CORS_ORIGINS = os.environ.get('SOCKETIO_CORS_ORIGINS', '*')
     SOCKETIO_LOGGING = True
     ENGINEIO_LOGGING = True
@@ -39,6 +46,7 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     LOGLEVEL = 'INFO'
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_HOURS', 1)))  # Shorter for prod
     SOCKETIO_CORS_ORIGINS = os.environ.get('SOCKETIO_CORS_ORIGINS', 'http://localhost,http://questforge.k2svr.com')
     SOCKETIO_LOGGING = False
     ENGINEIO_LOGGING = False

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template # Import render_template
+from flask import Blueprint, request, jsonify, render_template, current_app # Import render_template and current_app
 from database import db # Import db directly from database
 from models import User # Import User model
 from flask_bcrypt import Bcrypt
@@ -108,8 +108,9 @@ def login():
         user.last_login = datetime.utcnow()
         db.session.commit()
 
-        # Create access token
-        access_token = create_access_token(identity=str(user.id), expires_delta=timedelta(hours=1))
+        # Create access token with environment-specific expiration
+        expires_delta = current_app.config.get('JWT_ACCESS_TOKEN_EXPIRES', timedelta(hours=1))
+        access_token = create_access_token(identity=str(user.id), expires_delta=expires_delta)
         response_data = {
             "message": "Login successful",
             "access_token": access_token, # Still returning token for JS if needed

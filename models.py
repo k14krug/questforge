@@ -76,6 +76,7 @@ class GameState(db.Model):
     game_log = db.Column(JSON, nullable=False)
     completed_objectives = db.Column(JSON, nullable=True)
     discovered_lore_items = db.Column(JSON, nullable=True)
+    inventory = db.Column(JSON, nullable=True, default=lambda: [])
     last_ai_exchange = db.Column(JSON, nullable=True)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
@@ -99,6 +100,7 @@ class GameState(db.Model):
             "game_log": self.game_log,
             "completed_objectives": self.completed_objectives,
             "discovered_lore_items": self.discovered_lore_items,
+            "inventory": self.inventory or [],
             "last_ai_exchange": self.last_ai_exchange,
             "updated_at": self.updated_at.isoformat()
         }
@@ -144,6 +146,7 @@ class Game(db.Model):
     settings = db.Column(JSON, nullable=False)
     campaign_charter = db.Column(JSON, nullable=False)
     cumulative_cost = db.Column(db.Float, nullable=False, default=0.0)
+    ai_models_used = db.Column(JSON, nullable=True, default=lambda: {}) # Track AI models used - allow NULL for existing games
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     started_at = db.Column(db.DateTime, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=True)
@@ -168,6 +171,7 @@ class Game(db.Model):
             "settings": self.settings,
             "campaign_charter": self.campaign_charter,
             "cumulative_cost": self.cumulative_cost,
+            "ai_models_used": self.ai_models_used or {}, # Include AI models used, default to empty dict if None
             "created_at": self.created_at.isoformat(),
             "started_at": self.started_at.isoformat() if self.started_at else None,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,

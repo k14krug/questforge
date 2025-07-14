@@ -1,18 +1,19 @@
-from flask import Flask, jsonify, request, render_template, redirect, url_for # Import redirect, url_for
-from flask_socketio import SocketIO, emit, join_room, leave_room # Import emit, join_room, leave_room
-from config import config_by_name # Import config_by_name
-from database import init_db # Only import init_db, not db directly
-from models import User, Game, GamePlayer, GameState # Import User, Game, GamePlayer, GameState models
-from flask_bcrypt import Bcrypt # Import Flask-Bcrypt
-from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required # Import jwt_required
-from datetime import datetime # Import datetime
-# Import blueprints later to avoid circular imports
-from flask.json.provider import DefaultJSONProvider # Import DefaultJSONProvider
-from flask_migrate import Migrate # Import Flask-Migrate
 import os # Import os to get FLASK_ENV
-from services.ai_service import AIService # Import AIService
-from services.game_state_service import GameStateService # Import GameStateService
-from flask import current_app # Import current_app
+import json # Import json for parsing campaign_charter
+from flask import Flask, jsonify, request, render_template, redirect, url_for, current_app
+from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
+from flask_migrate import Migrate
+from datetime import datetime
+from config import config_by_name
+from database import init_db
+from models import User, Game, GamePlayer, GameState
+from services.ai_service import AIService
+from services.game_state_service import GameStateService
+from functools import wraps
+from flask_jwt_extended import decode_token, get_jwt_identity
+import jwt as jwt_module
 
 app = Flask(__name__)
 # Load configuration based on FLASK_ENV
@@ -204,7 +205,43 @@ def play_page_route(game_id):
         lore_documents=lore_documents
     )
 
-    # Socket.IO event handlers
+# Socket.IO Authentication Helper
+def socketio_jwt_required(f):
+    """
+    Decorator for Socket.IO events that require JWT authentication.
+    Extracts user ID from JWT token and adds it to the function parameters.
+    """
+    @wraps(f)
+    def decorated_function(data=None):
+        try:
+            # Get token from cookies or query parameters
+            token = None
+            if hasattr(request, 'cookies') and 'access_token_cookie' in request.cookies:
+                token = request.cookies.get('access_token_cookie')
+            elif data and isinstance(data, dict) and 'token' in data:
+                token = data.get('token')
+            
+            if not token:
+                emit('error', {'message': 'Authentication token required.'})
+                return
+            
+            # Decode and verify token
+            decoded_token = decode_token(token)
+            current_user_id = decoded_token['sub']
+            
+            # Add user_id to data if data is a dict
+            if data is None:
+                data = {}
+            if isinstance(data, dict):
+                data['_current_user_id'] = current_user_id
+            
+            return f(data)
+        except Exception as e:
+            emit('error', {'message': f'Authentication failed: {str(e)}'})
+            return
+    return decorated_function
+
+# Socket.IO event handlers
     @socketio.on('connect')
     def handle_connect():
         print('Client connected:', request.sid)

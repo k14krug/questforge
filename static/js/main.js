@@ -3,33 +3,48 @@
 const API_BASE_URL = '/api'; // Assuming your Flask app serves API under /api
 
 // --- Token Management ---
-function saveToken(token) {
-    localStorage.setItem('questforge_token', token);
+// Note: We're using HTTP-only cookies for JWT tokens, so we can't access them directly from JavaScript
+// Instead, we'll check authentication status by making a request to the server
+
+async function checkAuthStatus() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/profile`, {
+            method: 'GET',
+            credentials: 'include' // Include cookies in the request
+        });
+        return response.ok;
+    } catch (error) {
+        console.log('Auth check failed:', error);
+        return false;
+    }
 }
 
-function getToken() {
-    return localStorage.getItem('questforge_token');
-}
-
-function removeToken() {
-    localStorage.removeItem('questforge_token');
+// For immediate UI updates, we'll track login state in sessionStorage
+function setLoggedInState(loggedIn) {
+    if (loggedIn) {
+        sessionStorage.setItem('questforge_logged_in', 'true');
+    } else {
+        sessionStorage.removeItem('questforge_logged_in');
+    }
 }
 
 function isLoggedIn() {
-    return !!getToken();
+    // Check sessionStorage for immediate UI response
+    return sessionStorage.getItem('questforge_logged_in') === 'true';
 }
 
 // --- API Helper ---
 async function fetchWithAuth(url, options = {}) {
-    const token = getToken();
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers,
     };
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    const response = await fetch(url, { ...options, headers });
+    // JWT tokens are in HTTP-only cookies, so we just need to include credentials
+    const response = await fetch(url, { 
+        ...options, 
+        headers,
+        credentials: 'include' // Include cookies in the request
+    });
     return response;
 }
 
@@ -75,13 +90,14 @@ async function handleLoginFormSubmit(event) {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // Include cookies in the request
             body: JSON.stringify({ username_or_email: email, password: password }) // API expects username_or_email
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            saveToken(data.access_token);
+            setLoggedInState(true); // Update session state
             updateNavAuthLinks();
             window.location.href = '/dashboard'; // Redirect to dashboard or desired page
         } else {
@@ -171,36 +187,47 @@ async function handleLogout() {
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/auth/logout`, { method: 'POST' });
         if (response.ok || response.status === 401 || response.status === 422) { // 401/422 if token already expired/invalid
-            removeToken();
+            setLoggedInState(false);
             updateNavAuthLinks();
             window.location.href = '/api/auth/login-page'; // Redirect to login page
         } else {
             const data = await response.json();
             console.error('Logout failed:', data.error || 'Unknown error');
             // Still remove token and redirect as a fallback
-            removeToken();
+            setLoggedInState(false);
             updateNavAuthLinks();
             window.location.href = '/api/auth/login-page';
         }
     } catch (error) {
         console.error('Logout error:', error);
         // Still remove token and redirect as a fallback
-        removeToken();
+        setLoggedInState(false);
         updateNavAuthLinks();
-            window.location.href = '/api/auth/login-page';
+        window.location.href = '/api/auth/login-page';
     }
 }
 
 // --- Page Protection & Auth State Update ---
-function checkAuthStatusAndProtect() {
-    updateNavAuthLinks();
+async function checkAuthStatusAndProtect() {
     const protectedPaths = ['/dashboard', '/', '/templates-page', '/games-page', '/play', '/games/create', '/games']; 
     const currentPath = window.location.pathname;
 
     const isProtected = protectedPaths.some(path => currentPath.startsWith(path));
 
-    if (isProtected && !isLoggedIn()) {
-        window.location.href = '/api/auth/login-page';
+    if (isProtected) {
+        // Check with server for actual auth status
+        const isAuthenticated = await checkAuthStatus();
+        if (isAuthenticated) {
+            setLoggedInState(true);
+            updateNavAuthLinks();
+        } else {
+            setLoggedInState(false);
+            updateNavAuthLinks();
+            window.location.href = '/api/auth/login-page';
+        }
+    } else {
+        // For non-protected pages, just update UI based on current session state
+        updateNavAuthLinks();
     }
 }
 
@@ -518,7 +545,22 @@ async function handleCreateGameFormSubmit(event) {
 }
 
 // --- Play Page Functions ---
-function renderInteractiveMap(mapData) {
+// Function to show action status messages (global scope)
+function showActionStatus(message, type = 'info') {
+    const statusElement = document.getElementById('action-status');
+    if (statusElement) {
+        statusElement.className = `action-status ${type}`;
+        statusElement.textContent = message;
+        statusElement.style.display = 'block';
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            statusElement.style.display = 'none';
+        }, 3000);
+    }
+}
+
+function renderInteractiveMap(mapData, currentLocation = null) {
     const mapContainer = document.getElementById('map-container');
     const actionInput = document.getElementById('action-input');
 
@@ -530,17 +572,118 @@ function renderInteractiveMap(mapData) {
     mapContainer.innerHTML = ''; // Clear existing content
 
     if (mapData && mapData.nodes && Array.isArray(mapData.nodes) && mapData.nodes.length > 0) {
-        mapData.nodes.forEach(node => {
-            const locationButton = document.createElement('button');
-            locationButton.className = 'btn btn-link map-location';
-            locationButton.textContent = node.name;
-            locationButton.addEventListener('click', () => {
+        // Create map nodes with positioning
+        mapData.nodes.forEach((node, index) => {
+            const mapNode = document.createElement('div');
+            mapNode.className = 'map-node';
+            
+            // Check if this node is the current location
+            const isCurrentLocation = currentLocation && 
+                (node.name.toLowerCase() === currentLocation.toLowerCase() || 
+                 node.id.toLowerCase() === currentLocation.toLowerCase());
+            
+            // Add current location indicator
+            if (isCurrentLocation) {
+                mapNode.classList.add('current-location');
+                mapNode.setAttribute('title', `Current Location: ${node.name}`);
+            }
+            
+            // Position nodes in a circular pattern if no coordinates provided
+            const containerWidth = 380; // Approximate container width
+            const containerHeight = 380; // Approximate container height
+            const centerX = containerWidth / 2;
+            const centerY = containerHeight / 2;
+            const radius = 120;
+            
+            let x, y;
+            if (node.x !== undefined && node.y !== undefined) {
+                x = node.x;
+                y = node.y;
+            } else {
+                // Distribute nodes in a circle
+                const angle = (2 * Math.PI * index) / mapData.nodes.length;
+                x = centerX + radius * Math.cos(angle) - 10; // -10 for node radius
+                y = centerY + radius * Math.sin(angle) - 10;
+            }
+            
+            mapNode.style.left = `${x}px`;
+            mapNode.style.top = `${y}px`;
+            
+            // Add click handler
+            mapNode.addEventListener('click', () => {
                 actionInput.value = `Travel to ${node.name}`;
+                actionInput.focus();
+                showActionStatus(`Travel action set: ${node.name}`, 'info');
             });
-            mapContainer.appendChild(locationButton);
+            
+            // Add hover tooltip with smart positioning
+            mapNode.addEventListener('mouseenter', (e) => {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'map-tooltip';
+                tooltip.textContent = node.name;
+                
+                // Add tooltip to container first to measure its size
+                mapContainer.appendChild(tooltip);
+                const tooltipRect = tooltip.getBoundingClientRect();
+                const containerRect = mapContainer.getBoundingClientRect();
+                
+                // Smart positioning - avoid going off screen
+                let tooltipX = x + 25; // Default to right of node
+                let tooltipY = y - 30; // Default to above node
+                
+                // If tooltip would go off the right edge, position it to the left of the node
+                if (tooltipX + tooltipRect.width > containerWidth) {
+                    tooltipX = x - tooltipRect.width - 5;
+                }
+                
+                // If tooltip would go off the bottom edge, position it above the node
+                if (tooltipY + tooltipRect.height > containerHeight) {
+                    tooltipY = y - tooltipRect.height - 5;
+                }
+                
+                // If tooltip would go off the top edge, position it below the node
+                if (tooltipY < 0) {
+                    tooltipY = y + 25;
+                }
+                
+                // If tooltip would go off the left edge, ensure minimum left position
+                if (tooltipX < 0) {
+                    tooltipX = 5;
+                }
+                
+                tooltip.style.left = `${tooltipX}px`;
+                tooltip.style.top = `${tooltipY}px`;
+                tooltip.style.opacity = '1';
+                
+                e.target.tooltip = tooltip;
+            });
+            
+            mapNode.addEventListener('mouseleave', (e) => {
+                if (e.target.tooltip) {
+                    e.target.tooltip.remove();
+                }
+            });
+            
+            mapContainer.appendChild(mapNode);
         });
+        
+        // Add connections between nodes if available
+        if (mapData.connections && Array.isArray(mapData.connections)) {
+            mapData.connections.forEach(connection => {
+                const fromNode = mapData.nodes[connection.from];
+                const toNode = mapData.nodes[connection.to];
+                if (fromNode && toNode) {
+                    // Draw connection line (simplified for now)
+                    const line = document.createElement('div');
+                    line.className = 'map-connection';
+                    // Position and rotate the line between nodes
+                    // This is a simplified implementation
+                    mapContainer.appendChild(line);
+                }
+            });
+        }
     } else {
-        mapContainer.innerHTML = '<p>No map data available for this location.</p>';
+        mapContainer.innerHTML = '<div class="text-center p-4"><p class="text-muted">No map data available for this location.</p><small>Map will be generated as you explore!</small></div>';
     }
 }
 
@@ -552,7 +695,6 @@ async function initializePlayPage() { // Made async to support dynamic import
 
     const gameLog = document.getElementById('game-log');
     const actionInput = document.getElementById('action-input');
-    const submitActionBtn = document.getElementById('submit-action-btn');
     const notYourTurnNotice = document.getElementById('not-your-turn-notice');
     const actionControls = document.getElementById('action-controls');
     const partyGrid = document.getElementById('party-grid');
@@ -566,6 +708,7 @@ async function initializePlayPage() { // Made async to support dynamic import
     const chatInput = document.getElementById('chat-input');
     const chatSendBtn = document.getElementById('chat-send-btn');
     const chatLog = document.getElementById('chat-log');
+    const summaryBtn = document.getElementById('summary-btn');
 
     
 
@@ -584,6 +727,19 @@ async function initializePlayPage() { // Made async to support dynamic import
 
     socket.on('game_state_update', updateGameState);
 
+    socket.on('story_summary_updated', (data) => {
+        console.log('Story summary updated:', data);
+        showActionStatus(`Story summary updated! Cost: $${data.cost.toFixed(4)}`, 'success');
+        // Update the cost display
+        const costEl = document.querySelector('#campaign-cost div');
+        if (costEl) {
+            const currentCostText = costEl.textContent;
+            const currentCost = parseFloat(currentCostText.replace('Cost: $', ''));
+            const newCost = currentCost + data.cost;
+            costEl.textContent = `Cost: $${newCost.toFixed(4)}`;
+        }
+    });
+
     socket.on('error', (data) => alert(`An error occurred: ${data.error}`));
 
     fetch(`/api/games/${gameId}/state`).then(res => res.json()).then(state => {
@@ -598,32 +754,82 @@ async function initializePlayPage() { // Made async to support dynamic import
         const currentPlayer = state.players.find(p => p.user_id === currentPlayerId);
         currentPlayerNameEl.textContent = currentPlayer ? currentPlayer.character_name : 'Unknown';
 
+        // Enhanced turn management with visual feedback
+        isCurrentUserTurn = String(currentUserId) === String(currentPlayerId);
+        const turnIndicator = document.querySelector('.turn-indicator');
+        
+        if (isCurrentUserTurn) {
+            if (turnIndicator) turnIndicator.classList.add('active-turn');
+            actionControls.style.display = 'block';
+            notYourTurnNotice.style.display = 'none';
+            actionInput.placeholder = "What do you do? (Press Enter to submit)";
+            actionInput.disabled = false;
+            
+            // Add visual notification for turn start
+            showActionStatus("It's your turn! What would you like to do?", 'success');
+        } else {
+            if (turnIndicator) turnIndicator.classList.remove('active-turn');
+            actionControls.style.display = 'none';
+            notYourTurnNotice.style.display = 'block';
+            actionInput.disabled = true;
+        }
+
+        // Enhanced game log rendering
         gameLog.innerHTML = '';
-        state.game_log.forEach(entry => {
-            const logEntry = document.createElement('div');
-            const entryType = entry.type ? entry.type.toLowerCase() : 'system';
-            logEntry.className = `log-entry log-${entryType}`;
-            logEntry.innerHTML = `<span class="log-timestamp">${new Date(entry.timestamp).toLocaleTimeString()}</span>: ${entry.content}`;
-            gameLog.appendChild(logEntry);
-        });
-        gameLog.scrollTop = gameLog.scrollHeight;
+        if (state.game_log && Array.isArray(state.game_log)) {
+            state.game_log.forEach((entry, index) => {
+                const logEntry = document.createElement('div');
+                const entryType = entry.type ? entry.type.toLowerCase() : 'system';
+                logEntry.className = `log-entry log-${entryType}`;
+                
+                let content = '';
+                if (entry.type === 'GM_NARRATIVE') {
+                    content = `<strong>GM:</strong> ${entry.content}`;
+                } else if (entry.type === 'PLAYER_ACTION') {
+                    content = `<strong>${entry.actor || 'Player'}:</strong> ${entry.content}`;
+                } else if (entry.type === 'SYSTEM_MESSAGE') {
+                    content = `<strong>SYSTEM:</strong> ${entry.content}`;
+                } else {
+                    content = `<span class="log-timestamp">${new Date(entry.timestamp).toLocaleTimeString()}</span>: ${entry.content}`;
+                }
+                
+                logEntry.innerHTML = content;
+                gameLog.appendChild(logEntry);
+                
+                // Add staggered entrance animation for new entries
+                logEntry.style.opacity = '0';
+                logEntry.style.transform = 'translateX(-10px)';
+                setTimeout(() => {
+                    logEntry.style.transition = 'all 0.3s ease';
+                    logEntry.style.opacity = '1';
+                    logEntry.style.transform = 'translateX(0)';
+                }, index * 50);
+            });
+        }
+        
+        // Smooth scroll to bottom with a slight delay to allow for animations
+        setTimeout(() => {
+            gameLog.scrollTo({
+                top: gameLog.scrollHeight,
+                behavior: 'smooth'
+            });
+        }, state.game_log.length * 50 + 100);
 
         updateCharacterGrids(state.players, state.active_npcs);
-
-        isCurrentUserTurn = (String(currentPlayerId) === String(currentUserId));
-        actionControls.style.display = isCurrentUserTurn ? 'block' : 'none';
-        notYourTurnNotice.style.display = isCurrentUserTurn ? 'none' : 'block';
-        updateObjectivesAndLore(state.completed_objectives, state.discovered_lore_items, state.all_objectives);
+        updateObjectivesAndLore(state.completed_objectives, state.discovered_lore_items, state.all_objectives, state.inventory, state.players);
+        
         if (state.campaign_charter && state.campaign_charter.interactive_map_layout) {
-            renderInteractiveMap(state.campaign_charter.interactive_map_layout);
+            renderInteractiveMap(state.campaign_charter.interactive_map_layout, state.current_location);
         }
     }
 
-    function updateObjectivesAndLore(completedObjectives, discoveredLore, allObjectives) {
+    function updateObjectivesAndLore(completedObjectives, discoveredLore, allObjectives, inventory, players) {
         console.log("Updating objectives and lore with:", {
             completedObjectives,
             discoveredLore,
-            allObjectives
+            allObjectives,
+            inventory,
+            players
         });
         const objectivesList = document.getElementById('objectives-list');
         const loreDocuments = document.getElementById('lore-documents');
@@ -646,8 +852,94 @@ async function initializePlayPage() { // Made async to support dynamic import
             objectivesList.innerHTML = '<li>No objectives defined yet.</li>';
         }
 
+        // Update Lore section
         loreDocuments.innerHTML = '';
+        
+        // Add Party Inventory section first
+        if (inventory && inventory.length > 0) {
+            const inventorySection = document.createElement('div');
+            inventorySection.className = 'inventory-section';
+            const inventoryHeader = document.createElement('h4');
+            inventoryHeader.textContent = '🎒 Party Inventory (Shared)';
+            inventoryHeader.className = 'inventory-header';
+            inventorySection.appendChild(inventoryHeader);
+            
+            const inventoryList = document.createElement('div');
+            inventoryList.className = 'inventory-list';
+            inventory.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'inventory-item';
+                const itemName = document.createElement('span');
+                itemName.className = 'item-name';
+                itemName.textContent = `${item.name}`;
+                if (item.quantity > 1) {
+                    itemName.textContent += ` (${item.quantity})`;
+                }
+                const itemDesc = document.createElement('div');
+                itemDesc.className = 'item-description';
+                itemDesc.textContent = (item.description || 'No description available.') + ' (Available to all players)';
+                itemDiv.appendChild(itemName);
+                itemDiv.appendChild(itemDesc);
+                inventoryList.appendChild(itemDiv);
+            });
+            inventorySection.appendChild(inventoryList);
+            loreDocuments.appendChild(inventorySection);
+        }
+        
+        // Add Player Inventories section
+        if (players && players.length > 0) {
+            players.forEach(player => {
+                const playerInventory = player.character_sheet?.inventory;
+                if (playerInventory && playerInventory.length > 0) {
+                    const playerInventorySection = document.createElement('div');
+                    playerInventorySection.className = 'inventory-section';
+                    const playerInventoryHeader = document.createElement('h4');
+                    playerInventoryHeader.textContent = `🎒 ${player.character_name}'s Inventory`;
+                    playerInventoryHeader.className = 'inventory-header';
+                    playerInventorySection.appendChild(playerInventoryHeader);
+                    
+                    const playerInventoryList = document.createElement('div');
+                    playerInventoryList.className = 'inventory-list';
+                    playerInventory.forEach(item => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'inventory-item';
+                        const itemName = document.createElement('span');
+                        itemName.className = 'item-name';
+                        
+                        if (typeof item === 'string') {
+                            itemName.textContent = item;
+                        } else {
+                            itemName.textContent = `${item.name}`;
+                            if (item.quantity > 1) {
+                                itemName.textContent += ` (${item.quantity})`;
+                            }
+                        }
+                        
+                        const itemDesc = document.createElement('div');
+                        itemDesc.className = 'item-description';
+                        if (typeof item === 'string') {
+                            itemDesc.textContent = `A ${item.toLowerCase()} (Only ${player.character_name} can use this)`;
+                        } else {
+                            itemDesc.textContent = (item.description || 'No description available.') + ` (Only ${player.character_name} can use this)`;
+                        }
+                        
+                        itemDiv.appendChild(itemName);
+                        itemDiv.appendChild(itemDesc);
+                        playerInventoryList.appendChild(itemDiv);
+                    });
+                    playerInventorySection.appendChild(playerInventoryList);
+                    loreDocuments.appendChild(playerInventorySection);
+                }
+            });
+        }
+        
+        // Add Lore section
         if (discoveredLore && discoveredLore.length > 0) {
+            const loreHeader = document.createElement('h4');
+            loreHeader.textContent = '📜 Discovered Lore';
+            loreHeader.className = 'lore-header';
+            loreDocuments.appendChild(loreHeader);
+            
             discoveredLore.forEach(lore => {
                 const details = document.createElement('details');
                 details.className = 'lore-item';
@@ -661,7 +953,14 @@ async function initializePlayPage() { // Made async to support dynamic import
                 loreDocuments.appendChild(details);
             });
         } else {
-            loreDocuments.innerHTML = '<p>No lore discovered yet.</p>';
+            // Check if there are any inventories at all
+            const hasAnyInventory = (inventory && inventory.length > 0) || 
+                                  (players && players.some(p => p.character_sheet?.inventory?.length > 0));
+            
+            if (!hasAnyInventory) {
+                // Only show "no lore" message if there's also no inventory
+                loreDocuments.innerHTML = '<p>No lore or items discovered yet.</p>';
+            }
         }
     }
 
@@ -748,38 +1047,89 @@ async function initializePlayPage() { // Made async to support dynamic import
         if (event.target == characterDetailsModal) characterDetailsModal.style.display = 'none';
     };
 
-    submitActionBtn.addEventListener('click', () => {
-        const actionText = actionInput.value.trim();
-        if (actionText && isCurrentUserTurn) {
-            // Directly find the player from the already available state if possible
-            // This depends on whether 'players' is available in the scope. 
-            // Assuming it is not directly, we still need a way to get game_player_id.
-            // The original implementation had a fetch, which is slow but gets the needed ID.
-            // A better way would be to store the game_player_id when the page loads.
+    // Add Enter key functionality for action input
+    actionInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Prevent newline
+            submitPlayerAction();
+        }
+    });
 
-            // Let's check if we can get the player id from the global scope or data attribute.
-            const { gameId, currentUserId, gameCreatorId, players } = window.questForgeData;
-            const currentPlayer = players.find(p => String(p.user_id) === String(currentUserId));
-
-            if (currentPlayer) {
-                socket.emit('submit_player_action', { 
-                    game_id: gameId, 
-                    game_player_id: currentPlayer.id, 
-                    action_text: actionText 
-                });
-                actionInput.value = '';
-            } else {
-                // Fallback to fetch if not available, though this indicates a design issue
-                console.warn("Player data not available in window.questForgeData, falling back to fetch. This may cause delays.");
-                fetch(`/api/games/${gameId}/state`).then(res => res.json()).then(state => {
-                    const player = state.players.find(p => String(p.user_id) === String(currentUserId));
-                    if (player) {
-                        socket.emit('player_action', { game_id: gameId, game_player_id: player.id, action_text: actionText });
-                        actionInput.value = '';
-                    }
-                });
+    // Handle quick action buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('.quick-actions .btn-outline')) {
+            const actionText = e.target.getAttribute('data-action');
+            if (actionText) {
+                actionInput.value = actionText;
+                actionInput.focus();
+                // Optional: Auto-submit quick actions
+                // submitPlayerAction();
             }
         }
+    });
+
+    function submitPlayerAction() {
+        const actionText = actionInput.value.trim();
+        if (!actionText || !isCurrentUserTurn) {
+            return;
+        }
+
+        // Show loading state
+        const actionLoading = document.getElementById('action-loading');
+        actionLoading.style.display = 'flex';
+        showActionStatus('Processing your action...', 'info');
+        
+        // Disable input while processing
+        actionInput.disabled = true;
+
+        const { gameId, currentUserId, gameCreatorId, players } = window.questForgeData;
+        const currentPlayer = players.find(p => String(p.user_id) === String(currentUserId));
+
+        if (currentPlayer) {
+            socket.emit('submit_player_action', { 
+                game_id: gameId, 
+                game_player_id: currentPlayer.id, 
+                action_text: actionText 
+            });
+            actionInput.value = '';
+        } else {
+            // Fallback with error handling
+            console.warn("Player data not available in window.questForgeData, falling back to fetch.");
+            fetch(`/api/games/${gameId}/state`).then(res => res.json()).then(state => {
+                const player = state.players.find(p => String(p.user_id) === String(currentUserId));
+                if (player) {
+                    socket.emit('submit_player_action', { 
+                        game_id: gameId, 
+                        game_player_id: player.id, 
+                        action_text: actionText 
+                    });
+                    actionInput.value = '';
+                } else {
+                    showActionStatus('Error: Could not find your player data.', 'error');
+                }
+            }).catch(error => {
+                console.error('Error fetching player data:', error);
+                showActionStatus('Error: Failed to submit action.', 'error');
+            }).finally(() => {
+                actionLoading.style.display = 'none';
+                actionInput.disabled = false;
+            });
+        }
+    }
+
+    // Handle action processing response
+    socket.on('action_received_ack', (data) => {
+        const actionLoading = document.getElementById('action-loading');
+        actionLoading.style.display = 'none';
+        showActionStatus('Action submitted successfully!', 'success');
+        actionInput.disabled = false;
+    });
+
+    socket.on('action_error', (data) => {
+        const actionLoading = document.getElementById('action-loading');
+        actionLoading.style.display = 'none';
+        showActionStatus(`Error: ${data.message}`, 'error');
+        actionInput.disabled = false;
     });
 
     chatSendBtn.addEventListener('click', () => {
@@ -795,6 +1145,49 @@ async function initializePlayPage() { // Made async to support dynamic import
         const npcName = prompt("Enter NPC name:");
         if (npcName) socket.emit('add_npc', { game_id: gameId, npc_data: { name: npcName } });
     });
+
+    // Summary button functionality
+    if (summaryBtn) {
+        summaryBtn.addEventListener('click', async () => {
+            // Show loading state
+            const originalText = summaryBtn.textContent;
+            summaryBtn.disabled = true;
+            summaryBtn.textContent = 'Generating...';
+            
+            try {
+                showActionStatus('Generating story summary using AI...', 'info');
+                
+                const response = await fetchWithAuth(`${API_BASE_URL}/games/${gameId}/summary`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showStorySummaryModal(data.summary, data.cost);
+                    showActionStatus(`Story summary generated! Cost: $${data.cost.toFixed(4)}`, 'success');
+                    
+                    // Update the cost display
+                    const costEl = document.querySelector('#campaign-cost div');
+                    if (costEl) {
+                        const currentCostText = costEl.textContent;
+                        const currentCost = parseFloat(currentCostText.replace('Cost: $', ''));
+                        const newCost = currentCost + data.cost;
+                        costEl.textContent = `Cost: $${newCost.toFixed(4)}`;
+                    }
+                } else {
+                    const errorData = await response.json();
+                    showActionStatus(`Error: ${errorData.msg}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error generating summary:', error);
+                showActionStatus('Error: Failed to generate summary.', 'error');
+            } finally {
+                // Restore button state
+                summaryBtn.disabled = false;
+                summaryBtn.textContent = originalText;
+            }
+        });
+    }
 
     const diceContainer = document.getElementById('dice-container');
     if (diceContainer) {
@@ -898,9 +1291,51 @@ function updateLobbyPlayers(players) {
     }
 }
 
+// Function to display the story summary in a modal
+function showStorySummaryModal(summary, cost) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('story-summary-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'story-summary-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Story So Far</h2>
+                    <span class="close" id="story-summary-close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div id="story-summary-content"></div>
+                    <div class="summary-meta">
+                        <small>Generated using AI • Cost: $<span id="summary-cost">0.0000</span></small>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Add close functionality
+        const closeBtn = modal.querySelector('#story-summary-close');
+        closeBtn.onclick = () => modal.style.display = 'none';
+        
+        // Close when clicking outside the modal
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+    }
+    
+    // Update content and show modal
+    document.getElementById('story-summary-content').innerHTML = summary.replace(/\n/g, '<br>');
+    document.getElementById('summary-cost').textContent = cost.toFixed(4);
+    modal.style.display = 'block';
+}
+
 // --- DOMContentLoaded Event Listener ---
-document.addEventListener('DOMContentLoaded', function() {
-    checkAuthStatusAndProtect();
+document.addEventListener('DOMContentLoaded', async function() {
+    await checkAuthStatusAndProtect();
 
     const currentPath = window.location.pathname;
 

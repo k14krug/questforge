@@ -76,34 +76,40 @@ class AIService:
         Generates a Campaign Charter in a more reliable two-step process.
         Step 1: Generate the core narrative content.
         Step 2: Generate the interactive map based on the narrative content.
+        Returns: (charter, cost, prompt_tokens, completion_tokens, models_used)
         """
         total_cost = 0.0
         total_prompt_tokens = 0
         total_completion_tokens = 0
+        models_used = []
 
         # Step 1: Generate the core narrative content (without the map)
-        narrative_charter, cost, p_tokens, c_tokens = self._generate_narrative_charter(template_data, game_settings)
+        narrative_charter, cost, p_tokens, c_tokens, model = self._generate_narrative_charter(template_data, game_settings)
         total_cost += cost
         total_prompt_tokens += p_tokens
         total_completion_tokens += c_tokens
+        if model:
+            models_used.append(model)
 
         if not narrative_charter:
             logging.error("Failed to generate narrative charter in Step 1. Aborting.")
-            return {}, total_cost, total_prompt_tokens, total_completion_tokens
+            return {}, total_cost, total_prompt_tokens, total_completion_tokens, models_used
 
         # Step 2: Generate the interactive map based on the setting description
         setting_description = narrative_charter.get("setting_description", "")
         if setting_description:
-            map_layout, cost, p_tokens, c_tokens = self._generate_interactive_map_layout(setting_description)
+            map_layout, cost, p_tokens, c_tokens, model = self._generate_interactive_map_layout(setting_description)
             total_cost += cost
             total_prompt_tokens += p_tokens
             total_completion_tokens += c_tokens
+            if model:
+                models_used.append(model)
             narrative_charter['interactive_map_layout'] = map_layout
         else:
             logging.warning("No setting_description found in narrative charter. Skipping map generation.")
             narrative_charter['interactive_map_layout'] = {"nodes": [], "edges": []} # Add empty map
 
-        return narrative_charter, total_cost, total_prompt_tokens, total_completion_tokens
+        return narrative_charter, total_cost, total_prompt_tokens, total_completion_tokens, models_used
 
     def generate_character_sheet(self, character_keywords, core_skills):
         """
@@ -168,17 +174,17 @@ class AIService:
             cost = self.calculate_cost(model_name, prompt_tokens, completion_tokens)
 
             logging.info(f"OpenAI character sheet generation cost: {cost:.4f}")
-            return character_sheet_data, cost, prompt_tokens, completion_tokens
+            return character_sheet_data, cost, prompt_tokens, completion_tokens, model_name
 
         except openai.APIError as e:
             logging.error(f"OpenAI API Error during character sheet generation: {e}")
-            return {"character_sheet": {"skills": {}}}, 0.0, 0, 0
+            return {"character_sheet": {"skills": {}}}, 0.0, 0, 0, None
         except json.JSONDecodeError as e:
             logging.error(f"JSON decoding error from OpenAI response: {e}. Response: {generated_json_str[:500]}...")
-            return {"character_sheet": {"skills": {}}}, 0.0, 0, 0
+            return {"character_sheet": {"skills": {}}}, 0.0, 0, 0, None
         except Exception as e:
-            logging.error(f"An unexpected error occurred during Campaign Charter generation: {e}")
-            return {"character_sheet": {"skills": {}}}, 0.0, 0, 0
+            logging.error(f"An unexpected error occurred during character sheet generation: {e}")
+            return {"character_sheet": {"skills": {}}}, 0.0, 0, 0, None
 
     def _generate_narrative_charter(self, template_data, game_settings):
         model_name = self.default_logic_model
@@ -229,9 +235,10 @@ class AIService:
             )
             narrative_charter = json.loads(response.choices[0].message.content)
             cost = self.calculate_cost(model_name, response.usage.prompt_tokens, response.usage.completion_tokens)
-            return narrative_charter, cost, response.usage.prompt_tokens, response.usage.completion_tokens
+            return narrative_charter, cost, response.usage.prompt_tokens, response.usage.completion_tokens, model_name
         except Exception as e:
             logging.error(f"Error in _generate_narrative_charter: {e}")
+            return {}, 0.0, 0, 0, None
             return None, 0.0, 0, 0
 
     def _generate_interactive_map_layout(self, setting_description):
@@ -274,10 +281,10 @@ class AIService:
             )
             map_layout = json.loads(response.choices[0].message.content)
             cost = self.calculate_cost(model_name, response.usage.prompt_tokens, response.usage.completion_tokens)
-            return map_layout, cost, response.usage.prompt_tokens, response.usage.completion_tokens
+            return map_layout, cost, response.usage.prompt_tokens, response.usage.completion_tokens, model_name
         except Exception as e:
             logging.error(f"Error in _generate_interactive_map_layout: {e}")
-            return {"nodes": [], "edges": []}, 0.0, 0, 0
+            return {"nodes": [], "edges": []}, 0.0, 0, 0, None
 
     def generate_player_npc_image_url(self, description, entity_type="character"):
         """
@@ -445,6 +452,25 @@ class AIService:
         Campaign Charter: {json.dumps(charter, indent=2)}
         Character Sheet: {json.dumps(character_sheet, indent=2)}
 
+        IMPORTANT CONTEXT:
+        - Current Location: {game_state.get('current_location', 'Unknown')}
+        - Critical Path Objectives: {', '.join(charter.get('critical_path_objectives', []))}
+        - Interactive Map Available: {'Yes' if charter.get('interactive_map_layout', {}).get('nodes') else 'No'}
+        - Current Inventory: {game_state.get('inventory', [])}
+        
+        INVENTORY VALIDATION RULES:
+        - If the player tries to use a specific item (like "hammer", "rope", "flashlight"), check if it exists in the inventory
+        - Items in the character sheet are starting equipment, NOT current inventory
+        - Only allow use of items that are currently in the inventory list
+        - If player tries to use an item not in inventory, the narration should indicate they don't have that item
+        
+        NARRATIVE GUIDANCE:
+        - If the player is moving between locations, acknowledge the new environment
+        - Introduce appropriate challenges, discoveries, or NPCs for the new location
+        - Progress the story meaningfully rather than giving generic "continue moving" responses
+        - Reference specific map locations and their descriptions when relevant
+        - Create meaningful obstacles or discoveries that advance the critical path objectives
+
         Output a JSON object strictly following this structure:
         {{
             "action_requires_roll": boolean,
@@ -453,7 +479,7 @@ class AIService:
             "narration_prompt": "string"
         }}
 
-        If no roll is required, set "action_requires_roll" to false, and provide a direct narration prompt for the outcome.
+        If no roll is required, set "action_requires_roll" to false, and provide a detailed narration prompt that advances the story meaningfully.
         """
 
         messages = [
@@ -519,6 +545,14 @@ class AIService:
         
         Current Critical Path Objectives: {', '.join(critical_path_objectives) if critical_path_objectives else 'None defined'}.
         Current Player Location: {current_location}.
+        
+        IMPORTANT NARRATIVE REQUIREMENTS:
+        - Create meaningful story progression, not generic responses
+        - If the player has moved to a new location, describe the new environment in detail
+        - Introduce location-specific challenges, NPCs, or discoveries
+        - Reference the interactive map layout and location descriptions from the Campaign Charter
+        - Advance at least one critical path objective when possible
+        - Avoid repetitive "continue moving" narratives - create actual story beats
         
         If the player seems to be deviating significantly from the critical path objectives, subtly guide the narrative back towards them.
         You have a conceptual "Deviation Budget" to introduce minor, unscripted elements or twists. A '{ai_gm_persona}' persona might have a {'higher' if ai_gm_persona != 'The Chronicler' else 'moderate'} implicit budget. Use this sparingly to add emergent gameplay, but do not derail the main narrative.

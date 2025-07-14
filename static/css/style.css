@@ -194,7 +194,25 @@ footer {
 
 .btn-small {
     padding: 6px 12px;
-    font-size: 14px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid #ddd;
+    color: #666;
+    transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+    background: #f8f9fa;
+    border-color: #3498db;
+    color: #3498db;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
 }
 
 #profile-link a {
@@ -216,125 +234,60 @@ footer {
     border-bottom: 1px solid #eee;
 }
 
-/* Tabbed Info Panel Styles */
-.info-panel {
-    margin-top: 20px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-/* Party Management Styles */
-.party-management {
-    display: flex;
-    gap: 20px;
-}
-
-.party-members, .npcs {
-    flex: 1;
-}
-
-.character-list {
-    list-style: none;
-    padding: 0;
-    margin: 10px 0;
-}
-
-.character-list li {
-    padding: 8px;
-    margin-bottom: 5px;
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.character-list .character-name {
-    font-weight: bold;
-}
-
-.character-list .character-actions button {
-    padding: 3px 6px;
-    font-size: 0.8em;
-    margin-left: 5px;
-}
-
-#add-party-member, #add-npc {
-    margin-top: 10px;
-    width: 100%;
-}
-
-
-
-.tab-content {
-    padding: 15px;
-}
-
-.tab-pane {
-    display: none;
-}
-
-.tab-pane.active {
-    display: block;
-}
-
-.game-metadata, .game-stats {
-    display: flex;
-    flex-direction: column;
-}
-
-.game-metadata {
-    flex: 2;
-}
-
-.game-stats {
-    flex: 1;
-    align-items: flex-end;
-    text-align: right;
-}
-
-#gm-persona {
-    font-style: italic;
-    color: #555;
-    font-size: 0.9em;
-    margin-top: 5px;
-}
-
-#campaign-cost {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-#summary-btn {
-    margin-bottom: 10px;
-    padding: 5px 10px;
-    font-size: 0.9em;
-}
-
-.turn-indicator {
-    font-size: 1.1em;
-    color: #555;
-    margin-top: 5px;
-}
-
-#current-player-name {
-    font-weight: bold;
-    color: #0779e4;
-}
-
+/* Enhanced Play Page Layout - Desktop Focused */
 .play-area {
     display: grid;
-    grid-template-columns: 2fr 1fr; /* Two columns: main and action */
-    gap: 20px;
+    grid-template-columns: 2.2fr 1fr;
+    gap: 25px;
+    min-height: 75vh;
 }
 
-/* Adjust main panel to flex column for tab layout */
-.main-panel {
-    display: flex;
-    flex-direction: column;
+/* Prominent turn indicator with better visibility */
+.turn-indicator {
+    font-size: 1.3em;
+    font-weight: bold;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    border: 2px solid #0779e4;
+    border-radius: 8px;
+    margin: 10px 0;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(7, 121, 228, 0.2);
 }
+
+.turn-indicator.active-turn {
+    background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+    border-color: #4caf50;
+    color: #2e7d32;
+    animation: activePlayerPulse 3s infinite;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+@keyframes activePlayerPulse {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+    50% { 
+        transform: scale(1.02);
+        box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+    }
+}
+
+/* Sticky action panel for easy access */
+.action-panel {
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Enhanced game log with better readability */
 .game-log-panel .log-box {
     height: 50vh; /* Reduced height to fit scene panel */
     overflow-y: auto;
@@ -344,6 +297,41 @@ footer {
     border-radius: 5px;
 }
 
+/* Improved log entries with better visual hierarchy */
+.log-entry {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.log-entry:hover {
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.log-entry.log-gm_narrative {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-left-color: #6c757d;
+    font-style: italic;
+}
+
+.log-entry.log-player_action {
+    background: linear-gradient(135deg, #e3f2fd, #e1f5fe);
+    border-left-color: #0779e4;
+    font-weight: 500;
+}
+
+.log-entry.log-system_message {
+    background: linear-gradient(135deg, #fff8e1, #ffecb3);
+    border-left-color: #ff9800;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+/* Action input enhancements */
 .action-panel textarea {
     width: 100%;
     height: 150px;
@@ -356,6 +344,67 @@ footer {
 
 .action-panel button {
     width: 100%;
+}
+
+/* Quick Actions for Play Page */
+.quick-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+/* Action status messages */
+.action-status {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 10px;
+}
+
+.action-status.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.action-status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.action-status.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* Enhanced action input container */
+.action-input-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+#action-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background: white;
+}
+
+#action-input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
 .not-your-turn {
@@ -442,15 +491,286 @@ footer {
     font-weight: bold;
 }
 
-.log-entry.log-player_action {
-    background-color: #e7f3fe; /* A light blue background */
-    border-left: 4px solid #0779e4; /* A solid blue left border */
-    padding-left: 12px; /* Add some padding to not touch the border */
-}
-
 .close-button:hover,
 .close-button:focus {
     color: black;
     text-decoration: none;
     cursor: pointer;
+}
+
+/* Story Summary Modal Specific Styles */
+#story-summary-modal .modal-content {
+    max-width: 800px;
+    width: 90%;
+}
+
+#story-summary-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+#story-summary-modal .close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#story-summary-modal .close:hover,
+#story-summary-modal .close:focus {
+    color: black;
+    text-decoration: none;
+}
+
+#story-summary-content {
+    line-height: 1.8;
+    font-size: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border-left: 4px solid #0779e4;
+}
+
+.summary-meta {
+    text-align: right;
+    color: #6c757d;
+    border-top: 1px solid #dee2e6;
+    padding-top: 15px;
+}
+
+/* Enhanced Map and World Tab Styles */
+#map-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.map-node {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #0779e4;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(7, 121, 228, 0.4);
+}
+
+.map-node:hover {
+    transform: scale(1.3);
+    background: #055fa0;
+    box-shadow: 0 4px 12px rgba(7, 121, 228, 0.6);
+    z-index: 10;
+}
+
+.map-node.current-location {
+    background: #28a745;
+    box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.3);
+    animation: currentLocationPulse 2s infinite;
+}
+
+@keyframes currentLocationPulse {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.3);
+    }
+    50% { 
+        transform: scale(1.1);
+        box-shadow: 0 0 0 6px rgba(40, 167, 69, 0.5);
+    }
+}
+
+.map-connection {
+    position: absolute;
+    height: 2px;
+    background: rgba(7, 121, 228, 0.4);
+    z-index: 1;
+}
+
+/* Enhanced tab content styling */
+.information-panel .tab-content {
+    min-height: 300px;
+}
+
+.tab-pane {
+    animation: fadeInUp 0.3s ease when entering;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Final Polish - Tab Loading States */
+.information-panel .nav-link {
+    position: relative;
+    overflow: hidden;
+}
+
+.information-panel .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #0779e4, transparent);
+    transition: left 0.4s ease;
+}
+
+.information-panel .nav-link:hover::after {
+    left: 100%;
+}
+
+/* Enhanced hover states for character grids */
+.character-grid .character-item {
+    transition: all 0.2s ease;
+}
+
+.character-grid .character-item:hover {
+    background: #f8f9fa;
+    border-color: #0779e4;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(7, 121, 228, 0.15);
+}
+
+/* Improved objectives styling */
+.objectives-list .objective-item {
+    padding: 12px;
+    margin-bottom: 8px;
+    border-left: 4px solid #dee2e6;
+    background: #f8f9fa;
+    border-radius: 0 6px 6px 0;
+    transition: all 0.2s ease;
+}
+
+.objectives-list .objective-item.completed {
+    border-left-color: #28a745;
+    background: #d4edda;
+}
+
+.objectives-list .objective-item:hover {
+    transform: translateX(2px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.map-connection {
+    position: absolute;
+    height: 2px;
+    background: rgba(7, 121, 228, 0.4);
+    z-index: 1;
+}
+
+/* AI models information styling */
+.ai-models-info {
+    margin-top: 4px;
+    font-size: 0.8em;
+    color: #666;
+    font-style: italic;
+}
+
+#campaign-cost {
+    text-align: right;
+    line-height: 1.3;
+}
+
+/* Inventory styling */
+.inventory-section {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #0779e4;
+}
+
+.inventory-header {
+    margin: 0 0 12px 0;
+    color: #333;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.inventory-list {
+    display: grid;
+    gap: 8px;
+}
+
+.inventory-item {
+    padding: 8px 12px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.inventory-item:hover {
+    border-color: #0779e4;
+    box-shadow: 0 2px 4px rgba(7, 121, 228, 0.1);
+}
+
+.inventory-item .item-name {
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.inventory-item .item-description {
+    font-size: 0.9em;
+    color: #666;
+    line-height: 1.4;
+}
+
+.lore-header {
+    margin: 16px 0 12px 0;
+    color: #333;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+/* Existing lore styling improvements */
+.lore-item {
+    margin-bottom: 8px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.lore-item summary {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    background: #f8f9fa;
+    border-radius: 6px 6px 0 0;
+    user-select: none;
+}
+
+.lore-item summary:hover {
+    background: #e9ecef;
+}
+
+.lore-item .lore-content {
+    padding: 12px;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: #555;
 }

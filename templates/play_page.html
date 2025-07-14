@@ -13,7 +13,26 @@ Play - QuestForge
     </div>
     <div class="game-stats">
         <button id="summary-btn">Summary</button>
-        <div id="campaign-cost">Cost: {{ game.cumulative_cost }}</div>
+        <div id="campaign-cost">
+            <div>Cost: ${{ "%.4f"|format(game.cumulative_cost) }}</div>
+            <div class="ai-models-info">
+                {% if game.ai_models_used %}
+                    {% set all_models = [] %}
+                    {% for category, models in game.ai_models_used.items() %}
+                        {% if models %}
+                            {% for model in models %}
+                                {% if model not in all_models %}
+                                    {% set _ = all_models.append(model) %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if all_models %}
+                        <small>AI Models: {{ all_models|join(', ') }}</small>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
         <div id="turn-indicator" class="turn-indicator">
             Turn: <span id="turn-number">1</span> | Current Player: <span id="current-player-name">Loading...</span>
         </div>
@@ -93,13 +112,22 @@ Play - QuestForge
             <h2>Take Action</h2>
             
             <div id="action-controls">
-                <textarea id="action-input" placeholder="What do you do?"></textarea>
-                <div class="action-buttons">
-                    <button id="submit-action-btn" class="btn">Submit</button>
+                <div class="action-input-container" style="position: relative;">
+                    <textarea id="action-input" placeholder="What do you do? (Press Enter to submit)"></textarea>
+                    <div id="action-loading" class="loading-overlay" style="display: none;">
+                        <div class="loading-spinner"></div>
+                    </div>
                 </div>
+                <div class="quick-actions" style="margin-bottom: 10px;">
+                    <button class="btn btn-small btn-outline" data-action="Look around">👁️ Look</button>
+                    <button class="btn btn-small btn-outline" data-action="Search the area">🔍 Search</button>
+                    <button class="btn btn-small btn-outline" data-action="Listen carefully">👂 Listen</button>
+                    <button class="btn btn-small btn-outline" data-action="Talk to someone">💬 Talk</button>
+                </div>
+                <div class="action-status" id="action-status" style="margin-top: 10px; font-size: 0.9em; color: #666; display: none;"></div>
             </div>
             <div id="not-your-turn-notice" class="not-your-turn" style="display: none;">
-                <p>It is not your turn.</p>
+                <p>It is not your turn. Please wait for the current player to complete their action.</p>
             </div>
         </div>
         

@@ -5,6 +5,7 @@ from database import db # Import db directly from database
 from models import Game, Template, User, GamePlayer, GameState
 from datetime import datetime
 import uuid
+import json
 from services.ai_service import AIService # Import AIService
 import logging # Import logging for AIService
 from flask import current_app # Import current_app
@@ -47,10 +48,26 @@ def create_game():
             "ai_gm_persona": template.ai_gm_persona,
             "core_skills": template.core_skills
         }
-        campaign_charter, charter_cost, _, _ = current_app.ai_service.generate_campaign_charter(
+        campaign_charter, charter_cost, _, _, models_used = current_app.ai_service.generate_campaign_charter(
             template_data=template_data_for_ai,
             game_settings=settings
         )
+
+        # Add the creator as the first player to the game
+        character_name = data.get('character_name', f"{creator_user.username}'s Character")
+        
+        # Generate character sheet using AIService
+        # Pass character_name (as keywords) and core_skills from the template
+        character_sheet_response, character_sheet_cost, _, _, character_model = current_app.ai_service.generate_character_sheet(
+            character_keywords=character_name,
+            core_skills=template.core_skills
+        )
+
+        # Collect all models used during game creation
+        all_models_used = {
+            'campaign_charter': models_used,
+            'character_sheet': [character_model] if character_model else []
+        }
 
         new_game = Game(
             game_name=game_name, # Store the user-provided game name
@@ -59,20 +76,11 @@ def create_game():
             settings=settings,
             campaign_charter=campaign_charter, # Populated by AI
             cumulative_cost=charter_cost, # Initial cost from charter generation
+            ai_models_used=all_models_used, # Store models used
             created_at=datetime.utcnow()
         )
         db.session.add(new_game)
         db.session.flush() # Use flush to get new_game.id before commit
-
-        # Add the creator as the first player to the game
-        character_name = data.get('character_name', f"{creator_user.username}'s Character")
-        
-        # Generate character sheet using AIService
-        # Pass character_name (as keywords) and core_skills from the template
-        character_sheet_response, character_sheet_cost, _, _ = current_app.ai_service.generate_character_sheet(
-            character_keywords=character_name,
-            core_skills=template.core_skills
-        )
         
         new_game_player = GamePlayer(
             game_id=new_game.id,
@@ -189,8 +197,10 @@ def delete_game(game_id):
         return jsonify({"msg": "Unauthorized: Only the game creator can delete the game"}), 403
 
     try:
-        # Set current_game_state_id to NULL in games table
-        Game.query.filter_by(id=game_id).update({Game.current_game_state_id: None})
+        # First, set current_game_state_id to NULL to break the circular reference
+        game.current_game_state_id = None
+        db.session.add(game)
+        db.session.flush()  # Ensure the update is written before deleting
 
         # Delete all GamePlayer records for this game
         GamePlayer.query.filter_by(game_id=game_id).delete()
@@ -198,7 +208,7 @@ def delete_game(game_id):
         # Delete all GameState records for this game
         GameState.query.filter_by(game_id=game_id).delete()
         
-        # Delete the game itself
+        # Now delete the game itself
         db.session.delete(game)
         db.session.commit()
         
@@ -401,3 +411,84 @@ def ready_up(game_id):
         db.session.rollback()
         logging.error(f"Error in ready_up for game {game_id}: {e}")
         return jsonify({"msg": f"An unexpected error occurred: {str(e)}"}), 500
+
+@games_bp.route('/games/<int:game_id>/summary', methods=['POST'])
+@jwt_required()
+def generate_game_summary(game_id):
+    """
+    Generates a "Story So Far" summary for the game using AI.
+    Updates the current_story_summary field in the GameState.
+    """
+    current_user_id = get_jwt_identity()
+    
+    # Check if the game exists and user is part of it
+    game = Game.query.get(game_id)
+    if not game:
+        return jsonify({"msg": "Game not found"}), 404
+
+    # Check if user is a player in this game
+    game_player = GamePlayer.query.filter_by(game_id=game_id, user_id=current_user_id).first()
+    if not game_player:
+        return jsonify({"msg": "You are not a player in this game"}), 403
+
+    try:
+        # Get current game state
+        game_state = GameState.query.get(game.current_game_state_id) if game.current_game_state_id else None
+        if not game_state:
+            return jsonify({"msg": "Game state not found. Game might not have started."}), 404
+
+        # Prepare data for AI service
+        game_state_snapshot = {
+            "turn_number": game_state.turn_number,
+            "current_location": game_state.current_location,
+            "active_npcs": game_state.active_npcs or [],
+            "inventory": game_state.inventory or [],
+            "completed_objectives": game_state.completed_objectives or [],
+            "discovered_lore_items": game_state.discovered_lore_items or []
+        }
+
+        # Use the existing AI service from app context
+        ai_service = current_app.ai_service
+
+        # Generate summary using AI
+        summary, cost, prompt_tokens, completion_tokens = ai_service.generate_story_summary(
+            game_log_entries=game_state.game_log or [],
+            game_state_snapshot=game_state_snapshot,
+            charter=game.campaign_charter
+        )
+
+        # Update the game state with the new summary
+        game_state.current_story_summary = summary
+        game_state.updated_at = datetime.utcnow()
+        
+        # Update the game's cumulative cost
+        game.cumulative_cost += cost
+
+        # Track AI model usage
+        if not game.ai_models_used:
+            game.ai_models_used = {}
+        if 'summary_generation' not in game.ai_models_used:
+            game.ai_models_used['summary_generation'] = []
+        
+        model_name = ai_service.default_main_model
+        if model_name not in game.ai_models_used['summary_generation']:
+            game.ai_models_used['summary_generation'].append(model_name)
+
+        db.session.add(game_state)
+        db.session.add(game)
+        db.session.commit()
+
+        logging.info(f"Generated story summary for game {game_id}, cost: {cost:.4f}")
+
+        return jsonify({
+            "msg": "Story summary generated successfully",
+            "summary": summary,
+            "cost": cost,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error generating summary for game {game_id}: {e}")
+        return jsonify({"msg": f"An error occurred while generating the summary: {str(e)}"}), 500

@@ -1,3 +1,52 @@
+
+class GameStateService:
+    def __init__(self, ai_service: AIService, socketio_instance=None): # Add socketio_instance
+        self.ai_service = ai_service
+        self.socketio = socketio_instance # Store it
+
+    def add_item_to_player_inventory(self, game_player_id, item_name, item_description=None, quantity=1):
+        """
+        Adds an item to a specific player's inventory.
+        Args:
+            game_player_id: ID of the GamePlayer
+            item_name: Name of the item to add
+            item_description: Optional description of the item
+            quantity: Number of items to add (default: 1)
+        """
+        game_player = GamePlayer.query.get(game_player_id)
+        if not game_player:
+            raise ValueError("GamePlayer not found")
+        character_sheet = game_player.character_sheet or {}
+        inventory = character_sheet.get('inventory', [])
+        # Check if item already exists in inventory
+        existing_item = next((item for item in inventory if (isinstance(item, dict) and item.get('name', '').lower() == item_name.lower()) or (isinstance(item, str) and item.lower() == item_name.lower())), None)
+        if existing_item:
+            if isinstance(existing_item, dict):
+                existing_item['quantity'] = existing_item.get('quantity', 1) + quantity
+            # If it's a string, convert to dict
+            else:
+                inventory.remove(existing_item)
+                inventory.append({
+                    'id': str(uuid.uuid4()),
+                    'name': item_name,
+                    'description': item_description or f"A {item_name.lower()}",
+                    'quantity': quantity + 1,
+                    'acquired_at': datetime.utcnow().isoformat()
+                })
+        else:
+            inventory.append({
+                'id': str(uuid.uuid4()),
+                'name': item_name,
+                'description': item_description or f"A {item_name.lower()}",
+                'quantity': quantity,
+                'acquired_at': datetime.utcnow().isoformat()
+            })
+        character_sheet['inventory'] = inventory
+        game_player.character_sheet = character_sheet
+        db.session.add(game_player)
+        db.session.commit()
+        logging.info(f"Added {quantity}x {item_name} to player {game_player_id}'s inventory")
+
 import logging
 import random
 from database import db # Import db directly from database
@@ -7,8 +56,6 @@ from datetime import datetime
 import uuid
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-class GameStateService:
     def __init__(self, ai_service: AIService, socketio_instance=None): # Add socketio_instance
         self.ai_service = ai_service
         self.socketio = socketio_instance # Store it
@@ -28,166 +75,10 @@ class GameStateService:
         
         return game_state, None
 
-    def add_item_to_player_inventory(self, game_player_id, item_name, item_description=None, quantity=1):
-        """
-        Adds an item to a specific player's inventory.
-        
-        This method handles individual player inventory management, separate from party inventory.
-        Items added here are owned by the specific player and can only be used by them.
-        
-        Args:
-            game_player_id: ID of the GamePlayer
-            item_name: Name of the item to add
-            item_description: Optional description of the item
-            quantity: Number of items to add (default: 1)
-        """
-        game_player = GamePlayer.query.get(game_player_id)
-        if not game_player:
-            raise ValueError("GamePlayer not found")
-            
-        character_sheet = game_player.character_sheet or {}
-        inventory = character_sheet.get('inventory', [])
-        
-        # Check if item already exists in inventory
-        existing_item = next((item for item in inventory if 
-                            (isinstance(item, dict) and item.get('name', '').lower() == item_name.lower()) or 
-                            (isinstance(item, str) and item.lower() == item_name.lower())), None)
-        
-        if existing_item:
-            if isinstance(existing_item, dict):
-                existing_item['quantity'] = existing_item.get('quantity', 1) + quantity
-            else:
-                # If it's a string, convert to dict
-                inventory.remove(existing_item)
-                inventory.append({
-                    'id': str(uuid.uuid4()),
-                    'name': item_name,
-                    'description': item_description or f"A {item_name.lower()}",
-                    'quantity': quantity + 1,
-                    'acquired_at': datetime.utcnow().isoformat()
-                })
-        else:
-            inventory.append({
-                'id': str(uuid.uuid4()),
-                'name': item_name,
-                'description': item_description or f"A {item_name.lower()}",
-                'quantity': quantity,
-                'acquired_at': datetime.utcnow().isoformat()
-            })
-        
-        character_sheet['inventory'] = inventory
-        game_player.character_sheet = character_sheet
-        db.session.add(game_player)
-        db.session.commit()
-        logging.info(f"Added {quantity}x {item_name} to player {game_player_id}'s inventory")
-
-    def transfer_item_to_party(self, game_player_id, item_name, quantity=1):
-        """
-        Transfers an item from a player's inventory to the party inventory.
-        
-        Args:
-            game_player_id: ID of the GamePlayer
-            item_name: Name of the item to transfer
-            quantity: Number of items to transfer (default: 1)
-            
-        Returns:
-            bool: True if transfer was successful, False otherwise
-        """
-        game_player = GamePlayer.query.get(game_player_id)
-        if not game_player:
-            return False
-            
-        # Remove from player inventory
-        character_sheet = game_player.character_sheet or {}
-        player_inventory = character_sheet.get('inventory', [])
-        
-        item = next((item for item in player_inventory if 
-                    (isinstance(item, dict) and item.get('name', '').lower() == item_name.lower()) or
-                    (isinstance(item, str) and item.lower() == item_name.lower())), None)
-        
-        if not item:
-            return False
-            
-        if isinstance(item, str):
-            # Convert string item to dict format
-            item = {'name': item, 'quantity': 1, 'description': f"A {item.lower()}"}
-            
-        current_quantity = item.get('quantity', 1)
-        if current_quantity < quantity:
-            return False
-            
-        # Add to party inventory
-        try:
-            self.add_item_to_inventory(game_player.game_id, item_name, 
-                                     item.get('description'), quantity)
-        except Exception as e:
-            logging.error(f"Error adding item to party inventory: {e}")
-            return False
-            
-        # Remove from player inventory
-        if current_quantity == quantity:
-            player_inventory.remove(item)
-        else:
-            item['quantity'] = current_quantity - quantity
-            
-        character_sheet['inventory'] = player_inventory
-        game_player.character_sheet = character_sheet
-        db.session.add(game_player)
-        db.session.commit()
-        
-        logging.info(f"Transferred {quantity}x {item_name} from player {game_player_id} to party inventory")
-        return True
-
-    def transfer_item_to_player(self, game_id, target_player_id, item_name, quantity=1):
-        """
-        Transfers an item from the party inventory to a specific player's inventory.
-        
-        Args:
-            game_id: ID of the game
-            target_player_id: ID of the GamePlayer to receive the item
-            item_name: Name of the item to transfer
-            quantity: Number of items to transfer (default: 1)
-            
-        Returns:
-            bool: True if transfer was successful, False otherwise
-        """
-        # Remove from party inventory
-        success = self.remove_item_from_inventory(game_id, item_name, quantity)
-        if not success:
-            return False
-            
-        # Get item details from party inventory before removal
-        game_state, error = self.get_current_game_state(game_id)
-        if error:
-            return False
-            
-        party_inventory = game_state.inventory or []
-        item_details = next((item for item in party_inventory if 
-                           item.get('name', '').lower() == item_name.lower()), None)
-        
-        description = item_details.get('description') if item_details else f"A {item_name.lower()}"
-        
-        # Add to player inventory
-        try:
-            self.add_item_to_player_inventory(target_player_id, item_name, description, quantity)
-        except Exception as e:
-            logging.error(f"Error adding item to player inventory: {e}")
-            # Try to restore item to party inventory
-            self.add_item_to_inventory(game_id, item_name, description, quantity)
-            return False
-            
-        logging.info(f"Transferred {quantity}x {item_name} from party to player {target_player_id}")
-        return True
-
     def process_player_action(self, game_id, game_player_id, action_text):
         """
         Processes a player's action, potentially triggering AI skill checks and narrative.
         This is the core of the Action Resolution Workflow.
-        
-        Inventory Management Rules:
-        - Items found during actions are added to both party and player inventories
-        - Party inventory: shared among all players, good for consumables and quest items
-        - Player inventory: individual ownership, good for personal equipment
         """
         game = Game.query.get(game_id)
         if not game:
@@ -224,22 +115,16 @@ class GameStateService:
         
         # Handle location movement if detected
         location_movement_occurred = False
-        movement_details = None
         if target_location_node:
             try:
                 old_location = current_game_state_data["current_location"]
                 new_location = target_location_node.get('name')
                 
-                # Update the player's location in database
+                # Update the player's location
                 self.update_player_location(game_id, new_location)
                 
-                # Store movement details but DON'T update local game state data yet
-                # (we'll update it after AI processes the action)
-                movement_details = {
-                    "old_location": old_location,
-                    "new_location": new_location,
-                    "location_description": target_location_node.get('description', '')
-                }
+                # Update our local game state data for AI context
+                current_game_state_data["current_location"] = new_location
                 location_movement_occurred = True
                 
                 # Add a system message about the location change
@@ -367,29 +252,19 @@ class GameStateService:
             "details": {}
         })
 
-        # Now update local game state data with movement details after AI processing
-        if movement_details:
-            current_game_state_data["current_location"] = movement_details["new_location"]
-            logging.info(f"Updated local game state location to: {movement_details['new_location']}")
-
         # Check for item gathering in the action and AI response
         detected_items = self.analyze_action_for_items(action_text, ai_narrative_response)
-        logging.info(f"DEBUG: Item detection - Action: '{action_text}', Narrative contains: datapad={('datapad' in ai_narrative_response.lower())}, medkit={('medkit' in ai_narrative_response.lower())}, multipurpose={('multipurpose' in ai_narrative_response.lower())}")
-        logging.info(f"DEBUG: Detected items: {detected_items}")
         if detected_items:
-            # Add items to both party and player inventories for shared access
+            # Decide target inventory: for demo, add to both party and player
             self.add_items_to_inventory_batch(game_id, detected_items, game_log_entries)
             for item in detected_items:
                 self.add_item_to_player_inventory(game_player_id, item['name'], item.get('description'), item.get('quantity', 1))
-            
-            # Log which inventories were updated
-            item_list = ', '.join([f"{item['name']} (x{item.get('quantity', 1)})" for item in detected_items])
             game_log_entries.append({
                 "timestamp": datetime.utcnow().isoformat(),
                 "type": "SYSTEM_MESSAGE",
                 "actor": "System",
-                "content": f"Added {item_list} to both party and {game_player.character_name}'s inventory.",
-                "details": {"action_type": "item_acquired", "target": "both", "player_name": game_player.character_name}
+                "content": f"Added {', '.join([f'{item['name']} (x{item.get('quantity', 1)})' for item in detected_items])} to both party and player inventory.",
+                "details": {"action_type": "item_acquired", "target": "both"}
             })
 
         # Update game's cumulative cost and save the new game log
@@ -709,10 +584,6 @@ class GameStateService:
             
             # Check if location is mentioned in action
             if node_name in action_lower or node_id in action_lower:
-                # Don't allow movement to the same location
-                if current_location and (current_location.lower() == node_name or current_location.lower() == node_id):
-                    continue  # Skip this node, player is already there
-                
                 # Check if it's explicitly a movement action
                 for keyword in movement_keywords:
                     if keyword in action_lower:
@@ -746,12 +617,7 @@ class GameStateService:
 
     def add_item_to_inventory(self, game_id, item_name, item_description=None, quantity=1):
         """
-        Adds an item to the party's inventory (shared inventory).
-        
-        Party inventory is shared among all players and is suitable for:
-        - Consumable items (food, potions, ammo)
-        - Quest items that the group needs
-        - Resources that can be used by anyone
+        Adds an item to the party's inventory.
         
         Args:
             game_id: ID of the game
@@ -791,14 +657,14 @@ class GameStateService:
         if self.socketio:
             room_name = f"game_{game_id}"
             self.socketio.emit('inventory_updated', {
-                'action': 'item_added_to_party',
+                'action': 'item_added',
                 'item_name': item_name,
                 'quantity': quantity,
                 'inventory': inventory,
                 'timestamp': datetime.utcnow().isoformat()
             }, to=room_name)
             
-        logging.info(f"Added {quantity}x {item_name} to party inventory in game {game_id}")
+        logging.info(f"Added {quantity}x {item_name} to inventory in game {game_id}")
 
     def remove_item_from_inventory(self, game_id, item_name, quantity=1):
         """
@@ -844,14 +710,14 @@ class GameStateService:
         if self.socketio:
             room_name = f"game_{game_id}"
             self.socketio.emit('inventory_updated', {
-                'action': 'item_removed_from_party',
+                'action': 'item_removed',
                 'item_name': item_name,
                 'quantity': quantity,
                 'inventory': inventory,
                 'timestamp': datetime.utcnow().isoformat()
             }, to=room_name)
             
-        logging.info(f"Removed {quantity}x {item_name} from party inventory in game {game_id}")
+        logging.info(f"Removed {quantity}x {item_name} from inventory in game {game_id}")
         return True
 
     def add_items_to_inventory_batch(self, game_id, items, game_log_entries):
@@ -901,15 +767,14 @@ class GameStateService:
                     "timestamp": datetime.utcnow().isoformat(),
                     "type": "SYSTEM_MESSAGE",
                     "actor": "System",
-                    "content": f"Added {quantity}x {item_name} to party inventory",
+                    "content": f"Added {quantity}x {item_name} to inventory",
                     "details": {
                         "action_type": "item_acquired",
                         "item_name": item_name,
-                        "quantity": quantity,
-                        "target": "party"
+                        "quantity": quantity
                     }
                 })
-                logging.info(f"Auto-detected and added item to party: {quantity}x {item_name}")
+                logging.info(f"Auto-detected and added item: {quantity}x {item_name}")
                 
             except Exception as e:
                 logging.error(f"Error adding item {item.get('name', 'unknown')} in batch: {e}")
@@ -924,7 +789,7 @@ class GameStateService:
         if self.socketio:
             room_name = f"game_{game_id}"
             self.socketio.emit('inventory_updated', {
-                'action': 'items_added_batch_to_party',
+                'action': 'items_added_batch',
                 'items': items,
                 'inventory': inventory,
                 'timestamp': datetime.utcnow().isoformat()
@@ -943,7 +808,7 @@ class GameStateService:
         # Common item gathering keywords
         gathering_keywords = [
             'gather', 'collect', 'pick up', 'take', 'grab', 'acquire', 
-            'find', 'discover', 'obtain', 'secure', 'retrieve', 'get'
+            'find', 'discover', 'obtain', 'secure', 'retrieve'
         ]
         
         # Common item types with their descriptions
@@ -952,8 +817,6 @@ class GameStateService:
             'toolbox': 'A sturdy toolbox containing various repair tools and equipment',
             'multitool': 'A versatile tool combining multiple functions in one device',
             'multi-tool': 'A versatile tool combining multiple functions in one device',
-            'multipurpose tool': 'A versatile tool combining multiple functions in one device',
-            'multipurpose': 'A versatile tool combining multiple functions in one device',
             'pry bar': 'A metal tool used for prying and leverage',
             'wire': 'Insulated wire for electrical connections and repairs',
             'insulated wire': 'Insulated wire for electrical connections and repairs',
@@ -962,10 +825,8 @@ class GameStateService:
             'keycard': 'An electronic keycard for security doors',
             'flashlight': 'A portable light source for dark areas',
             'medkit': 'A medical kit containing healing supplies',
-            'basic medkit': 'A basic medical kit containing healing supplies',
             'data pad': 'A portable device containing important information',
             'datapad': 'A portable device containing important information',
-            'damaged datapad': 'A damaged portable device that may contain recoverable information',
             'weapon': 'A tool for protection and combat',
             'ammunition': 'Ammunition for weapons',
             'rope': 'Sturdy rope for climbing and securing objects',
@@ -974,13 +835,7 @@ class GameStateService:
             'oxygen tank': 'A portable air supply for emergencies',
             'power cell': 'A portable energy source for electronic devices',
             'beacon': 'An emergency signaling device',
-            'emergency beacon': 'An emergency signaling device',
-            'ration pack': 'A sealed package containing emergency food',
-            'sealed ration pack': 'A sealed package containing emergency food',
-            'emergency toolkit': 'A collection of essential tools for emergency situations',
-            'plasma cutter': 'A cutting tool that uses plasma for precise cuts',
-            'diagnostic nanites': 'Microscopic robots for system analysis and repair',
-            'multi-spectrum scanner': 'A device capable of scanning across multiple frequencies and spectrums'
+            'emergency beacon': 'An emergency signaling device'
         }
         
         # Check if action indicates gathering
@@ -1047,77 +902,3 @@ class GameStateService:
             
         inventory = game_state.inventory or []
         return [f"{item.get('quantity', 1)}x {item.get('name', 'Unknown Item')}" for item in inventory]
-
-    def generate_and_update_story_summary(self, game_id):
-        """
-        Generates a new "Story So Far" summary using AI and updates the game state.
-        
-        Args:
-            game_id: ID of the game
-            
-        Returns:
-            tuple: (summary_text, cost, error_message)
-        """
-        try:
-            # Get current game state
-            game_state, error = self.get_current_game_state(game_id)
-            if error:
-                return None, 0.0, error
-
-            game = Game.query.get(game_id)
-            if not game:
-                return None, 0.0, "Game not found"
-
-            # Prepare game state snapshot for AI
-            game_state_snapshot = {
-                "turn_number": game_state.turn_number,
-                "current_location": game_state.current_location,
-                "active_npcs": game_state.active_npcs or [],
-                "inventory": game_state.inventory or [],
-                "completed_objectives": game_state.completed_objectives or [],
-                "discovered_lore_items": game_state.discovered_lore_items or []
-            }
-
-            # Generate summary using AI service
-            summary, cost, prompt_tokens, completion_tokens = self.ai_service.generate_story_summary(
-                game_log_entries=game_state.game_log or [],
-                game_state_snapshot=game_state_snapshot,
-                charter=game.campaign_charter
-            )
-
-            # Update the game state with the new summary
-            game_state.current_story_summary = summary
-            game_state.updated_at = datetime.utcnow()
-            
-            # Update the game's cumulative cost
-            game.cumulative_cost += cost
-
-            # Track AI model usage
-            if not game.ai_models_used:
-                game.ai_models_used = {}
-            if 'summary_generation' not in game.ai_models_used:
-                game.ai_models_used['summary_generation'] = []
-            
-            model_name = self.ai_service.default_main_model
-            if model_name not in game.ai_models_used['summary_generation']:
-                game.ai_models_used['summary_generation'].append(model_name)
-
-            db.session.add(game_state)
-            db.session.add(game)
-            db.session.commit()
-
-            # Emit socket event to update all clients
-            if self.socketio:
-                room_name = f"game_{game_id}"
-                self.socketio.emit('story_summary_updated', {
-                    'summary': summary,
-                    'cost': cost,
-                    'timestamp': datetime.utcnow().isoformat()
-                }, to=room_name)
-
-            logging.info(f"Generated and updated story summary for game {game_id}, cost: {cost:.4f}")
-            return summary, cost, None
-
-        except Exception as e:
-            logging.error(f"Error generating story summary for game {game_id}: {e}")
-            return None, 0.0, f"An error occurred while generating the summary: {str(e)}"
